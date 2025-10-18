@@ -15,13 +15,13 @@ o.value = data.running and ('<span style="color:green;">' .. _("Running") .. '</
 o.rawhtml = true
 
 o = s:option(DummyValue, "_ipv4", _("Tailscale IPv4"))
-o.value = data.ipv4
+o.value = _(data.ipv4)
 
 o = s:option(DummyValue, "_ipv6", _("Tailscale IPv6"))
 o.value = data.ipv6 or _("N/A")
 
 o = s:option(DummyValue, "_domain", _("Tailnet Name"))
-o.value = data.domain_name
+o.value = _(data.domain_name)
 
 -- ## Peer Status Table Section ##
 if data.peers then

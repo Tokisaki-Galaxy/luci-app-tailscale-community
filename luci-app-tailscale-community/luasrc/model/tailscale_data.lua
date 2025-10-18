@@ -25,9 +25,9 @@ function load()
 
     local data = {
         running = false,
-        ipv4 = _("Not running"),
+        ipv4 = "Not running",
         ipv6 = nil,
-        domain_name = _("Unknown"),
+        domain_name = "Unknown",
         settings = {},
         daemon_settings = {},
         peers = nil,
@@ -104,10 +104,10 @@ function load()
                 end
             end
         else
-            data.ipv4 = _("State file is invalid JSON")
+            data.ipv4 = "State file is invalid JSON"
         end
     else
-        data.ipv4 = _("State file not found at: ") .. state_file_path
+        data.ipv4 = "State file not found at: " .. state_file_path
     end
 
     -- 步骤 3: 获取所有节点的状态
