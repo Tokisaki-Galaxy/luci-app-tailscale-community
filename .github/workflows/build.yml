@@ -1,0 +1,105 @@
+name: Build LuCI Tailscale
+
+on:
+  push:
+    branches: [ "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 步骤 1: 安装 OpenWrt 编译所需的依赖
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential clang flex bison g++ gawk gcc-multilib g++-multilib \
+          gettext git libncurses5-dev libssl-dev python3-distutils rsync unzip zlib1g-dev file wget
+
+      # 步骤 2: 检出你的插件仓库代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 步骤 3: 克隆 OpenWrt 官方源码
+      # 使用 --depth 1 来加快克隆速度
+      - name: Clone OpenWrt source
+        run: |
+          git clone https://github.com/openwrt/openwrt.git --depth 1 --branch v23.05.3 openwrt
+          
+      # 步骤 4: 准备编译环境
+      # 复制你的插件代码到 package 目录，并更新 feeds
+      - name: Prepare build environment
+        run: |
+          # 将当前仓库中的 luci-app-tailscale-community 目录复制到 openwrt 的 package 目录下
+          cp -r ./luci-app-tailscale-community openwrt/package/
+          
+          # 进入 openwrt 目录
+          cd openwrt
+          
+          # 更新并安装 feeds
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      # 步骤 5: 生成编译配置文件 (.config)
+      - name: Generate build config
+        run: |
+          cd openwrt
+          
+          # 创建自定义 .config 文件
+          cat <<'EOF' > .config
+          # 编译目标架构 (示例: x86_64)
+          CONFIG_TARGET_x86=y
+          CONFIG_TARGET_x86_64=y
+          CONFIG_TARGET_x86_64_DEVICE_generic=y
+          
+          # 选中我们的插件包 (m = 编译成 ipk)
+          CONFIG_PACKAGE_luci-app-tailscale-community=m
+          
+          # 选中依赖包
+          CONFIG_PACKAGE_smartmontools=m
+          EOF
+          
+          # 应用默认配置
+          make defconfig
+
+      # 步骤 6: 编译你的插件包
+      # 使用 -j 选项并行编译以加快速度
+      - name: Compile the package
+        run: |
+          cd openwrt
+          make package/luci-app-tailscale-community/compile -j$(nproc) V=s
+
+      # 步骤 7: 查找并准备上传 .ipk 文件
+      - name: Find .ipk package
+        id: find_ipk
+        run: |
+          # 在输出目录中查找 .ipk 文件
+          ipk_path=$(find ./openwrt/bin/packages -name "luci-app-tailscale-community*.ipk" | head -n 1)
+          if [ -z "$ipk_path" ]; then
+            echo "::error::IPK file not found!"
+            exit 1
+          fi
+          echo "Found IPK: $ipk_path"
+          # 将路径设置为下一步的输出变量
+          echo "path=$ipk_path" >> $GITHUB_OUTPUT
+
+      # 步骤 8: 上传 .ipk 文件作为构建产物 (Artifact)
+      - name: Upload .ipk artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: luci-app-tailscale-community-ipk
+          path: ${{ steps.find_ipk.outputs.path }}
+
+      # 步骤 9: 在 Commit 上发表评论，提供下载链接
+      # 这一步使用的 Action (peter-evans/commit-comment) 非常稳定和流行
+      - name: Comment on commit
+        uses: peter-evans/commit-comment@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          body: |
+            ✅ **luci-app-tailscale-community** build successful!
+
+            You can download the compiled `.ipk` package from the link below (login required):
+
+            [**Download Artifact**](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
