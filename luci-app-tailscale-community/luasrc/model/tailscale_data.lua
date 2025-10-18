@@ -28,25 +28,33 @@ function load()
         ipv6 = nil,
         domain_name = _("Unknown"),
         settings = {},
+        daemon_settings = {},
         peers = nil,
         -- 用于 write() 函数比较的原始数据
         _profile_detail_data_raw = nil
     }
 
     -- 步骤 1: 检查 Tailscale 运行状态
+    uci:foreach("tailscale", "daemon", function(s)
+        data.daemon_settings = {
+            mtu = s.mtu,
+            reduce_memory = (s.reduce_memory == "1")
+        }
+    end)
+
     local ip_output = sys.exec("tailscale ip 2>/dev/null")
-    if ip_output and ip_output ~= "" then
-        data.running = true
-        for line in ip_output:gmatch("[^\r\n]+") do
-            if line:match("^(%d{1,3}%.%d{1,3}%.%d{1,3}%.%d{1,3})$") then
-                data.ipv4 = line
-            elseif line:match(":") then
-                data.ipv6 = line
-            end
-        end
-    else
+    if not (ip_output and ip_output ~= "") then
         cached_data = data
-        return data -- 如果未运行，直接返回
+        return data
+    end
+
+    data.running = true
+    for line in ip_output:gmatch("[^\r\n]+") do
+        if line:match("^(%d{1,3}%.%d{1,3}%.%d{1,3}%.%d{1,3})$") then
+            data.ipv4 = line
+        elseif line:match(":") then
+            data.ipv6 = line
+        end
     end
 
     -- 步骤 2: 读取 state file for settings
@@ -107,9 +115,7 @@ function load()
         local full_status_data = safe_json_parse(status_output)
         if full_status_data and full_status_data.Peer then
             data.peers = {}
-            for _, v in pairs(full_status_data.Peer) do
-                table.insert(data.peers, v)
-            end
+            for _, v in pairs(full_status_data.Peer) do table.insert(data.peers, v) end
             table.sort(data.peers, function(a, b) return a.HostName < b.HostName end)
         end
     end
