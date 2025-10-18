@@ -1,4 +1,4 @@
-name: Build LuCI Tailscale
+name: Build LuCI App
 
 on:
   push:
@@ -7,6 +7,7 @@ on:
 
 env:
   OPENWRT_VERSION: v24.10.3
+  CURRENT_PACKAGE: luci-app-tailscale-community
 
 jobs:
   build:
@@ -70,8 +71,8 @@ jobs:
       - name: Copy plugin and generate build config
         working-directory: ./openwrt
         run: |
-          # 将当前仓库中的 luci-app-tailscale-community 目录复制到 openwrt 的 package 目录下
-          cp -r ../luci-app-tailscale-community ./package/
+          # 将当前仓库中的目录复制到 openwrt 的 package 目录下
+          cp -r ../${{ env.CURRENT_PACKAGE }} ./package/
           
           # 创建自定义 .config 文件
           cat <<EOF > .config
@@ -81,7 +82,7 @@ jobs:
           CONFIG_TARGET_${{ matrix.target.target }}_${{ matrix.target.subtarget }}_DEVICE_${{ matrix.target.profile }}=y
 
           # 选中我们的插件包 (m = 编译成 ipk)
-          CONFIG_PACKAGE_luci-app-tailscale-community=m
+          CONFIG_PACKAGE_${{ env.CURRENT_PACKAGE }}=m
 
           # 选中依赖包
           CONFIG_PACKAGE_tailscale=m
@@ -94,8 +95,15 @@ jobs:
       - name: Compile the package
         working-directory: ./openwrt
         run: |
-          make clean
-          make package/luci-app-tailscale-community/compile -j$(nproc) V=s
+          # 下载所有依赖包的源码
+          make download -j$(nproc)
+
+          # 编译工具链和主机工具
+          make toolchain/install -j$(nproc) V=s
+          make tools/install -j$(nproc) V=s
+
+          # 最后编译你的软件包
+          make package/${{ env.CURRENT_PACKAGE }}/compile -j$(nproc) V=s
 
       # 步骤 8: 查找并准备上传 .ipk 文件
       - name: Find .ipk package
@@ -103,7 +111,7 @@ jobs:
         working-directory: ./openwrt
         run: |
           # 在输出目录中查找 .ipk 文件
-          ipk_path=$(find ./bin/packages -name "luci-app-tailscale-community*.ipk" | head -n 1)
+          ipk_path=$(find ./bin/packages -name "${{ env.CURRENT_PACKAGE }}*.ipk" | head -n 1)
           if [ -z "$ipk_path" ]; then
             echo "::error::IPK file not found!"
             exit 1
@@ -116,7 +124,7 @@ jobs:
       - name: Upload .ipk artifact
         uses: actions/upload-artifact@v4
         with:
-          name: luci-app-tailscale-community-${{ matrix.target.name }}
+          name: ${{ env.CURRENT_PACKAGE }}-${{ matrix.target.name }}
           path: openwrt/${{ steps.find_ipk.outputs.path }}
           if-no-files-found: error
 
@@ -131,7 +139,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           body: |
-            ✅ **luci-app-tailscale-community** build successful for all targets!
+            ✅ **${{ env.CURRENT_PACKAGE }}** build successful for all targets!
 
             You can download the compiled `.ipk` packages from the artifacts section of the link below (login required):
 
