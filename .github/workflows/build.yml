@@ -82,7 +82,7 @@ jobs:
         id: find_ipk
         working-directory: ${{ env.SDK_DIR }}
         run: |
-          ipk_path=$(find ./bin/packages -name "${{ env.PACKAGE_NAME }}*.ipk" | head -n 1)
+          ipk_path=$(find ./bin/packages -name "${{ env.PACKAGE_NAME }}*.ipk" | head -n 1 | sed 's|^\./||')
           if [ -z "$ipk_path" ]; then
             echo "::error::IPK file not found in ./bin/packages/"
             # 显示编译输出目录树，方便调试
