@@ -5,6 +5,9 @@ on:
     branches: [ "master" ]
   workflow_dispatch:
 
+env:
+  OPENWRT_VERSION: v24.10.3
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -21,19 +24,26 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 步骤 3: 克隆 OpenWrt 官方源码
-      # 使用 --depth 1 来加快克隆速度
+      # 步骤 3: 缓存 OpenWrt 源码和 feeds
+      - name: Cache OpenWrt build environment
+        id: cache-openwrt
+        uses: actions/cache@v4
+        with:
+          path: openwrt
+          key: ${{ runner.os }}-openwrt-${{ env.OPENWRT_VERSION }}-${{ hashFiles('openwrt/.config') }}
+          restore-keys: |
+            ${{ runner.os }}-openwrt-${{ env.OPENWRT_VERSION }}-
+
+      # 步骤 4: 克隆 OpenWrt 官方源码 (如果缓存未命中)
       - name: Clone OpenWrt source
+        if: steps.cache-openwrt.outputs.cache-hit != 'true'
         run: |
-          git clone https://github.com/openwrt/openwrt.git --depth 1 --branch v23.05.3 openwrt
+          git clone https://github.com/openwrt/openwrt.git --depth 1 --branch ${{ env.OPENWRT_VERSION }} openwrt
           
-      # 步骤 4: 准备编译环境
-      # 复制你的插件代码到 package 目录，并更新 feeds
+      # 步骤 5: 准备编译环境 (如果缓存未命中)
       - name: Prepare build environment
+        if: steps.cache-openwrt.outputs.cache-hit != 'true'
         run: |
-          # 将当前仓库中的 luci-app-tailscale-community 目录复制到 openwrt 的 package 目录下
-          cp -r ./luci-app-tailscale-community openwrt/package/
-          
           # 进入 openwrt 目录
           cd openwrt
           
@@ -41,9 +51,12 @@ jobs:
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
-      # 步骤 5: 生成编译配置文件 (.config)
-      - name: Generate build config
+      # 步骤 6: 复制插件并生成编译配置
+      - name: Copy plugin and generate build config
         run: |
+          # 将当前仓库中的 luci-app-tailscale-community 目录复制到 openwrt 的 package 目录下
+          cp -r ./luci-app-tailscale-community openwrt/package/
+          
           cd openwrt
           
           # 创建自定义 .config 文件
@@ -57,20 +70,19 @@ jobs:
           CONFIG_PACKAGE_luci-app-tailscale-community=m
           
           # 选中依赖包
-          CONFIG_PACKAGE_smartmontools=m
+          CONFIG_PACKAGE_tailscale=m
           EOF
           
           # 应用默认配置
           make defconfig
 
-      # 步骤 6: 编译你的插件包
-      # 使用 -j 选项并行编译以加快速度
+      # 步骤 7: 编译你的插件包
       - name: Compile the package
         run: |
           cd openwrt
           make package/luci-app-tailscale-community/compile -j$(nproc) V=s
 
-      # 步骤 7: 查找并准备上传 .ipk 文件
+      # 步骤 8: 查找并准备上传 .ipk 文件
       - name: Find .ipk package
         id: find_ipk
         run: |
@@ -84,15 +96,14 @@ jobs:
           # 将路径设置为下一步的输出变量
           echo "path=$ipk_path" >> $GITHUB_OUTPUT
 
-      # 步骤 8: 上传 .ipk 文件作为构建产物 (Artifact)
+      # 步骤 9: 上传 .ipk 文件作为构建产物 (Artifact)
       - name: Upload .ipk artifact
         uses: actions/upload-artifact@v4
         with:
           name: luci-app-tailscale-community-ipk
           path: ${{ steps.find_ipk.outputs.path }}
 
-      # 步骤 9: 在 Commit 上发表评论，提供下载链接
-      # 这一步使用的 Action (peter-evans/commit-comment) 非常稳定和流行
+      # 步骤 10: 在 Commit 上发表评论，提供下载链接
       - name: Comment on commit
         uses: peter-evans/commit-comment@v3
         with:
