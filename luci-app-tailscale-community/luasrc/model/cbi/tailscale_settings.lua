@@ -1,6 +1,7 @@
 local util = require "luci.util"
 local sys = require "luci.sys"
-local fs = require "luci.fs"
+local nixio = require "nixio"
+local fs = require "nixio.fs"
 local data_loader = require "luci.model.tailscale_data"
 
 -- 加载所有数据

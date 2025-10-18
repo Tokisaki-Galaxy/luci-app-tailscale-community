@@ -1,7 +1,8 @@
 module("luci.model.tailscale_data", package.seeall)
 
 local sys = require "luci.sys"
-local fs = require "luci.fs"
+local nixio = require "nixio"
+local fs = require "nixio.fs"
 local uci = require "luci.model.uci".cursor()
 local jsonc = require "luci.jsonc"
 local b64 = require "nixio.util".base64decode
