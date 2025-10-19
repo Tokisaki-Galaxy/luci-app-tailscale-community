@@ -10,8 +10,7 @@ local data = data_loader.load()
 m = Map("tailscale", "Tailscale")
 
 -- ## Status Display Section ##
-s = m:section(TypedSection, "tailscale_status", _("Status"))
-s.anonymous = true
+s = m:section(SimpleSection, _("Status"))
 
 o = s:option(DummyValue, "_status", _("Service Status"))
 o.value = data.running and ('<span style="color:green;">' .. _("Running") .. '</span>') or ('<span style="color:red;">' .. _("Not Running") .. '</span>')

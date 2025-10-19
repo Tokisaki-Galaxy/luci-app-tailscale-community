@@ -3,7 +3,6 @@ module("luci.model.tailscale_data", package.seeall)
 local sys = require "luci.sys"
 local nixio = require "nixio"
 local fs = require "nixio.fs"
-local uci = require "luci.model.uci".cursor()
 local jsonc = require "luci.jsonc"
 local util = require "luci.util"
 
@@ -32,6 +31,7 @@ function load()
         return cached_data
     end
 
+    local uci = require "luci.model.uci".cursor()
     local data = {
         running = false,
         ipv4 = "Not running",
@@ -61,9 +61,9 @@ function load()
 
     data.running = true
     for line in ip_output:gmatch("[^\r\n]+") do
-        if line:match("^(%d{1,3}%.%d{1,3}%.%d{1,3}%.%d{1,3})$") then
-            data.ipv4 = line
-        elseif line:match(":") then
+        if line:match(":") then
+            --空格前面是ipv4
+            data.ipv4 = ip_output:match("^(%S+)")
             data.ipv6 = line
         end
     end
