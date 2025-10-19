@@ -5,7 +5,16 @@ local nixio = require "nixio"
 local fs = require "nixio.fs"
 local uci = require "luci.model.uci".cursor()
 local jsonc = require "luci.jsonc"
-local b64 = require "nixio.util".base64decode
+local util = require "luci.util"
+
+local function base64_decode_cmd(b64_string)
+    if not b64_string or b64_string == "" then
+        return ""
+    end
+    -- 使用 luci.util.shellquote 来防止命令注入
+    local cmd = string.format("echo %s | base64 -d", util.shellquote(b64_string))
+    return sys.exec(cmd)
+end
 
 -- 定义一个辅助函数，用于安全地解析 JSON
 local function safe_json_parse(str)
@@ -67,7 +76,7 @@ function load()
             -- ... (解析 state file 的逻辑)
             local profiles_b64 = state_data._profiles
             if profiles_b64 then
-                local profiles_json = b64(profiles_b64)
+                local profiles_json = base64_decode_cmd(profiles_b64)
                 local profiles_data = safe_json_parse(profiles_json)
                 if profiles_data then
                     for _, profile in pairs(profiles_data) do
@@ -84,7 +93,7 @@ function load()
 
             if profile_key and state_data[profile_key] then
                 local profile_detail_b64 = state_data[profile_key]
-                local profile_detail_json = b64(profile_detail_b64)
+                local profile_detail_json = base64_decode_cmd(profile_detail_b64)
                 data._profile_detail_data_raw = safe_json_parse(profile_detail_json)
 
                 if data._profile_detail_data_raw then

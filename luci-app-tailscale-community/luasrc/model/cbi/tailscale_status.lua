@@ -1,5 +1,7 @@
 local util = require "luci.util"
 local data_loader = require "luci.model.tailscale_data"
+local i18n = require "luci.i18n"
+_ = i18n.translate
 
 -- 加载所有数据
 local data = data_loader.load()
