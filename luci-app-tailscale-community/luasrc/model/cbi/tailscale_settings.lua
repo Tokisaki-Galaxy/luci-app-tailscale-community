@@ -71,37 +71,49 @@ fi
 ]]
 
 
--- ## 核心修改：重构 on_after_commit 函数 ##
 function m.on_after_commit(self)
+    -- 引入日志
+    local log = function(...) sys.call("logger -t luci-tailscale " .. table.concat({...}, " ")) end
+    log("on_after_commit triggered.")
+
     -- 1. 处理 Daemon Environment Settings
     
     -- 从提交的表单中获取新值，并进行规范化处理
     local new_mtu = self:formvalue("settings", "daemon_mtu") or ""
     local new_reduce_mem = self:formvalue("settings", "daemon_reduce_memory") or "0"
+    log(string.format("New form values: daemon_mtu='%s', daemon_reduce_memory='%s'", new_mtu, new_reduce_mem))
     
     -- 从 commit 前缓存的数据中获取旧值，并进行同样的规范化处理
     local old_mtu = self.data.settings.daemon_mtu or ""
     local old_reduce_mem = (self.data.settings.daemon_reduce_memory == "1" or self.data.settings.daemon_reduce_memory == true) and "1" or "0"
+    log(string.format("Old settings values: daemon_mtu='%s', daemon_reduce_memory='%s'", old_mtu, old_reduce_mem))
 
     -- 检查守护进程相关的设置是否有变化
     local daemon_settings_changed = (new_mtu ~= old_mtu) or (new_reduce_mem ~= old_reduce_mem)
+    log("Daemon settings changed:", tostring(daemon_settings_changed))
 
     if daemon_settings_changed then
         -- 判断是否需要创建脚本（即，至少有一个守护进程设置是启用的）
         local script_needed = (new_mtu ~= "") or (new_reduce_mem == "1")
+        log("Script needed:", tostring(script_needed))
 
         if script_needed then
             -- 写入固定的脚本内容并设置权限
+            log("Writing env script to", env_script_path)
             fs.writefile(env_script_path, env_script_content)
             sys.call("chmod +x " .. env_script_path)
         else
             -- 如果不再需要脚本，则删除它（如果存在）
             if fs.access(env_script_path) then
+                log("Removing env script from", env_script_path)
                 fs.remove(env_script_path)
+            else
+                log("Env script not found, nothing to remove.")
             end
         end
         
         m.message = _("Daemon settings applied. Restarting Tailscale service...")
+        log("Committing UCI and restarting tailscale service.")
         -- 提交 UCI 更改并重启服务
         sys.call("uci commit tailscale && /etc/init.d/tailscale restart >/dev/null 2>&1 &")
         return 
