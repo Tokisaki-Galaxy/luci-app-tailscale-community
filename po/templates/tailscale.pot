@@ -1,0 +1,201 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:36
+msgid "Accept Routes"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:38
+msgid "Advertise Routes"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:37
+msgid "Advertise as Exit Node"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:40
+msgid "Allow LAN Access via Exit Node"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:56
+msgid ""
+"Changing these settings requires a <strong>service restart</strong> to take "
+"effect. This works by creating a script in <code>/etc/profile.d/</code> to "
+"set environment variables for the daemon."
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:46
+msgid "Connection"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:45
+msgid "Custom Hostname"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:55
+msgid "Daemon Environment Settings"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:132
+msgid "Daemon settings applied. Restarting Tailscale service..."
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:91
+msgid "Direct"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:44
+msgid "Enable Auto-Updates"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:41
+msgid "Enable SNAT for Subnet Routes"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:42
+msgid "Enable SSH Server"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:37
+msgid "Hostname"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:100
+msgid "Idle"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:49
+msgid "Last Seen"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:59
+msgid ""
+"Leave empty for default. A common value for problematic networks is 1280."
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:23
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:84
+msgid "N/A"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:30
+msgid "Network Devices"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:53
+msgid "Never"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:32
+msgid "Node Settings"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:191
+msgid "Node settings applied."
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:50
+msgid ""
+"Node settings cannot be loaded. Please ensure Tailscale is running and "
+"properly configured."
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:16
+msgid "Not Running"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:109
+msgid "Now"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:98
+msgid "ONLINE BUT UNKNOWN"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:43
+msgid "OS"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:63
+msgid "Offline"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:62
+msgid "Online"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:62
+msgid ""
+"Optimizes for lower memory consumption at the cost of higher CPU usage. Sets "
+"<code>GOCG=10</code> environment variable."
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:62
+msgid "Reduce Memory Usage"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:95
+msgid "Relay"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:16
+msgid "Running"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:15
+msgid "Service Status"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:59
+msgid "Set Custom MTU"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/controller/tailscale.lua:11
+msgid "Settings"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:48
+msgid "Settings Unavailable"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:43
+msgid "Shields Up Mode"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/controller/tailscale.lua:10
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:13
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:34
+msgid "Status"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:25
+msgid "Tailnet Name"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/controller/tailscale.lua:9
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:13
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:10
+msgid "Tailscale"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:40
+msgid "Tailscale IPs"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:19
+msgid "Tailscale IPv4"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:22
+msgid "Tailscale IPv6"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:33
+msgid ""
+"These settings are applied instantly using the <code>tailscale set</code> "
+"command and do not require a service restart."
+msgstr ""
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:39
+msgid "Use Exit Node"
+msgstr ""

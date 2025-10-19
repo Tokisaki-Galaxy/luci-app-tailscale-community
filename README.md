@@ -4,6 +4,11 @@
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![OpenWrt Version](https://img.shields.io/badge/OpenWrt-24.10.3-orange.svg)](https://openwrt.org/)
 
+<p align="center">
+  <a href="README.CN.md"><img src="https://img.shields.io/badge/简体中文-brightgreen.svg" alt="简体中文"></a>
+  <a href="README.md"><img src="https://img.shields.io/badge/English-blue.svg" alt="English"></a>
+</p>
+
 A community-maintained LuCI application for managing Tailscale on OpenWrt. This app provides a user-friendly web interface to view Tailscale status and configure its settings directly from LuCI.
 
 ## Features

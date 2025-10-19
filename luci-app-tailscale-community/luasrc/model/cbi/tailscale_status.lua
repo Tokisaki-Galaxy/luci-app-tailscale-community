@@ -7,7 +7,7 @@ _ = i18n.translate
 -- 加载所有数据
 local data = data_loader.load()
 
-m = Map("tailscale", "Tailscale")
+m = Map("tailscale", _("Tailscale"))
 
 -- ## Status Display Section ##
 s = m:section(SimpleSection, _("Status"))

@@ -1,0 +1,198 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:36
+msgid "Accept Routes"
+msgstr "接受路由"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:38
+msgid "Advertise Routes"
+msgstr "通告路由"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:37
+msgid "Advertise as Exit Node"
+msgstr "作为出口节点"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:40
+msgid "Allow LAN Access via Exit Node"
+msgstr "允许通过出口节点访问局域网"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:56
+msgid ""
+"Changing these settings requires a <strong>service restart</strong> to take "
+"effect. This works by creating a script in <code>/etc/profile.d/</code> to "
+"set environment variables for the daemon."
+msgstr "更改这些设置需要<strong>重启服务</strong>才能生效。其原理是在 <code>/etc/profile.d/</code> 目录下创建一个脚本来为守护进程设置环境变量。"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:46
+msgid "Connection"
+msgstr "连接"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:45
+msgid "Custom Hostname"
+msgstr "自定义主机名"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:55
+msgid "Daemon Environment Settings"
+msgstr "守护进程环境变量设置"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:132
+msgid "Daemon settings applied. Restarting Tailscale service..."
+msgstr "守护进程设置已应用。正在重启 Tailscale 服务..."
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:91
+msgid "Direct"
+msgstr "直连"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:44
+msgid "Enable Auto-Updates"
+msgstr "启用自动更新"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:41
+msgid "Enable SNAT for Subnet Routes"
+msgstr "为子网路由启用 SNAT"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:42
+msgid "Enable SSH Server"
+msgstr "启用 SSH 服务器"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:37
+msgid "Hostname"
+msgstr "主机名"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:100
+msgid "Idle"
+msgstr "空闲"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:49
+msgid "Last Seen"
+msgstr "上次在线"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:59
+msgid "Leave empty for default. A common value for problematic networks is 1280."
+msgstr "留空为默认值。对于有问题的网络，一个常用值为 1280。"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:23
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:84
+msgid "N/A"
+msgstr "N/A"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:30
+msgid "Network Devices"
+msgstr "网络设备"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:53
+msgid "Never"
+msgstr "从未"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:32
+msgid "Node Settings"
+msgstr "节点设置"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:191
+msgid "Node settings applied."
+msgstr "节点设置已应用。"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:50
+msgid "Node settings cannot be loaded. Please ensure Tailscale is running and properly configured."
+msgstr "无法加载节点设置。请确保 Tailscale 正在运行且配置正确。"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:16
+msgid "Not Running"
+msgstr "未运行"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:109
+msgid "Now"
+msgstr "当前"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:98
+msgid "ONLINE BUT UNKNOWN"
+msgstr "在线但状态未知"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:43
+msgid "OS"
+msgstr "操作系统"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:63
+msgid "Offline"
+msgstr "离线"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:62
+msgid "Online"
+msgstr "在线"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:62
+msgid ""
+"Optimizes for lower memory consumption at the cost of higher CPU usage. Sets "
+"<code>GOCG=10</code> environment variable."
+msgstr "优化以降低内存消耗，但会增加 CPU 使用率。此选项将设置 <code>GOCG=10</code> 环境变量。"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:62
+msgid "Reduce Memory Usage"
+msgstr "减少内存使用"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:95
+msgid "Relay"
+msgstr "中继"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:16
+msgid "Running"
+msgstr "运行中"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:15
+msgid "Service Status"
+msgstr "服务状态"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:59
+msgid "Set Custom MTU"
+msgstr "设置自定义 MTU"
+
+#: applications/luci-app-tailscale-community/luasrc/controller/tailscale.lua:11
+msgid "Settings"
+msgstr "设置"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:48
+msgid "Settings Unavailable"
+msgstr "设置不可用"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:43
+msgid "Shields Up Mode"
+msgstr "网络屏障模式"
+
+#: applications/luci-app-tailscale-community/luasrc/controller/tailscale.lua:10
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:13
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:34
+msgid "Status"
+msgstr "状态"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:25
+msgid "Tailnet Name"
+msgstr "Tailnet 名称"
+
+#: applications/luci-app-tailscale-community/luasrc/controller/tailscale.lua:9
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:13
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:10
+msgid "Tailscale"
+msgstr "Tailscale"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:40
+msgid "Tailscale IPs"
+msgstr "Tailscale IP"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:19
+msgid "Tailscale IPv4"
+msgstr "Tailscale IPv4"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_status.lua:22
+msgid "Tailscale IPv6"
+msgstr "Tailscale IPv6"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:33
+msgid ""
+"These settings are applied instantly using the <code>tailscale set</code> "
+"command and do not require a service restart."
+msgstr "这些设置通过 <code>tailscale set</code> 命令即时生效，无需重启服务。"
+
+#: applications/luci-app-tailscale-community/luasrc/model/cbi/tailscale_settings.lua:39
+msgid "Use Exit Node"
+msgstr "使用出口节点"

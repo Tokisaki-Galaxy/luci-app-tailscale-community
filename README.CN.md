@@ -5,6 +5,11 @@
 [![许可证](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![OpenWrt 版本](https://img.shields.io/badge/OpenWrt-24.10.3-orange.svg)](https://openwrt.org/)
 
+<p align="center">
+  <a href="README.CN.md"><img src="https://img.shields.io/badge/简体中文-brightgreen.svg" alt="简体中文"></a>
+  <a href="README.md"><img src="https://img.shields.io/badge/English-blue.svg" alt="English"></a>
+</p>
+
 一个社区维护的 LuCI 应用，用于在 OpenWrt 上管理 Tailscale。此应用提供了一个友好的 Web 界面，让您可以直接从 LuCI 查看 Tailscale 状态和配置其设置。
 
 ## 功能特性

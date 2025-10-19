@@ -10,7 +10,7 @@ _ = i18n.translate
 -- 加载所有数据
 local data = data_loader.load()
 
-m = Map("tailscale", "Tailscale")
+m = Map("tailscale", _("Tailscale"))
 m:chain("luci")
 
 m.old_settings = {}
