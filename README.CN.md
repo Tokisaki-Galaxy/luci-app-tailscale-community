@@ -64,7 +64,8 @@ opkg install tailscale coreutils-base64
 
 ### 安装 LuCI 应用
 
-1.  从 [GitHub Actions artifacts](https://github.com/actions) 下载最新的 `.ipk` 软件包（需要登录 GitHub）。
+1.  从 [Github Release](https://github.com/Tokisaki-Galaxy/luci-app-tailscale-community/releases) 下载最新稳定的 `.ipk` 软件包。
+ - 如果有特殊需求，也可以从[GitHub Actions artifacts](https://github.com/actions) 下载最新的基于调试用途的 `.ipk` 软件包。
 2.  将 `.ipk` 文件传输到您的 OpenWrt 路由器（例如，使用 `scp`）。
 3.  使用 `opkg` 安装软件包：
 
