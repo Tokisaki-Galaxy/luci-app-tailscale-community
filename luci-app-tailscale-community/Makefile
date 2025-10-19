@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 LUCI_TITLE:=LuCI support for Tailscale
-PKG_DESCRIPTION:=为 Tailscale 提供 LuCI Web 管理界面，允许查看状态、配置节点和守护进程。
+PKG_DESCRIPTION:=Provides a LuCI Web management interface for Tailscale, allowing viewing status, configuring nodes and daemons.
 PKG_VERSION:=1.0.0
 PKG_RELEASE:=1
 PKG_MAINTAINER:=Tokisaki-Galaxy <moebest@outlook.jp>

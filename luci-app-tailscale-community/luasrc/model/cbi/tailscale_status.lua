@@ -95,7 +95,7 @@ if data.peers then
             local display_text = relay_node and ("Relay (%s)"):format(relay_node) or _("Relay")
             return ('<span style="color:orange;" title="%s">%s</span>'):format(xml.pcdata(conn_info), display_text)
         elseif conn_info == "-" then
-            return _("This device")
+            return _("ONLINE BUT UNKNOWN")
         elseif conn_info:match("^idle") then
             return ('<span style="color:blue;" title="%s">%s</span>'):format(xml.pcdata(conn_info), _("Idle"))
         else
