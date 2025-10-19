@@ -1,4 +1,5 @@
 local util = require "luci.util"
+local xml = require "luci.xml"
 local data_loader = require "luci.model.tailscale_data"
 local i18n = require "luci.i18n"
 _ = i18n.translate
@@ -65,7 +66,7 @@ if data.peers then
 
     hostname_col.value = function(self, section, value)
         local peer = data.peers[tonumber(section)]
-        return string.format("<strong>%s</strong><br /><small>%s</small>", util.pcdata(peer.HostName), util.pcdata(peer.DNSName))
+        return string.format("<strong>%s</strong><br /><small>%s</small>", xml.pcdata(peer.HostName), xml.pcdata(peer.DNSName))
     end
 
     ips_col.value = function(self, section, value)
@@ -75,7 +76,7 @@ if data.peers then
 
     os_col.value = function(self, section, value)
         local peer = data.peers[tonumber(section)]
-        return util.pcdata(peer.OS)
+        return xml.pcdata(peer.OS)
     end
 
     connection_col.value = function(self, section, value)
@@ -88,19 +89,19 @@ if data.peers then
 
         -- 根据关键字美化显示
         if conn_info:match("direct") then
-            return ('<span style="color:green;" title="%s">%s</span>'):format(util.pcdata(conn_info), _("Direct"))
+            return ('<span style="color:green;" title="%s">%s</span>'):format(xml.pcdata(conn_info), _("Direct"))
         elseif conn_info:match("relay") then
             -- 提取 relay 节点名称
             local relay_node = conn_info:match("%((%S+)%)")
             local display_text = relay_node and ("Relay (%s)"):format(relay_node) or _("Relay")
-            return ('<span style="color:orange;" title="%s">%s</span>'):format(util.pcdata(conn_info), display_text)
+            return ('<span style="color:orange;" title="%s">%s</span>'):format(xml.pcdata(conn_info), display_text)
         elseif conn_info == "-" then
             return _("This device")
         elseif conn_info:match("^idle") then
-            return ('<span style="color:blue;" title="%s">%s</span>'):format(util.pcdata(conn_info), _("Idle"))
+            return ('<span style="color:blue;" title="%s">%s</span>'):format(xml.pcdata(conn_info), _("Idle"))
         else
             -- 其他状态 (如 active, offers exit node) 直接显示
-            return util.pcdata(conn_info)
+            return xml.pcdata(conn_info)
         end
     end
 
