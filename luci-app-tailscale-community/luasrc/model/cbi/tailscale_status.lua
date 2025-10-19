@@ -44,6 +44,7 @@ if data.peers then
     os_col.rawhtml = true
 
     local connection_col = s_peers:option(DummyValue, "connection", _("Connection"))
+    connection_col.rawhtml = true -- 允许HTML
 
     local lastseen_col = s_peers:option(DummyValue, "lastseen", _("Last Seen"))
 
@@ -79,10 +80,28 @@ if data.peers then
 
     connection_col.value = function(self, section, value)
         local peer = data.peers[tonumber(section)]
-        if peer.Online then
-            return peer.Relay and peer.Relay ~= "" and ("Relay (%s)"):format(peer.Relay) or _("Direct")
+        if not peer.Online then
+            return _("N/A")
         end
-        return _("N/A")
+
+        local conn_info = peer.ConnectionInfo or "-"
+
+        -- 根据关键字美化显示
+        if conn_info:match("direct") then
+            return ('<span style="color:green;" title="%s">%s</span>'):format(util.pcdata(conn_info), _("Direct"))
+        elseif conn_info:match("relay") then
+            -- 提取 relay 节点名称
+            local relay_node = conn_info:match("%((%S+)%)")
+            local display_text = relay_node and ("Relay (%s)"):format(relay_node) or _("Relay")
+            return ('<span style="color:orange;" title="%s">%s</span>'):format(util.pcdata(conn_info), display_text)
+        elseif conn_info == "-" then
+            return _("This device")
+        elseif conn_info:match("^idle") then
+            return ('<span style="color:blue;" title="%s">%s</span>'):format(util.pcdata(conn_info), _("Idle"))
+        else
+            -- 其他状态 (如 active, offers exit node) 直接显示
+            return util.pcdata(conn_info)
+        end
     end
 
     lastseen_col.value = function(self, section, value)

@@ -37,19 +37,20 @@ function load()
         ipv4 = "Not running",
         ipv6 = nil,
         domain_name = "Unknown",
-        settings = {},
-        daemon_settings = {},
+        settings = {}, -- 所有配置都将加载到这里
         peers = nil,
         -- 用于 write() 函数比较的原始数据
         _profile_detail_data_raw = nil
     }
 
     -- 步骤 1: 检查 Tailscale 运行状态
-    uci:foreach("tailscale", "daemon", function(s)
-        data.daemon_settings = {
-            mtu = s.mtu,
-            reduce_memory = (s.reduce_memory == "1")
-        }
+    uci:foreach("tailscale", "settings", function(s)
+        -- 将该 section 下的所有 option 复制到 data.settings 表中
+        for key, value in pairs(s) do
+            if key:sub(1,1) ~= "." then -- 忽略 .name 和 .type
+                data.settings[key] = value
+            end
+        end
     end)
 
     local ip_output = sys.exec("tailscale ip 2>/dev/null")
@@ -67,8 +68,10 @@ function load()
         end
     end
 
-    -- 步骤 2: 读取 state file for settings
-    local state_file_path = uci:get("tailscale", "settings", "state_file") or "/etc/tailscale/tailscaled.state"
+    -- 步骤 2: 读取 state file for runtime settings
+    -- 注意：这里获取的设置是 tailscale 运行时动态的设置，而上面从 UCI 加载的是用户保存的配置。
+    -- 我们保留 UCI 加载的值，让 state file 的值覆盖它们，以便页面显示最新的状态。
+    local state_file_path = data.settings.state_file or "/etc/tailscale/tailscaled.state"
     if fs.access(state_file_path) then
         local state_content = fs.readfile(state_file_path)
         local state_data = safe_json_parse(state_content)
@@ -119,14 +122,37 @@ function load()
         data.ipv4 = "State file not found at: " .. state_file_path
     end
 
-    -- 步骤 3: 获取所有节点的状态
-    local status_output = sys.exec("tailscale status --json 2>/dev/null")
-    if status_output and status_output ~= "" then
-        local full_status_data = safe_json_parse(status_output)
+    -- 步骤 3: 获取所有节点的状态 (JSON)
+    local status_output_json = sys.exec("tailscale status --json 2>/dev/null")
+    if status_output_json and status_output_json ~= "" then
+        local full_status_data = safe_json_parse(status_output_json)
         if full_status_data and full_status_data.Peer then
             data.peers = {}
             for _, v in pairs(full_status_data.Peer) do table.insert(data.peers, v) end
             table.sort(data.peers, function(a, b) return a.HostName < b.HostName end)
+        end
+    end
+
+    -- 步骤 4: 获取原始文本状态以补充连接信息
+    if data.peers then
+        local status_output_plain = sys.exec("tailscale status 2>/dev/null")
+        if status_output_plain and status_output_plain ~= "" then
+            local connection_info = {}
+            for line in status_output_plain:gmatch("[^\r\n]+") do
+                local ip, _, _, _, conn_str = line:match("^(%S+)%s+(%S+)%s+(%S+)%s+(%S+)%s+(.*)$")
+                if ip and conn_str then
+                    connection_info[ip] = util.trim(conn_str)
+                end
+            end
+
+            for _, peer in ipairs(data.peers) do
+                if peer.TailscaleIPs and #peer.TailscaleIPs > 0 then
+                    local primary_ip = peer.TailscaleIPs[1]
+                    if connection_info[primary_ip] then
+                        peer.ConnectionInfo = connection_info[primary_ip]
+                    end
+                end
+            end
         end
     end
 

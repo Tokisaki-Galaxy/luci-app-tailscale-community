@@ -12,7 +12,8 @@ local data = data_loader.load()
 m = Map("tailscale", "Tailscale")
 m:chain("luci")
 
--- 只有在成功解析了设置后，才显示设置表单
+-- Node Settings (即时生效)
+-- 这个 section 正确地指向了 UCI 中的 'settings' section
 if data._profile_detail_data_raw then
     s_set = m:section(TypedSection, "settings", _("Node Settings"),
         _("These settings are applied instantly using the <code>tailscale set</code> command and do not require a service restart."))
@@ -34,23 +35,24 @@ else
     s_err.description = _("Node settings cannot be loaded. Please ensure Tailscale is running and properly configured.")
 end
 
-s_daemon = m:section(TypedSection, "daemon", _("Daemon Environment Settings"),
+-- Daemon Environment Settings (需要重启)
+s_daemon = m:section(TypedSection, "settings", _("Daemon Environment Settings"),
     _("Changing these settings requires a <strong>service restart</strong> to take effect. This works by creating a script in <code>/etc/profile.d/</code> to set environment variables for the daemon."))
 s_daemon.anonymous = true
 
-o = s_daemon:option(Value, "mtu", _("Set Custom MTU"), _("Leave empty for default. A common value for problematic networks is 1280."))
-o.datatype = "uinteger"; o.placeholder = "1280"; o.default = data.daemon_settings.mtu
+o = s_daemon:option(Value, "daemon_mtu", _("Set Custom MTU"), _("Leave empty for default. A common value for problematic networks is 1280."))
+o.datatype = "uinteger"; o.placeholder = "1280"; o.default = data.settings.daemon_mtu
 
-o = s_daemon:option(Flag, "reduce_memory", _("Reduce Memory Usage"), _("Optimizes for lower memory consumption at the cost of higher CPU usage. Sets <code>GOCG=10</code> environment variable."))
-o.default = data.daemon_settings.reduce_memory and "1" or "0"; o.rmempty = false
+o = s_daemon:option(Flag, "daemon_reduce_memory", _("Reduce Memory Usage"), _("Optimizes for lower memory consumption at the cost of higher CPU usage. Sets <code>GOCG=10</code> environment variable."))
+o.default = data.settings.daemon_reduce_memory and "1" or "0"; o.rmempty = false
 
-local function update_env_script(form_data)
-    local mtu = form_data.mtu
-    local reduce_mem = form_data.reduce_memory == "1"
+local function update_env_script(mtu_val, reduce_mem_val)
+    local mtu = mtu_val
+    local reduce_mem = reduce_mem_val == "1"
     local script_path = "/etc/profile.d/tailscale-env.sh"
     
     if (not mtu or mtu == "") and not reduce_mem then
-        fs.remove(script_path)
+        if fs.access(script_path) then fs.remove(script_path) end
         return
     end
     
@@ -63,34 +65,74 @@ local function update_env_script(form_data)
 end
 
 function m.on_after_commit(self)
-    local form = self:formvalue_readall()
-    local node_settings_changed, daemon_settings_changed = false, false
-
-    if (form.mtu or data.daemon_settings.mtu) and form.mtu ~= data.daemon_settings.mtu then daemon_settings_changed = true end
-    if (form.reduce_memory == "1") ~= data.daemon_settings.reduce_memory then daemon_settings_changed = true end
+    -- 从提交的表单中获取新值
+    -- 注意 section ID 现在是 'settings'
+    local new_daemon_mtu = self:formvalue("settings", "daemon_mtu")
+    local new_daemon_reduce_memory = self:formvalue("settings", "daemon_reduce_memory")
     
-    if data._profile_detail_data_raw then
-        for _, flag in ipairs({"accept_routes", "advertise_exit_node", "exit_node_allow_lan_access", "snat_subnet_routes", "ssh", "shields_up", "auto_update"}) do
-            if (form[flag] == "1") ~= data.settings[flag] then node_settings_changed = true; break end
-        end
-        if not node_settings_changed then
-            for _, val in ipairs({"advertise_routes", "exit_node", "hostname"}) do
-                if (form[val] or data.settings[val]) and form[val] ~= data.settings[val] then node_settings_changed = true; break end
-            end
-        end
-    end
+    -- 从页面加载时的旧数据中获取旧值
+    local old_daemon_mtu = data.settings.daemon_mtu or ""
+    local old_daemon_reduce_memory = data.settings.daemon_reduce_memory and "1" or "0"
+
+    -- 检查 daemon 设置是否真的被修改了
+    local daemon_settings_changed = (tostring(new_daemon_mtu or "") ~= old_daemon_mtu) or (tostring(new_daemon_reduce_memory or "0") ~= old_daemon_reduce_memory)
 
     if daemon_settings_changed then
-        update_env_script(form)
-        m.message = _("Daemon settings changed. Restarting Tailscale service...")
+        -- LuCI 框架已经自动将新值保存到 /etc/config/tailscale 了。
+        -- 我们只需要执行后续操作。
+        update_env_script(new_daemon_mtu, new_daemon_reduce_memory)
+        m.message = _("Daemon settings applied. Restarting Tailscale service...")
         sys.call("/etc/init.d/tailscale restart >/dev/null 2>&1 &")
-    elseif node_settings_changed then
-        local args = {}
-        local function add_arg(k, v, is_bool) if is_bool then table.insert(args, util.format("--%s=%s", k, v and "true" or "false")) else table.insert(args, util.format("--%s=\"%s\"", k, v or "")) end end
-        add_arg("accept-routes", form.accept_routes == "1", true); add_arg("advertise-exit-node", form.advertise_exit_node == "1", true); add_arg("exit-node-allow-lan-access", form.exit_node_allow_lan_access == "1", true); add_arg("snat-subnet-routes", form.snat_subnet_routes == "1", true); add_arg("ssh", form.ssh == "1", true); add_arg("shields-up", form.shields_up == "1", true); add_arg("auto-update", form.auto_update == "1", true); add_arg("advertise-routes", form.advertise_routes, false); add_arg("exit-node", form.exit_node, false); add_arg("hostname", form.hostname, false)
-        sys.call("tailscale set " .. table.concat(args, " ") .. " >/dev/null 2>&1")
-        sys.call("sleep 1")
-        m.message = _("Node settings applied.")
+        return -- 处理完毕，直接返回
+    end
+
+    -- 如果 daemon 设置没有变化，再检查 Node Settings
+    if data._profile_detail_data_raw then
+        local changed = false
+        local form = {}
+        local node_setting_keys = {
+            "accept_routes", "advertise_exit_node", "advertise_routes",
+            "exit_node", "exit_node_allow_lan_access", "snat_subnet_routes",
+            "ssh", "shields_up", "auto_update", "hostname"
+        }
+
+        for _, key in ipairs(node_setting_keys) do
+            local new_val_str = self:formvalue("settings", key)
+            if new_val_str ~= nil then
+                form[key] = new_val_str
+                local old_val = data.settings[key]
+                if type(old_val) == "boolean" then
+                    if (new_val_str == "1") ~= old_val then changed = true end
+                elseif tostring(old_val or "") ~= new_val_str then
+                    changed = true
+                end
+            end
+        end
+
+        if changed then
+            local args = {}
+            local function add_arg(k, v, is_bool) 
+                if is_bool then 
+                    table.insert(args, string.format("--%s=%s", k, v and "true" or "false")) 
+                else 
+                    table.insert(args, string.format("--%s=%s", k, util.shellquote(v or ""))) 
+                end 
+            end
+            add_arg("accept-routes", form.accept_routes == "1", true)
+            add_arg("advertise-exit-node", form.advertise_exit_node == "1", true)
+            add_arg("exit-node-allow-lan-access", form.exit_node_allow_lan_access == "1", true)
+            add_arg("snat-subnet-routes", form.snat_subnet_routes == "1", true)
+            add_arg("ssh", form.ssh == "1", true)
+            add_arg("shields-up", form.shields_up == "1", true)
+            add_arg("auto-update", form.auto_update == "1", true)
+            add_arg("advertise-routes", form.advertise_routes, false)
+            add_arg("exit-node", form.exit_node, false)
+            add_arg("hostname", form.hostname, false)
+
+            sys.call("tailscale set " .. table.concat(args, " ") .. " >/dev/null 2>&1")
+            sys.call("sleep 1")
+            m.message = _("Node settings applied.")
+        end
     end
 end
 
