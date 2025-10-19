@@ -2,10 +2,10 @@ include $(TOPDIR)/rules.mk
 
 LUCI_TITLE:=LuCI support for Tailscale
 PKG_DESCRIPTION:=Provides a LuCI Web management interface for Tailscale, allowing viewing status, configuring nodes and daemons.
-PKG_VERSION:=1.0.0
+PKG_VERSION:=2.0.0
 PKG_RELEASE:=1
 PKG_MAINTAINER:=Tokisaki-Galaxy <moebest@outlook.jp>
-LUCI_DEPENDS:=+tailscale +coreutils-base64
+LUCI_DEPENDS:=+tailscale +luci-base
 LUCI_PKGARCH:=all
 
 include $(TOPDIR)/feeds/luci/luci.mk
