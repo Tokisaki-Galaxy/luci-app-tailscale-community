@@ -1,0 +1,33 @@
+{
+	"unauthenticated": {
+		"description": "Allow unauthenticated access to tailscale info",
+		"read": {
+			"ubus": {
+				"tailscale": [
+					"is_installed",
+					"get_status",
+					"get_settings"
+				]
+			}
+		}
+	},
+	"user": {
+		"description": "Allow user access to tailscale",
+		"read": {
+			"ubus": {
+				"tailscale": [
+					"is_installed",
+					"get_status",
+					"get_settings"
+				]
+			}
+		},
+		"write": {
+			"ubus": {
+				"tailscale": [
+					"set_settings"
+				]
+			}
+		}
+	}
+}

@@ -40,12 +40,12 @@ return view.extend({
 
     // render 函数负责渲染页面内容
     render: function(data) {
-        var is_installed = data[0];
+        var is_installed_response = data[0]; // 变量重命名以示清晰
         var status = data[1];
         var settings = data[2];
 
         // 如果 tailscale 未安装，显示提示信息
-        if (!is_installed) {
+        if (!is_installed_response || !is_installed_response.installed) {
             return E('div', {}, [
                 E('h2', {}, _('Tailscale')),
                 E('p', {}, _('Tailscale executable not found. Please install tailscale first.'))

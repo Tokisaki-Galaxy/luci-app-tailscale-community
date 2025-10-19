@@ -65,8 +65,8 @@ opkg install tailscale coreutils-base64
 
 ### Install the LuCI App
 
-1. download the latest and stable `. ipk` software package from [Github Release] (https://github.com/tokisaki-galaxy/Luci-app-tailscale-community/releases).
- - If you have special requirements, you can also download the latest `. ipk` software package for debugging purposes from [Github Actions Artifacts] (https://github.com/actions).
+1. download the latest and stable `. ipk` software package from [Github Release](https://github.com/tokisaki-galaxy/Luci-app-tailscale-community/releases).
+ - If you have special requirements, you can also download the latest `. ipk` software package for debugging purposes from [Github Actions Artifacts](https://github.com/actions).
 2.  Transfer the `.ipk` file to your OpenWrt router (e.g., using `scp`).
 3.  Install the package using `opkg`:
 
