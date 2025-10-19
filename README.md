@@ -42,10 +42,10 @@ A community-maintained LuCI application for managing Tailscale on OpenWrt. This 
 *(Here you can add screenshots of the application)*
 
 **Status Page**
-![Status Page Screenshot](placeholder_status.png)
+![Status Page Screenshot](image/status.png)
 
 **Settings Page**
-![Settings Page Screenshot](placeholder_settings.png)
+![Settings Page Screenshot](image/setting.png)
 
 ## Installation
 

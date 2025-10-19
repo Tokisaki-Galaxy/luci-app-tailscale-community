@@ -40,13 +40,11 @@
 
 ## 界面截图
 
-*(您可以在此处添加应用的截图)*
-
 **状态页面**
-![状态页面截图](placeholder_status.png)
+![状态页面截图](image/status.png)
 
 **设置页面**
-![设置页面截图](placeholder_settings.png)
+![设置页面截图](image/setting.png)
 
 ## 安装
 
