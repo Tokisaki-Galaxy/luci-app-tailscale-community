@@ -6,20 +6,25 @@
 'require uci';
 'require tools.widgets as widgets';
 
-var callIsInstalled = rpc.declare({ object: 'tailscale', method: 'is_installed' });
+//var callIsInstalled = rpc.declare({ object: 'tailscale', method: 'is_installed' });
 var callGetStatus = rpc.declare({ object: 'tailscale', method: 'get_status' });
 var callGetSettings = rpc.declare({ object: 'tailscale', method: 'get_settings' });
 var callSetSettings = rpc.declare({ object: 'tailscale', method: 'set_settings', params: ['form_data'] });
 
-var startupConf = [[form.Flag, 'stdout', _('Log stdout')],
-[form.Flag, 'stderr', _('Log stderr')],
-[widgets.UserSelect, 'user', _('Run daemon as user')], [widgets.GroupSelect, 'group', _('Run daemon as group')],
-[form.DynamicList, 'env', _('Environment variable'), _('OS environments pass to frp for config file template, see <a href="https://github.com/fatedier/frp#configuration-file-template">frp README</a>'), { placeholder: 'ENV_NAME=value' }],];
+var tailscaleSettingsConf = [
+    [form.Flag, 'accept_routes', _('Accept Routes'), _('允许接受其他节点宣告的路由。')],
+    [form.Flag, 'advertise_exit_node', _('Advertise Exit Node'), _('将此设备宣告为出口节点 (Exit Node)。')],
+    [form.Value, 'advertise_routes', _('Advertise Routes'), _('宣告此设备后的子网路由，多个路由请用英文逗号分隔，例如: 192.168.100.0/24,10.0.0.0/24')],
+    [form.Value, 'exit_node', _('Exit Node'), _('指定一个出口节点。留空则不使用。')],
+    [form.Flag, 'exit_node_allow_lan_access', _('Allow LAN Access'), _('在使用出口节点时，允许访问本地局域网。')],
+    [form.Flag, 'shields_up', _('Shields Up'), _('启用后，阻止来自 Tailscale 网络的所有入站连接。')],
+    [form.Flag, 'ssh', _('Enable Tailscale SSH'), _('允许通过 Tailscale 的 SSH 功能连接到此设备。')]
+];
 
-var commonConf = [[form.Value, 'server_addr', _('Server address'), _('ServerAddr specifies the address of the server to connect to.<br />By default, this value is "127.0.0.1".'), { datatype: 'host' }],
-[form.Value, 'server_port', _('Server port'), _('ServerPort specifies the port to connect to the server on.<br />By default, this value is 7000.'), { datatype: 'port' }],
-[form.Value, 'log_file', _('Log file'), _('LogFile specifies a file where logs will be written to. This value will only be used if LogWay is set appropriately.<br />By default, this value is "console".')],];
-
+var daemonConf = [
+    [form.Value, 'daemon_mtu', _('Daemon MTU'), _('为 Tailscale 守护进程设置自定义 MTU。留空使用默认值。'), { datatype: 'uinteger', placeholder: '1280' }],
+    [form.Flag, 'daemon_reduce_memory', _('Reduce Memory Usage'), _('启用此选项可降低内存使用率，但这可能会牺牲一些性能 (设置 GOGC=10)。')]
+];
 function setParams(o, params) {
     if (!params) return; for (var key in params) {
         var val = params[key]; if (key === 'values') {
@@ -40,8 +45,6 @@ function setParams(o, params) {
     if (params['datatype'] === 'bool') { o.enabled = 'true'; o.disabled = 'false'; }
 }
 function defTabOpts(s, t, opts, params) { for (var i = 0; i < opts.length; i++) { var opt = opts[i]; var o = s.taboption(t, opt[0], opt[1], opt[2], opt[3]); setParams(o, opt[4]); setParams(o, params); } }
-function defOpts(s, opts, params) { for (var i = 0; i < opts.length; i++) { var opt = opts[i]; var o = s.option(opt[0], opt[1], opt[2], opt[3]); setParams(o, opt[4]); setParams(o, params); } }
-const callServiceList = rpc.declare({ object: 'service', method: 'list', params: ['name'], expect: { '': {} } });
 
 function getRunningStatus() {
     return L.resolveDefault(callGetStatus(), { running: false }).then(function (res) {
@@ -114,7 +117,7 @@ function renderStatus(status) {
             if (peers.hasOwnProperty(hostname)) {
                 var peer = peers[hostname];
                 peersTable += '<tr class="cbi-rowstyle-1">';
-                var status_indicator = (peer.status === 'active')
+                var status_indicator = (peer.status != 'offline')
                     ? '<span style="color:green;" title="' + _("Online") + '">●</span>'
                     : '<span style="color:gray;" title="' + _("Offline") + '">○</span>';
                 var td_style = 'padding-right: 20px;';
@@ -138,7 +141,7 @@ function renderStatus(status) {
 return view.extend({
     load: function() {
         return Promise.all([
-            L.resolveDefault(callIsInstalled(), { installed: false }),
+            //L.resolveDefault(callIsInstalled(), { installed: false }),
             L.resolveDefault(callGetStatus(), { running: false, peers: [] }),
             L.resolveDefault(callGetSettings(), { accept_routes: false })
         ])
@@ -150,16 +153,15 @@ return view.extend({
                 if (uci.get('tailscale', 'settings') === null) {
                     uci.add('tailscale', 'settings', 'settings');
 
-                    //uci.set('tailscale', 'settings', 'accept_routes', settings_from_rpc.accept_routes);
-                    //uci.set('tailscale', 'settings', 'advertise_exit_node', settings_from_rpc.advertise_exit_node);
-                    //uci.set('tailscale', 'settings', 'advertise_routes', settings_from_rpc.advertise_routes);
-                    uci.set('tailscale', 'settings', 'accept_routes', '0');
-                    uci.set('tailscale', 'settings', 'advertise_exit_node', '0');
-                    uci.set('tailscale', 'settings', 'advertise_routes', '0');
-                    uci.set('tailscale', 'settings', 'exit_node_allow_lan_access', '0');
-                    uci.set('tailscale', 'settings', 'snat_subnet_routes', '0');
-                    uci.set('tailscale', 'settings', 'ssh', '0');
-                    uci.set('tailscale', 'settings', 'shields_up', '0');
+                    uci.set('tailscale', 'settings', 'accept_routes', (settings_from_rpc.accept_routes ? '1' : '0'));
+                    uci.set('tailscale', 'settings', 'advertise_exit_node', ((settings_from_rpc.advertise_exit_node || false) ? '1' : '0'));
+                    uci.set('tailscale', 'settings', 'advertise_routes', (settings_from_rpc.advertise_routes || []).join(', '));
+                    uci.set('tailscale', 'settings', 'exit_node', settings_from_rpc.exit_node || '');
+                    uci.set('tailscale', 'settings', 'exit_node_allow_lan_access', ((settings_from_rpc.exit_node_allow_lan_access || false) ? '1' : '0'));
+                    uci.set('tailscale', 'settings', 'ssh', ((settings_from_rpc.ssh || false) ? '1' : '0'));
+                    uci.set('tailscale', 'settings', 'shields_up', ((settings_from_rpc.shields_up || false) ? '1' : '0'));
+                    uci.set('tailscale', 'settings', 'snat_subnet_routes', ((settings_from_rpc.snat_subnet_routes || false) ? '1' : '0'));
+
                     uci.set('tailscale', 'settings', 'daemon_reduce_memory', '0');
                     uci.set('tailscale', 'settings', 'daemon_mtu', '');
                     return uci.save();
@@ -175,7 +177,7 @@ return view.extend({
         var settings = data[1] || {};
         
         var m, s, o;
-        m = new form.Map('frpc', _('Tailscale'), _('Tailscale is a mesh VPN solution that makes it easy to connect your devices securely. This configuration page allows you to manage Tailscale settings on your OpenWrt device.'));
+        m = new form.Map('tailscale', _('Tailscale'), _('Tailscale is a mesh VPN solution that makes it easy to connect your devices securely. This configuration page allows you to manage Tailscale settings on your OpenWrt device.'));
         
         s = m.section(form.NamedSection, '_status');
         s.anonymous = true;
@@ -197,30 +199,29 @@ return view.extend({
             );
         }
 
-        s = m.section(form.NamedSection, 'common', 'conf');
+        // 将设置绑定到 uci 的 'settings' section
+        s = m.section(form.NamedSection, 'settings', 'settings', _('Settings'));
         s.dynamic = true;
 
-        s.tab('common', _('Common Settings'));
-        defTabOpts(s, 'common', commonConf, { optional: true });
-        
-        s.tab('init', _('Startup Settings'));
-        o = s.taboption('init', form.SectionValue, 'init', form.TypedSection, 'init', _('Startup Settings'));
-        s = o.subsection;
-        s.anonymous = true;
-        s.dynamic = false;
-        defOpts(s, startupConf);
+        // 创建 "常规设置" 标签页，并应用 tailscaleSettingsConf
+        s.tab('general', _('General Settings'));
+        defTabOpts(s, 'general', tailscaleSettingsConf, { optional: false });
+
+        // 创建 "守护设置" 标签页，并应用 daemonConf
+        s.tab('daemon', _('Daemon Settings'));
+        defTabOpts(s, 'daemon', daemonConf, { optional: false });
 
         return m.render();
     },
 
     // handleSaveApply 函数在点击 "Save & Apply" 后执行
     handleSaveApply: function (ev) {
-        var map = this.map;
+        var map = ev.map;
         return map.save().then(function () {
             var data = map.data.get('tailscale', 'settings');
             ui.showModal(_('Applying changes...'), E('em', {}, _('Please wait.')));
 
-            callSetSettings(data).then(function (response) {
+            callSetSettings({ form_data: data }).then(function (response) {
                 if (response.success) {
                     ui.hideModal();
                     ui.addNotification(null, E('p', _('Tailscale settings applied successfully.')), 'info');
@@ -230,6 +231,9 @@ return view.extend({
                     ui.addNotification(null, E('p', _('Error applying settings: %s').format(response.error)), 'error');
                 }
             });
+        }).catch(function(err) {
+            console.error('Save failed:', err); 
+            ui.addNotification(null, E('p', _('Failed to save settings: %s').format(err.message)), 'error');
         });
     },
 

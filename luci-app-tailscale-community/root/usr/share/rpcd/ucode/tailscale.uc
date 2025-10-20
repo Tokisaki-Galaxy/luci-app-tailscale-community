@@ -162,11 +162,11 @@ methods.set_settings = {
     call: function(params) {
         const form_data = params.form_data;
         let args = ['set'];
-        args.push('--accept-routes=' + (form_data.accept_routes === '1'));
-        args.push('--advertise-exit-node=' + (form_data.advertise_exit_node === '1'));
-        args.push('--exit-node-allow-lan-access=' + (form_data.exit_node_allow_lan_access === '1'));
-        args.push('--ssh=' + (form_data.ssh === '1'));
-        args.push('--shields-up=' + (form_data.shields_up === '1'));
+        args.push('--accept-routes=' + (form_data.accept_routes == '1'));
+        args.push('--advertise-exit-node=' + (form_data.advertise_exit_node == '1'));
+        args.push('--exit-node-allow-lan-access=' + (form_data.exit_node_allow_lan_access == '1'));
+        args.push('--ssh=' + (form_data.ssh == '1'));
+        args.push('--shields-up=' + (form_data.shields_up == '1'));
         args.push('--advertise-routes=' + (form_data.advertise_routes || ""));
         args.push('--exit-node=' + (form_data.exit_node || ""));
         args.push('--hostname=' + (form_data.hostname || ""));
