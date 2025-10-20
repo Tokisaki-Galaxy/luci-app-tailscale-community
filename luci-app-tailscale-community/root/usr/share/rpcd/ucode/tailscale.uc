@@ -138,7 +138,7 @@ methods.get_settings = {
                     }
                 profiles_key = 'profile-'+profiles_key;
 
-                let status_data = json(state_data[profiles_key]);
+                let status_data = json(b64dec(state_data[profiles_key]));
                 if (status_data != null) {
                     settings.accept_routes = status_data.RouteAll;
                     settings.advertise_exit_node = status_data.AdvertiseExitNode;
