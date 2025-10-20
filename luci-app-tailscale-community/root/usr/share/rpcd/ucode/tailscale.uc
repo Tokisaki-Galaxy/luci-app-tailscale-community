@@ -8,15 +8,21 @@ import { cursor } from 'uci';
 const uci = cursor();
 
 function exec(command, args) {
-    const cmd_array = [command, ...(args || [])];
+    const cmd_array = command;
+    let stdout_content = '';
     let p = popen(cmd_array, 'r');
-    if (!p) {
+    if (p == null) {
         return { code: -1, stdout: '', stderr: `Failed to execute: ${command}` };
     }
-    let stdout_content = p.read('all') || '';
+    for (let line = p.read('line'); length(line); line = p.read('line')) {
+        stdout_content = stdout_content+line;
+    }
+    stdout_content = rtrim(stdout_content);
+    stdout_content = split(stdout_content, '\n');
+
     let exit_code = p.close();
     let stderr_content = '';
-    if (exit_code !== 0) {
+    if (exit_code != 0) {
         stderr_content = stdout_content;
     }
     return { code: exit_code, stdout: stdout_content, stderr: stderr_content };
@@ -33,64 +39,79 @@ methods.is_installed = {
 
 methods.get_status = {
     call: function() {
-        // 这个函数已经返回对象，是正确的
         let data = {
             running: false,
+            version: '',
+            TUNMode: '',
             ipv4: "Not running",
             ipv6: null,
-            domain_name: "Unknown",
+            domain_name: '',
             peers: []
         };
-        let ip_output = exec('tailscale', ['ip']);
-        if (ip_output.code === 0 && ip_output.stdout) {
-            data.running = true;
-            let lines = ip_output.stdout.trim().split('\n');
-            data.ipv4 = lines[0] || "N/A";
-            if (lines.length > 1) {
-                data.ipv6 = lines[1];
-            }
+        let ip_output = exec('tailscale ip');
+        if (ip_output.code == 0 && length(ip_output.stdout) > 0) {
+            data.ipv4 = ip_output.stdout[0];
+            data.ipv6 = ip_output.stdout[1];
         }
-        let status_json_output = exec('tailscale', ['status', '--json']);
+        let status_json_output = exec('tailscale status --json');
         let peer_map = {};
-        if (status_json_output.code === 0 && status_json_output.stdout) {
+        if (status_json_output.code == 0 && length(status_json_output.stdout) > 0) {
             try {
-                let status_data = JSON.parse(status_json_output.stdout);
-                if (status_data.Peer) {
-                    for (let key in status_data.Peer) {
-                        let peer = status_data.Peer[key];
-                        if (peer.TailscaleIPs && peer.TailscaleIPs.length > 0) {
-                            peer_map[peer.TailscaleIPs[0]] = peer;
-                        }
-                    }
+                let status_data = json(join('',status_json_output.stdout));
+                data.version = status_data.Version || 'Unknown';
+                data.TUNMode = status_data.TUN;
+                if (status_data.BackendState == 'Running') {
+                    data.running =  true;
                 }
             } catch (e) { /* ignore */ }
         }
-        let status_plain_output = exec('tailscale', ['status']);
-        if (status_plain_output.code === 0 && status_plain_output.stdout) {
-            status_plain_output.stdout.trim().split('\n').forEach(line => {
-                let parts = line.trim().split(/\s+/);
-                if (parts.length >= 5) {
+        let status_plain_output = exec('tailscale status');
+        if (length(status_plain_output.stdout) > 0) {
+            for (let line in status_plain_output.stdout) {
+                let parts = trim(line);
+                parts = split(parts, /\s+/);
+                if (parts[0] == '#' ){break;}
+                if (length(parts) >= 5) {
                     let ip = parts[0];
-                    if (peer_map[ip]) {
-                        peer_map[ip].ConnectionInfo = parts.slice(4).join(' ');
+                    let hostname = parts[1];
+                    let ostype = parts[3];
+                    let status = rtrim(parts[4],';');
+                    peer_map[hostname] = {
+                        ip: ip,
+                        hostname: hostname,
+                        ostype: ostype,
+                        status: status,
+                        linkadress: ''
+                    };
+                    if (status=='active') {
+                        let idx = index(parts,'direct');
+                        if (idx == -1){
+                            idx = index(parts,'relay');
+                        }
+                        peer_map[hostname].linkadress = rtrim(parts[idx+1],',') ||'';
                     }
                 }
-            });
+            }
         }
         for (let key in peer_map) {
-            data.peers.push(peer_map[key]);
+            push(data.peers,peer_map[key]);
         }
-        data.peers.sort((a, b) => (a.HostName || '').localeCompare(b.HostName || ''));
+        data.peers = peer_map;
         uci.load('tailscale');
         let state_file_path = uci.get('tailscale', 'settings', 'state_file') || "/var/lib/tailscale/tailscaled.state";
         if (access(state_file_path)) {
             try {
                 let state_content = readfile(state_file_path);
                 if (state_content) {
-                    let state_data = JSON.parse(state_content);
-                    if (state_data && state_data.MagicDNSSuffix) {
-                        data.domain_name = state_data.MagicDNSSuffix;
+                    let state_data = json(state_content);
+                    let profiles_b64 = state_data._profiles;
+                    let profiles_data = json(b64dec(profiles_b64));
+                    let profiles_key = null;
+                    for (let key in profiles_data) {
+                        profiles_key = key;
+                        break;
                     }
+                    data.domain_name = profiles_data[profiles_key].NetworkProfile.DomainName||"NXDOMAIN";
                 }
             } catch (e) { /* ignore */ }
         }
@@ -100,7 +121,6 @@ methods.get_status = {
 
 methods.get_settings = {
     call: function() {
-        // 这个函数已经返回对象，是正确的
         let settings = {};
         uci.load('tailscale');
         let uci_settings = uci.get('tailscale', 'settings') || {};
@@ -109,10 +129,10 @@ methods.get_settings = {
                 settings[key] = uci_settings[key];
             }
         }
-        let status_output = exec('tailscale', ['status', '--json']);
+        let status_output = exec('tailscale status --json');
         if (status_output.code === 0 && status_output.stdout) {
             try {
-                let status_data = JSON.parse(status_output.stdout);
+                let status_data = json(status_output.stdout);
                 if (status_data.Self) {
                     const self = status_data.Self;
                     const prefs = self.Prefs || {};
@@ -134,9 +154,7 @@ methods.get_settings = {
 methods.set_settings = {
     args: { form_data: 'form_data' },
     call: function(params) {
-        // 这个函数已经返回对象，是正确的
         const form_data = params.form_data;
-        // ... (其余代码保持不变)
         let args = ['set'];
         args.push('--accept-routes=' + (form_data.accept_routes === '1'));
         args.push('--advertise-exit-node=' + (form_data.advertise_exit_node === '1'));
@@ -173,7 +191,7 @@ if [ -n "$TS_MTU" ]; then export TS_DEBUG_MTU="$TS_MTU"; fi
             } else {
                 unlink(env_script_path);
             }
-            exec('/bin/sh', ['-c', '/etc/init.d/tailscale restart &']);
+            popen('/bin/sh -c /etc/init.d/tailscale restart &');
         }
         return { success: true };
     }
