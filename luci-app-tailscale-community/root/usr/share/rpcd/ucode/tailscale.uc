@@ -27,7 +27,6 @@ const methods = {};
 methods.is_installed = {
     call: function() {
         const is_found = access('/usr/sbin/tailscale') || access('/usr/bin/tailscale');
-        // 关键修复：必须返回一个对象
         return { installed: is_found };
     }
 };
@@ -42,7 +41,6 @@ methods.get_status = {
             domain_name: "Unknown",
             peers: []
         };
-        // ... (其余代码保持不变)
         let ip_output = exec('tailscale', ['ip']);
         if (ip_output.code === 0 && ip_output.stdout) {
             data.running = true;
@@ -104,7 +102,6 @@ methods.get_settings = {
     call: function() {
         // 这个函数已经返回对象，是正确的
         let settings = {};
-        // ... (其余代码保持不变)
         uci.load('tailscale');
         let uci_settings = uci.get('tailscale', 'settings') || {};
         for (let key in uci_settings) {
