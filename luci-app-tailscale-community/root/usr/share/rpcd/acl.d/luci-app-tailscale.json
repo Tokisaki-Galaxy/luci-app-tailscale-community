@@ -1,13 +1,9 @@
 {
 	"unauthenticated": {
-		"description": "Allow unauthenticated access to tailscale info",
+		"description": "unauthenticated user group",
 		"read": {
 			"ubus": {
-				"tailscale": [
-					"is_installed",
-					"get_status",
-					"get_settings"
-				]
+				"tailscale": []
 			}
 		}
 	},
