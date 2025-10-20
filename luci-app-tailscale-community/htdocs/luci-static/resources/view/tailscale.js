@@ -13,18 +13,18 @@ var callSetSettings = rpc.declare({ object: 'tailscale', method: 'set_settings',
 var map;
 
 var tailscaleSettingsConf = [
-    [form.Flag, 'accept_routes', _('Accept Routes'), _('允许接受其他节点宣告的路由。')],
-    [form.Flag, 'advertise_exit_node', _('Advertise Exit Node'), _('将此设备宣告为出口节点 (Exit Node)。')],
-    [form.Value, 'advertise_routes', _('Advertise Routes'), _('宣告此设备后的子网路由，多个路由请用英文逗号分隔，例如: 192.168.100.0/24,10.0.0.0/24')],
-    [form.Value, 'exit_node', _('Exit Node'), _('指定一个出口节点。留空则不使用。')],
-    [form.Flag, 'exit_node_allow_lan_access', _('Allow LAN Access'), _('在使用出口节点时，允许访问本地局域网。')],
-    [form.Flag, 'shields_up', _('Shields Up'), _('启用后，阻止来自 Tailscale 网络的所有入站连接。')],
-    [form.Flag, 'ssh', _('Enable Tailscale SSH'), _('允许通过 Tailscale 的 SSH 功能连接到此设备。')]
+    [form.Flag, 'accept_routes', _('Accept Routes'), _('允许接受其他节点宣告的路由。'), { rmempty: false }],
+    [form.Flag, 'advertise_exit_node', _('Advertise Exit Node'), _('将此设备宣告为出口节点 (Exit Node)。'), { rmempty: false }],
+    [form.Value, 'advertise_routes', _('Advertise Routes'), _('宣告此设备后的子网路由，多个路由请用英文逗号分隔，例如: 192.168.100.0/24,10.0.0.0/24'), { rmempty: false }],
+    [form.Value, 'exit_node', _('Exit Node'), _('指定一个出口节点。留空则不使用。'), { rmempty: true }],
+    [form.Flag, 'exit_node_allow_lan_access', _('Allow LAN Access'), _('在使用出口节点时，允许访问本地局域网。'), { rmempty: false }],
+    [form.Flag, 'shields_up', _('Shields Up'), _('启用后，阻止来自 Tailscale 网络的所有入站连接。'), { rmempty: false }],
+    [form.Flag, 'ssh', _('Enable Tailscale SSH'), _('允许通过 Tailscale 的 SSH 功能连接到此设备。'), { rmempty: false }]
 ];
 
 var daemonConf = [
-    [form.Value, 'daemon_mtu', _('Daemon MTU'), _('为 Tailscale 守护进程设置自定义 MTU。留空使用默认值。'), { datatype: 'uinteger', placeholder: '1280' }],
-    [form.Flag, 'daemon_reduce_memory', _('Reduce Memory Usage'), _('启用此选项可降低内存使用率，但这可能会牺牲一些性能 (设置 GOGC=10)。')]
+    [form.Value, 'daemon_mtu', _('Daemon MTU'), _('为 Tailscale 守护进程设置自定义 MTU。留空使用默认值。'), { datatype: 'uinteger', placeholder: '1280' }, { rmempty: false }],
+    [form.Flag, 'daemon_reduce_memory', _('Reduce Memory Usage'), _('启用此选项可降低内存使用率，但这可能会牺牲一些性能 (设置 GOGC=10)。'), { rmempty: false }]
 ];
 function setParams(o, params) {
     if (!params) return; for (var key in params) {
@@ -223,6 +223,7 @@ return view.extend({
 
             return callSetSettings(data).then(function (response) {
                 if (response.success) {
+                    map.reset();
                     ui.hideModal();
                     ui.addNotification(null, E('p', _('Tailscale settings applied successfully.')), 'info');
                     // 重新加载页面以显示最新状态

@@ -198,12 +198,14 @@ if [ "$(uci_get_state daemon_reduce_memory)" = "1" ]; then export GOGC=10; fi
 TS_MTU=$(uci_get_state daemon_mtu)
 if [ -n "$TS_MTU" ]; then export TS_DEBUG_MTU="$TS_MTU"; fi
 `;
+            const clean_env_script_content = replace(env_script_content, /\r/g, '');
             if (new_mtu !== "" || new_reduce_mem === "1") {
-                writefile(env_script_path, env_script_content, 0o755);
+                //writefile(env_script_path, clean_env_script_content);
+                //exec('chmod 755 '+env_script_path);
             } else {
                 unlink(env_script_path);
             }
-            popen('/bin/sh -c /etc/init.d/tailscale restart &');
+            //popen('/bin/sh -c /etc/init.d/tailscale restart &');
         }
         return { success: true };
     }
