@@ -10,6 +10,7 @@
 var callGetStatus = rpc.declare({ object: 'tailscale', method: 'get_status' });
 var callGetSettings = rpc.declare({ object: 'tailscale', method: 'get_settings' });
 var callSetSettings = rpc.declare({ object: 'tailscale', method: 'set_settings', params: ['form_data'] });
+var map;
 
 var tailscaleSettingsConf = [
     [form.Flag, 'accept_routes', _('Accept Routes'), _('允许接受其他节点宣告的路由。')],
@@ -176,10 +177,10 @@ return view.extend({
         var status = data[0] || {};
         var settings = data[1] || {};
         
-        var m, s, o;
-        m = new form.Map('tailscale', _('Tailscale'), _('Tailscale is a mesh VPN solution that makes it easy to connect your devices securely. This configuration page allows you to manage Tailscale settings on your OpenWrt device.'));
+        var s, o;
+        map = new form.Map('tailscale', _('Tailscale'), _('Tailscale is a mesh VPN solution that makes it easy to connect your devices securely. This configuration page allows you to manage Tailscale settings on your OpenWrt device.'));
         
-        s = m.section(form.NamedSection, '_status');
+        s = map.section(form.NamedSection, '_status');
         s.anonymous = true;
         s.render = function (section_id) {
             L.Poll.add(
@@ -200,7 +201,7 @@ return view.extend({
         }
 
         // 将设置绑定到 uci 的 'settings' section
-        s = m.section(form.NamedSection, 'settings', 'settings', _('Settings'));
+        s = map.section(form.NamedSection, 'settings', 'settings', _('Settings'));
         s.dynamic = true;
 
         // 创建 "常规设置" 标签页，并应用 tailscaleSettingsConf
@@ -211,27 +212,28 @@ return view.extend({
         s.tab('daemon', _('Daemon Settings'));
         defTabOpts(s, 'daemon', daemonConf, { optional: false });
 
-        return m.render();
+        return map.render();
     },
 
     // handleSaveApply 函数在点击 "Save & Apply" 后执行
     handleSaveApply: function (ev) {
-        var map = ev.map;
         return map.save().then(function () {
             var data = map.data.get('tailscale', 'settings');
             ui.showModal(_('Applying changes...'), E('em', {}, _('Please wait.')));
 
-            callSetSettings({ form_data: data }).then(function (response) {
+            return callSetSettings(data).then(function (response) {
                 if (response.success) {
                     ui.hideModal();
                     ui.addNotification(null, E('p', _('Tailscale settings applied successfully.')), 'info');
                     // 重新加载页面以显示最新状态
                     setTimeout(function () { window.location.reload(); }, 2000);
                 } else {
-                    ui.addNotification(null, E('p', _('Error applying settings: %s').format(response.error)), 'error');
+                    ui.hideModal();
+                    ui.addNotification(null, E('p', _('Error applying settings: %s').format(response.error || 'Unknown error')), 'error');
                 }
             });
         }).catch(function(err) {
+            ui.hideModal(); 
             console.error('Save failed:', err); 
             ui.addNotification(null, E('p', _('Failed to save settings: %s').format(err.message)), 'error');
         });

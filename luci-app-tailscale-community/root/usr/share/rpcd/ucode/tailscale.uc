@@ -7,12 +7,11 @@ import { cursor } from 'uci';
 
 const uci = cursor();
 
-function exec(command, args) {
-    const cmd_array = command + ' '+join(' ', args || []);
+function exec(command) {
     let stdout_content = '';
-    let p = popen(cmd_array, 'r');
+    let p = popen(command, 'r');
     if (p == null) {
-        return { code: -1, stdout: '', stderr: `Failed to execute: ${cmd_array}` };
+        return { code: -1, stdout: '', stderr: `Failed to execute: ${command}` };
     }
     for (let line = p.read('line'); length(line); line = p.read('line')) {
         stdout_content = stdout_content+line;
@@ -158,32 +157,39 @@ methods.get_settings = {
 };
 
 methods.set_settings = {
-    args: { form_data: 'form_data' },
-    call: function(params) {
-        const form_data = params.form_data;
+    args: { form_data: {} },
+    call: function(request) {
+        const form_data = request.args.form_data;
+        if (form_data == null || length(form_data) == 0) {
+            return { error: 'Missing or invalid form_data parameter. Please provide settings data.' };
+        }
         let args = ['set'];
-        args.push('--accept-routes=' + (form_data.accept_routes == '1'));
-        args.push('--advertise-exit-node=' + (form_data.advertise_exit_node == '1'));
-        args.push('--exit-node-allow-lan-access=' + (form_data.exit_node_allow_lan_access == '1'));
-        args.push('--ssh=' + (form_data.ssh == '1'));
-        args.push('--shields-up=' + (form_data.shields_up == '1'));
-        args.push('--advertise-routes=' + (form_data.advertise_routes || ""));
-        args.push('--exit-node=' + (form_data.exit_node || ""));
-        args.push('--hostname=' + (form_data.hostname || ""));
-        let set_result = exec('tailscale', args);
-        if (set_result.code !== 0) {
+
+        push(args,'--accept-routes=' + (form_data.accept_routes == '1'));
+        push(args,'--advertise-exit-node=' + (form_data.advertise_exit_node == '1'));
+        push(args,'--exit-node-allow-lan-access=' + (form_data.exit_node_allow_lan_access == '1'));
+        push(args,'--ssh=' + (form_data.ssh == '1'));
+        push(args,'--shields-up=' + (form_data.shields_up == '1'));
+        push(args,'--advertise-routes=' + (form_data.advertise_routes || ""));
+        push(args,'--exit-node=' + (form_data.exit_node || ""));
+        push(args,'--hostname=' + (form_data.hostname || ""));
+
+        let cmd_array = 'tailscale '+join(' ', args);
+        let set_result = exec(cmd_array);
+        if (set_result.code != 0) {
             return { error: 'Failed to apply node settings: ' + set_result.stderr };
         }
+
         uci.load('tailscale');
-        let old_mtu = uci.get('tailscale', 'settings', 'daemon_mtu') || "";
-        let old_reduce_mem = uci.get('tailscale', 'settings', 'daemon_reduce_memory') || "0";
-        let new_mtu = form_data.daemon_mtu || "";
-        let new_reduce_mem = form_data.daemon_reduce_memory || "0";
-        uci.set('tailscale', 'settings', 'daemon_mtu', new_mtu);
-        uci.set('tailscale', 'settings', 'daemon_reduce_memory', new_reduce_mem);
+        for (let key in form_data) {
+            uci.set('tailscale', 'settings', key, form_data[key]);
+        }
         uci.save('tailscale');
         uci.commit('tailscale');
-        if (new_mtu !== old_mtu || new_reduce_mem !== old_reduce_mem) {
+
+        let new_mtu = form_data.daemon_mtu || "";
+        let new_reduce_mem = form_data.daemon_reduce_memory || "0";
+        if (new_mtu != null || new_mtu != '0' || new_reduce_mem != 0) {
             const env_script_path = "/etc/profile.d/tailscale-env.sh";
             const env_script_content = `#!/bin/sh
 # This script is managed by luci-app-tailscale-community.
