@@ -8,11 +8,11 @@ import { cursor } from 'uci';
 const uci = cursor();
 
 function exec(command, args) {
-    const cmd_array = command;
+    const cmd_array = command + ' '+join(' ', args || []);
     let stdout_content = '';
     let p = popen(cmd_array, 'r');
     if (p == null) {
-        return { code: -1, stdout: '', stderr: `Failed to execute: ${command}` };
+        return { code: -1, stdout: '', stderr: `Failed to execute: ${cmd_array}` };
     }
     for (let line = p.read('line'); length(line); line = p.read('line')) {
         stdout_content = stdout_content+line;
@@ -123,27 +123,33 @@ methods.get_settings = {
     call: function() {
         let settings = {};
         uci.load('tailscale');
-        let uci_settings = uci.get('tailscale', 'settings') || {};
-        for (let key in uci_settings) {
-            if (key.charAt(0) !== '.') {
-                settings[key] = uci_settings[key];
-            }
-        }
-        let status_output = exec('tailscale status --json');
-        if (status_output.code === 0 && status_output.stdout) {
+        let state_file_path = uci.get('tailscale', 'settings', 'state_file') || "/var/lib/tailscale/tailscaled.state";
+        if (access(state_file_path)) {
             try {
-                let status_data = json(status_output.stdout);
-                if (status_data.Self) {
-                    const self = status_data.Self;
-                    const prefs = self.Prefs || {};
-                    settings.accept_routes = prefs.RouteAll;
-                    settings.advertise_exit_node = prefs.AdvertiseExitNode;
-                    settings.advertise_routes = (prefs.AdvertiseRoutes || []).join(', ');
-                    settings.exit_node = prefs.ExitNodeID || "";
-                    settings.exit_node_allow_lan_access = prefs.ExitNodeAllowLANAccess;
-                    settings.hostname = self.HostName || "";
-                    settings.shields_up = prefs.ShieldsUp;
-                    settings.ssh = (self.Capabilities || []).includes("ssh");
+                let state_content = readfile(state_file_path);
+                if (state_content != null) {
+                    let state_data = json(state_content);
+                    let profiles_b64 = state_data._profiles;
+                    let profiles_data = json(b64dec(profiles_b64));
+                    let profiles_key = null;
+                    for (let key in profiles_data) {
+                        profiles_key = key;
+                        break;
+                    }
+                profiles_key = 'profile-'+profiles_key;
+
+                let status_data = json(state_data[profiles_key]);
+                if (status_data != null) {
+                    settings.accept_routes = status_data.RouteAll;
+                    settings.advertise_exit_node = status_data.AdvertiseExitNode;
+                    settings.advertise_routes = status_data.AdvertiseRoutes || [];
+                    settings.exit_node = status_data.ExitNodeID || "";
+                    settings.exit_node_allow_lan_access = status_data.ExitNodeAllowLANAccess;
+                    settings.shields_up = status_data.ShieldsUp;
+                    settings.ssh = status_data.RunSSH;
+                    settings.runwebclient = status_data.RunWebClient;
+                    settings.nosnat = status_data.NoSNAT;
+                }
                 }
             } catch (e) { /* ignore */ }
         }
