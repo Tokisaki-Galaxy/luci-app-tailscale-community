@@ -180,9 +180,9 @@ methods.set_settings = {
         push(args,'--exit-node-allow-lan-access=' + (form_data.exit_node_allow_lan_access == '1'));
         push(args,'--ssh=' + (form_data.ssh == '1'));
         push(args,'--shields-up=' + (form_data.shields_up == '1'));
-        push(args,'--advertise-routes=' + (form_data.advertise_routes || ""));
-        push(args,'--exit-node=' + (form_data.exit_node || ""));
-        push(args,'--hostname=' + (form_data.hostname || ""));
+        push(args,'--advertise-routes ' + (join(',',form_data.advertise_routes) || '\"\"'));
+        push(args,'--exit-node ' + (form_data.exit_node || '\"\"'));
+        push(args,'--hostname ' + (form_data.hostname || '\"\"'));
 
         let cmd_array = 'tailscale '+join(' ', args);
         let set_result = exec(cmd_array);
@@ -254,8 +254,9 @@ methods.do_login = {
 
 methods.get_subroutes = {
     call: function() {
-        let routes =  exec("ip -4 addr show | grep -v ' lo$' |grep -v 'tailscale*' | grep 'inet' | awk '{print $2}'");
-        return { routes: routes.stdout  };
+        let cmd = `ip -4 addr show | awk '!/ lo$|tailscale/ && /inet/ { split($2,c,"/");split(c[1],o,"."); p=c[2]; i=0; for(k=1;k<=4;k++) i=or(lshift(i,8),o[k]); m=lshift(4294967295,32-p); n=and(i,m); print rshift(n,24)"."and(rshift(n,16),255)"."and(rshift(n,8),255)"."and(n,255)"/"p }'`;
+        let routes =  exec(cmd);
+        return { routes: routes.stdout };
     }
 };
 
