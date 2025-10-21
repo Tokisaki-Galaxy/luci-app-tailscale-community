@@ -39,7 +39,7 @@ methods.is_installed = {
 methods.get_status = {
     call: function() {
         let data = {
-            running: false,
+            status: '',
             version: '',
             TUNMode: '',
             ipv4: "Not running",
@@ -47,6 +47,10 @@ methods.get_status = {
             domain_name: '',
             peers: []
         };
+        if ( access('/usr/sbin/tailscale') || access('/usr/bin/tailscale')==true){
+            data.status = 'not_installed';
+        }
+        return data;
         let ip_output = exec('tailscale ip');
         if (ip_output.code == 0 && length(ip_output.stdout) > 0) {
             data.ipv4 = ip_output.stdout[0];
@@ -60,7 +64,7 @@ methods.get_status = {
                 data.version = status_data.Version || 'Unknown';
                 data.TUNMode = status_data.TUN;
                 if (status_data.BackendState == 'Running') {
-                    data.running =  true;
+                    data.status =  'running';
                 }
             } catch (e) { /* ignore */ }
         }
@@ -68,6 +72,10 @@ methods.get_status = {
         if (length(status_plain_output.stdout) > 0) {
             for (let line in status_plain_output.stdout) {
                 let parts = trim(line);
+                if (line == 'Logged out.') {
+                    data.status=='logout';
+                    break;
+                    }
                 parts = split(parts, /\s+/);
                 if (parts[0] == '#' ){break;}
                 if (length(parts) >= 5) {
@@ -208,6 +216,28 @@ if [ -n "$TS_MTU" ]; then export TS_DEBUG_MTU="$TS_MTU"; fi
             //popen('/bin/sh -c /etc/init.d/tailscale restart &');
         }
         return { success: true };
+    }
+};
+
+methods.do_login = {
+    call: function() {
+        let loginhandle = popen('tailscale login','r');
+        let login_output = [];
+        sleep(3000);
+        push(login_output,loginhandle.read('line'));
+        push(login_output,loginhandle.read('line'));
+        push(login_output,loginhandle.read('line'));
+        push(login_output,loginhandle.read('line'));
+        push(login_output,loginhandle.read('line'));
+
+        for (let line in login_output) {
+            let trline = trim(line);
+            if (index(trline, 'https://') != -1) {
+                return { url: trline };
+            }
+        }
+
+        return { error: 'Could not retrieve login URL from tailscale command.' };
     }
 };
 
