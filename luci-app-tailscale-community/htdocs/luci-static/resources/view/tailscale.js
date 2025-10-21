@@ -205,11 +205,7 @@ return view.extend({
                         
                         var btn = document.getElementById('tailscale_login_btn');
                         if (btn) {
-                            btn.disabled = (res.status !== 'logout');
-                        }
-                        var urlInput = document.getElementById('tailscale_login_url');
-                        if (urlInput && res.status !== 'logout') {
-                            urlInput.value = '';
+                            btn.disabled = (res.status != 'logout');
                         }
                     });
                 }, 10);
@@ -234,16 +230,24 @@ return view.extend({
         loginBtn.disabled = (status.status != 'logout');
 
         loginBtn.onclick = function() {
+            var loginWindow = window.open('', '_blank');
+            if (!loginWindow) {
+                ui.addNotification(null, E('p', _('Could not open a new tab. Please disable your pop-up blocker for this site and try again.')), 'error');
+                return;
+            }
+            // 在新窗口显示提示信息
+            loginWindow.document.write(_('Requesting Tailscale login URL... Please wait.'));
+
+            // 显示“加载中”的模态框，并执行异步的RPC调用
             ui.showModal(_('Requesting Login URL...'), E('em', {}, _('Please wait.')));
             return callDoLogin().then(function(res) {
                 ui.hideModal();
                 if (res && res.url) {
-                    var urlInput = document.getElementById('tailscale_login_url');
-                    if (urlInput) {
-                        urlInput.value = res.url;
-                    }
-                    ui.addNotification(null, E('p', _('Login URL received. Please visit it in your browser to authenticate.')), 'info');
+                    // 成功获取URL后，重定向之前已打开的标签页
+                    loginWindow.location.href = res.url;
                 } else {
+                    // 如果失败，告知用户并可以关闭新标签页
+                    loginWindow.document.write(_('Failed to get login URL. You may close this tab.'));
                     ui.addNotification(null, E('p', _('Failed to get login URL: Invalid response from server.')), 'error');
                 }
             }).catch(function(err) {
@@ -251,11 +255,6 @@ return view.extend({
                 ui.addNotification(null, E('p', _('Failed to get login URL: %s').format(err.message || 'Unknown error')), 'error');
             });
         };
-
-        loginUrl = s.taboption('general', form.Value, '_login_url', _('Login URL'));
-        loginUrl.readonly = true;
-        loginUrl.id = 'tailscale_login_url';
-        loginUrl.placeholder = _('Click the Login button to get the URL');
 
         defTabOpts(s, 'general', tailscaleSettingsConf, { optional: false });
 
