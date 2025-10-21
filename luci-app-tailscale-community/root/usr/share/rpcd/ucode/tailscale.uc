@@ -10,6 +10,7 @@ const uci = cursor();
 function exec(command) {
     let stdout_content = '';
     let p = popen(command, 'r');
+    sleep(100);
     if (p == null) {
         return { code: -1, stdout: '', stderr: `Failed to execute: ${command}` };
     }
@@ -47,10 +48,11 @@ methods.get_status = {
             domain_name: '',
             peers: []
         };
-        if ( access('/usr/sbin/tailscale') || access('/usr/bin/tailscale')==true){
+        if (access('/usr/sbin/tailscale')==true || access('/usr/bin/tailscale')==true){
+        }else{
             data.status = 'not_installed';
+            return data;
         }
-        return data;
         let ip_output = exec('tailscale ip');
         if (ip_output.code == 0 && length(ip_output.stdout) > 0) {
             data.ipv4 = ip_output.stdout[0];
@@ -72,8 +74,8 @@ methods.get_status = {
         if (length(status_plain_output.stdout) > 0) {
             for (let line in status_plain_output.stdout) {
                 let parts = trim(line);
-                if (line == 'Logged out.') {
-                    data.status=='logout';
+                if (index(parts, 'Logged') != -1) {
+                    data.status='logout';
                     break;
                     }
                 parts = split(parts, /\s+/);
@@ -208,12 +210,12 @@ if [ -n "$TS_MTU" ]; then export TS_DEBUG_MTU="$TS_MTU"; fi
 `;
             const clean_env_script_content = replace(env_script_content, /\r/g, '');
             if (new_mtu !== "" || new_reduce_mem === "1") {
-                //writefile(env_script_path, clean_env_script_content);
-                //exec('chmod 755 '+env_script_path);
+                writefile(env_script_path, clean_env_script_content);
+                exec('chmod 755 '+env_script_path);
             } else {
                 unlink(env_script_path);
             }
-            //popen('/bin/sh -c /etc/init.d/tailscale restart &');
+            popen('/bin/sh -c /etc/init.d/tailscale restart &');
         }
         return { success: true };
     }
@@ -221,23 +223,20 @@ if [ -n "$TS_MTU" ]; then export TS_DEBUG_MTU="$TS_MTU"; fi
 
 methods.do_login = {
     call: function() {
-        let loginhandle = popen('tailscale login','r');
-        let login_output = [];
+        let check_login = exec('tailscale status');
+        popen('tailscale login&','r');
         sleep(3000);
-        push(login_output,loginhandle.read('line'));
-        push(login_output,loginhandle.read('line'));
-        push(login_output,loginhandle.read('line'));
-        push(login_output,loginhandle.read('line'));
-        push(login_output,loginhandle.read('line'));
 
-        for (let line in login_output) {
+        let tresult=exec('tailscale status');
+                return { url:  tresult.stdout};
+        for (let line in tresult.stdout) {
             let trline = trim(line);
             if (index(trline, 'https://') != -1) {
-                return { url: trline };
+                let url = split(trline);
+                return { url:  url[index(url, 'https://')]};
             }
         }
-
-        return { error: 'Could not retrieve login URL from tailscale command.' };
+            return { error: 'Could not retrieve login URL from tailscale command.' };
     }
 };
 

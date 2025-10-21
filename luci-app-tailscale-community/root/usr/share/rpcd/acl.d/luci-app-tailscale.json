@@ -12,6 +12,7 @@
 		"read": {
 			"ubus": {
 				"tailscale": [
+					"do_login",
 					"is_installed",
 					"get_status",
 					"get_settings"

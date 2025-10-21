@@ -10,6 +10,7 @@
 var callGetStatus = rpc.declare({ object: 'tailscale', method: 'get_status' });
 var callGetSettings = rpc.declare({ object: 'tailscale', method: 'get_settings' });
 var callSetSettings = rpc.declare({ object: 'tailscale', method: 'set_settings', params: ['form_data'] });
+var callDoLogin = rpc.declare({ object: 'tailscale', method: 'do_login' });
 var map;
 
 var tailscaleSettingsConf = [
@@ -55,7 +56,7 @@ function getRunningStatus() {
 
 function renderStatus(status) {
     // 如果 status 对象为空或没有 running 属性，则显示加载中
-    if (!status || !status.hasOwnProperty('running')) {
+    if (!status || !status.hasOwnProperty('status')) {
         return _('Collecting data ...');
     }
 
@@ -67,6 +68,12 @@ function renderStatus(status) {
         finalHtml.push('<dd><span style="color:red;"><strong>' + _('NO FOUND TAILSCALE') + '</strong></span></dd></dl>');
         return finalHtml.join('');
     }
+    if (status.status == 'logout') {
+        finalHtml.push('<dl class="cbi-value"><dt>' + _('Service Status') + '</dt>');
+        finalHtml.push('<dd><span style="color:orange;"><strong>' + _('LOGGED OUT') + '</strong></span></br><span>' + _('Please use the login button in the settings below to authenticate.') + '</span></dd></dl>');
+        return finalHtml.join('');
+    }
+    // ** MODIFICATION END **
     if (status.status != 'running') {
         finalHtml.push('<dl class="cbi-value"><dt>' + _('Service Status') + '</dt>');
         finalHtml.push('<dd><span style="color:red;"><strong>' + _('NOT RUNNING') + '</strong></span></dd></dl>');
@@ -182,7 +189,7 @@ return view.extend({
         var status = data[0] || {};
         var settings = data[1] || {};
         
-        var s, o;
+        var s, o, loginBtn, loginUrl;
         map = new form.Map('tailscale', _('Tailscale'), _('Tailscale is a mesh VPN solution that makes it easy to connect your devices securely. This configuration page allows you to manage Tailscale settings on your OpenWrt device.'));
         
         s = map.section(form.NamedSection, '_status');
@@ -193,8 +200,16 @@ return view.extend({
                     return getRunningStatus().then(function (res) {
                         var view = document.getElementById("service_status_display");
                         if (view) {
-                            // renderStatus 现在处理完整的对象并返回 HTML
                             view.innerHTML = renderStatus(res);
+                        }
+                        
+                        var btn = document.getElementById('tailscale_login_btn');
+                        if (btn) {
+                            btn.disabled = (res.status !== 'logout');
+                        }
+                        var urlInput = document.getElementById('tailscale_login_url');
+                        if (urlInput && res.status !== 'logout') {
+                            urlInput.value = '';
                         }
                     });
                 }, 10);
@@ -211,6 +226,37 @@ return view.extend({
 
         // 创建 "常规设置" 标签页，并应用 tailscaleSettingsConf
         s.tab('general', _('General Settings'));
+
+        loginBtn = s.taboption('general', form.Button, '_login', _('Login'), _('Click to get a login URL for this device.'));
+        loginBtn.inputstyle = 'apply';
+        loginBtn.id = 'tailscale_login_btn';
+        // Set initial state based on loaded data
+        loginBtn.disabled = (status.status != 'logout');
+
+        loginBtn.onclick = function() {
+            ui.showModal(_('Requesting Login URL...'), E('em', {}, _('Please wait.')));
+            return callDoLogin().then(function(res) {
+                ui.hideModal();
+                if (res && res.url) {
+                    var urlInput = document.getElementById('tailscale_login_url');
+                    if (urlInput) {
+                        urlInput.value = res.url;
+                    }
+                    ui.addNotification(null, E('p', _('Login URL received. Please visit it in your browser to authenticate.')), 'info');
+                } else {
+                    ui.addNotification(null, E('p', _('Failed to get login URL: Invalid response from server.')), 'error');
+                }
+            }).catch(function(err) {
+                ui.hideModal();
+                ui.addNotification(null, E('p', _('Failed to get login URL: %s').format(err.message || 'Unknown error')), 'error');
+            });
+        };
+
+        loginUrl = s.taboption('general', form.Value, '_login_url', _('Login URL'));
+        loginUrl.readonly = true;
+        loginUrl.id = 'tailscale_login_url';
+        loginUrl.placeholder = _('Click the Login button to get the URL');
+
         defTabOpts(s, 'general', tailscaleSettingsConf, { optional: false });
 
         // 创建 "守护设置" 标签页，并应用 daemonConf
