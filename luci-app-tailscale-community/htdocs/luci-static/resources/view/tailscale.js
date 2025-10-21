@@ -11,12 +11,12 @@ var callGetStatus = rpc.declare({ object: 'tailscale', method: 'get_status' });
 var callGetSettings = rpc.declare({ object: 'tailscale', method: 'get_settings' });
 var callSetSettings = rpc.declare({ object: 'tailscale', method: 'set_settings', params: ['form_data'] });
 var callDoLogin = rpc.declare({ object: 'tailscale', method: 'do_login' });
+var callGetSubroutes = rpc.declare({ object: 'tailscale', method: 'get_subroutes' });
 var map;
 
 var tailscaleSettingsConf = [
     [form.Flag, 'accept_routes', _('Accept Routes'), _('允许接受其他节点宣告的路由。'), { rmempty: false }],
     [form.Flag, 'advertise_exit_node', _('Advertise Exit Node'), _('将此设备宣告为出口节点 (Exit Node)。'), { rmempty: false }],
-    [form.Value, 'advertise_routes', _('Advertise Routes'), _('宣告此设备后的子网路由，多个路由请用英文逗号分隔，例如: 192.168.100.0/24,10.0.0.0/24'), { rmempty: true }],
     [form.Value, 'exit_node', _('Exit Node'), _('指定一个出口节点。留空则不使用。'), { rmempty: true }],
     [form.Flag, 'exit_node_allow_lan_access', _('Allow LAN Access'), _('在使用出口节点时，允许访问本地局域网。'), { rmempty: false }],
     [form.Flag, 'shields_up', _('Shields Up'), _('启用后，阻止来自 Tailscale 网络的所有入站连接。'), { rmempty: false }],
@@ -171,10 +171,11 @@ return view.extend({
         return Promise.all([
             //L.resolveDefault(callIsInstalled(), { installed: false }),
             L.resolveDefault(callGetStatus(), { running: '', peers: [] }),
-            L.resolveDefault(callGetSettings(), { accept_routes: false })
+            L.resolveDefault(callGetSettings(), { accept_routes: false }),
+            L.resolveDefault(callGetSubroutes(), { routes: [] })
         ])
         .then(function(rpc_data) {
-            // rpc_data 是一个数组: [status_result, settings_result]
+            // rpc_data 是数组: [status_result, settings_result, subroutes_result]
             var settings_from_rpc = rpc_data[1];
 
             return uci.load('tailscale').then(function() {
@@ -203,6 +204,7 @@ return view.extend({
     render: function (data) {
         var status = data[0] || {};
         var settings = data[1] || {};
+        var subroutes = (data[2] && data[2].routes) ? data[2].routes : [];
         
         var s, o, loginBtn, loginUrl;
         map = new form.Map('tailscale', _('Tailscale'), _('Tailscale is a mesh VPN solution that makes it easy to connect your devices securely. This configuration page allows you to manage Tailscale settings on your OpenWrt device.'));
@@ -276,6 +278,13 @@ return view.extend({
         };
 
         defTabOpts(s, 'general', tailscaleSettingsConf, { optional: false });
+        o = s.taboption('general', form.DynamicList, 'advertise_routes', _('Advertise Routes'));
+        if (subroutes.length > 0) {
+            subroutes.forEach(function(subnet) {
+                o.value(subnet, subnet);
+            });
+        }
+		o.rmempty = true;
 
         // 创建 "守护设置" 标签页，并应用 daemonConf
         s.tab('daemon', _('Daemon Settings'));

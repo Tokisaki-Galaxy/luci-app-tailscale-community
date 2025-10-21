@@ -259,4 +259,11 @@ methods.do_login = {
     }
 };
 
+methods.get_subroutes = {
+    call: function() {
+        let routes =  exec("ip -4 addr show | grep -v ' lo$' |grep -v 'tailscale*' | grep 'inet' | awk '{print $2}'");
+        return { routes: routes.stdout  };
+    }
+};
+
 return { 'tailscale': methods };
