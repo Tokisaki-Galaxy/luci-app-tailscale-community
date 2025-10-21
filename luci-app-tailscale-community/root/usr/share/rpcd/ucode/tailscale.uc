@@ -30,13 +30,6 @@ function exec(command) {
 
 const methods = {};
 
-methods.is_installed = {
-    call: function() {
-        const is_found = access('/usr/sbin/tailscale') || access('/usr/bin/tailscale');
-        return { installed: is_found };
-    }
-};
-
 methods.get_status = {
     call: function() {
         let data = {
