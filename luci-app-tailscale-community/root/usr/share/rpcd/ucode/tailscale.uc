@@ -223,20 +223,31 @@ if [ -n "$TS_MTU" ]; then export TS_DEBUG_MTU="$TS_MTU"; fi
 
 methods.do_login = {
     call: function() {
-        let check_login = exec('tailscale status');
-        popen('tailscale login&','r');
-        sleep(3000);
-
-        let tresult=exec('tailscale status');
-                return { url:  tresult.stdout};
-        for (let line in tresult.stdout) {
-            let trline = trim(line);
-            if (index(trline, 'https://') != -1) {
-                let url = split(trline);
-                return { url:  url[index(url, 'https://')]};
-            }
+        let status=methods.get_status.call();
+        if (status.status != 'logout') {
+            return { error: 'Tailscale is already logged in and running.' };
         }
-            return { error: 'Could not retrieve login URL from tailscale command.' };
+
+        let max_attempts = 15;
+        let interval = 2000;
+
+        for (let i = 0; i < max_attempts; i++) {
+            let tresult = exec('tailscale status');
+            for (let line in tresult.stdout) {
+                let trline = trim(line);
+                if (index(trline, 'login.tailscale.com') != -1) {
+                    let parts = split(trline, ' ');
+                    for (let part in parts) {
+                        if (index(part, 'login.tailscale.com') != -1) {
+                            return { url: part };
+                        }
+                    }
+                }
+            }
+            popen('tailscale login&','r');
+            sleep(interval);
+        }
+        return { error: 'Could not retrieve login URL from tailscale command.' };
     }
 };
 

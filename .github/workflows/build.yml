@@ -19,10 +19,6 @@ jobs:
         target:
           - name: x86_64
             path: x86/64
-          - name: mediatek_filogic
-            path: mediatek/filogic
-          - name: mips_mt7621
-            path: ramips/mt7621
 
     steps:
       # 步骤 1: 安装依赖
