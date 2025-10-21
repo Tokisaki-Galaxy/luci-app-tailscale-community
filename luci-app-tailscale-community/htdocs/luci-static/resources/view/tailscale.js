@@ -15,7 +15,7 @@ var map;
 var tailscaleSettingsConf = [
     [form.Flag, 'accept_routes', _('Accept Routes'), _('允许接受其他节点宣告的路由。'), { rmempty: false }],
     [form.Flag, 'advertise_exit_node', _('Advertise Exit Node'), _('将此设备宣告为出口节点 (Exit Node)。'), { rmempty: false }],
-    [form.Value, 'advertise_routes', _('Advertise Routes'), _('宣告此设备后的子网路由，多个路由请用英文逗号分隔，例如: 192.168.100.0/24,10.0.0.0/24'), { rmempty: false }],
+    [form.Value, 'advertise_routes', _('Advertise Routes'), _('宣告此设备后的子网路由，多个路由请用英文逗号分隔，例如: 192.168.100.0/24,10.0.0.0/24'), { rmempty: true }],
     [form.Value, 'exit_node', _('Exit Node'), _('指定一个出口节点。留空则不使用。'), { rmempty: true }],
     [form.Flag, 'exit_node_allow_lan_access', _('Allow LAN Access'), _('在使用出口节点时，允许访问本地局域网。'), { rmempty: false }],
     [form.Flag, 'shields_up', _('Shields Up'), _('启用后，阻止来自 Tailscale 网络的所有入站连接。'), { rmempty: false }],
@@ -62,7 +62,12 @@ function renderStatus(status) {
     var finalHtml = [];
 
     // --- Part 1: 渲染水平状态表格 ---
-    if (!status.running) {
+    if (status.status == 'not_installed') {
+        finalHtml.push('<dl class="cbi-value"><dt>' + _('Service Status') + '</dt>');
+        finalHtml.push('<dd><span style="color:red;"><strong>' + _('NO FOUND TAILSCALE') + '</strong></span></dd></dl>');
+        return finalHtml.join('');
+    }
+    if (status.status != 'running') {
         finalHtml.push('<dl class="cbi-value"><dt>' + _('Service Status') + '</dt>');
         finalHtml.push('<dd><span style="color:red;"><strong>' + _('NOT RUNNING') + '</strong></span></dd></dl>');
         return finalHtml.join('');
@@ -143,7 +148,7 @@ return view.extend({
     load: function() {
         return Promise.all([
             //L.resolveDefault(callIsInstalled(), { installed: false }),
-            L.resolveDefault(callGetStatus(), { running: false, peers: [] }),
+            L.resolveDefault(callGetStatus(), { running: '', peers: [] }),
             L.resolveDefault(callGetSettings(), { accept_routes: false })
         ])
         .then(function(rpc_data) {
@@ -223,9 +228,25 @@ return view.extend({
 
             return callSetSettings(data).then(function (response) {
                 if (response.success) {
-                    map.reset();
                     ui.hideModal();
-                    ui.addNotification(null, E('p', _('Tailscale settings applied successfully.')), 'info');
+        setTimeout(function() {
+                ui.addNotification(null, E('p', _('Tailscale settings applied successfully.')), 'info');
+        }, 1000);
+        try {
+        const indicator = document.querySelector('span[data-indicator="uci-changes"][data-clickable="true"]');
+        indicator.click();
+        setTimeout(function() {
+                const discardButton = document.querySelector('.cbi-button.cbi-button-reset');
+            if (discardButton) {
+                console.log('Found the "Discard" button in the modal. Clicking it...');
+                discardButton.click();
+            } else {
+                console.error('Could not find the "Discard" button in the modal!');
+            }
+        }, 100);
+            
+        } catch (error) {   
+        }
                     // 重新加载页面以显示最新状态
                     setTimeout(function () { window.location.reload(); }, 2000);
                 } else {
