@@ -198,6 +198,10 @@ return view.extend({
             L.Poll.add(
                 function () {
                     return getRunningStatus().then(function (res) {
+                        if (res.status != 'logout') {
+                            document.getElementsByClassName('cbi-button cbi-button-apply')[0].disabled = true;
+                        }
+
                         var view = document.getElementById("service_status_display");
                         if (view) {
                             view.innerHTML = renderStatus(res);
@@ -236,7 +240,7 @@ return view.extend({
                 return;
             }
             // 在新窗口显示提示信息
-            loginWindow.document.write(_('Requesting Tailscale login URL... Please wait.'));
+            loginWindow.document.write(_('Requesting Tailscale login URL... Please wait...<br>The looggest time to get the URL is about 30 seconds.'));
 
             // 显示“加载中”的模态框，并执行异步的RPC调用
             ui.showModal(_('Requesting Login URL...'), E('em', {}, _('Please wait.')));
@@ -247,8 +251,8 @@ return view.extend({
                     loginWindow.location.href = res.url;
                 } else {
                     // 如果失败，告知用户并可以关闭新标签页
-                    loginWindow.document.write(_('Failed to get login URL. You may close this tab.'));
-                    ui.addNotification(null, E('p', _('Failed to get login URL: Invalid response from server.')), 'error');
+                    loginWindow.document.write(_('<br>Failed to get login URL. You may close this tab.'));
+                    ui.addNotification(null, E('p', _('>Failed to get login URL: Invalid response from server.')), 'error');
                 }
             }).catch(function(err) {
                 ui.hideModal();
