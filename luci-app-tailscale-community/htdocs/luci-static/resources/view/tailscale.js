@@ -54,6 +54,17 @@ function getRunningStatus() {
     });
 }
 
+// NEW: Helper function to format bytes into a human-readable string.
+function formatBytes(bytes) {
+    var bytes_num = parseInt(bytes, 10);
+    if (isNaN(bytes_num) || bytes_num === 0) return '-';
+    var k = 1024;
+    var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    var i = Math.floor(Math.log(bytes_num) / Math.log(k));
+    return parseFloat((bytes_num / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+
 function renderStatus(status) {
     // 如果 status 对象为空或没有 running 属性，则显示加载中
     if (!status || !status.hasOwnProperty('status')) {
@@ -124,6 +135,8 @@ function renderStatus(status) {
         peersTable += '<th class="cbi-table-cell" style="' + th_style + '">' + _('Tailscale IP') + '</th>';
         peersTable += '<th class="cbi-table-cell" style="' + th_style + '">' + _('OS') + '</th>';
         peersTable += '<th class="cbi-table-cell" style="' + th_style + '">' + _('Connection Info') + '</th>';
+        peersTable += '<th class="cbi-table-cell" style="' + th_style + '">' + _('RX') + '</th>';
+        peersTable += '<th class="cbi-table-cell" style="' + th_style + '">' + _('TX') + '</th>';
         peersTable += '</tr>';
 
         for (var hostname in peers) {
@@ -139,6 +152,8 @@ function renderStatus(status) {
                 peersTable += '<td class="cbi-value-field" style="' + td_style + '">' + (peer.ip || 'N/A') + '</td>';
                 peersTable += '<td class="cbi-value-field" style="' + td_style + '">' + (peer.ostype || 'N/A') + '</td>';
                 peersTable += '<td class="cbi-value-field" style="' + td_style + '">' + (peer.linkadress || '-') + '</td>';
+                peersTable += '<td class="cbi-value-field" style="' + td_style + '">' + formatBytes(peer.rx) + '</td>';
+                peersTable += '<td class="cbi-value-field" style="' + td_style + '">' + formatBytes(peer.tx) + '</td>';
                 peersTable += '</tr>';
             }
         }

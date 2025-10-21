@@ -90,14 +90,21 @@ methods.get_status = {
                         hostname: hostname,
                         ostype: ostype,
                         status: status,
-                        linkadress: ''
+                        linkadress: '',
+                        tx: '',
+                        rx: ''
                     };
                     if (status=='active') {
                         let idx = index(parts,'direct');
                         if (idx == -1){
                             idx = index(parts,'relay');
                         }
-                        peer_map[hostname].linkadress = rtrim(parts[idx+1],',') ||'';
+                        if(index(parts,'tx') != -1) {
+                            peer_map[hostname].linkadress = trim(rtrim(parts[idx+1],','),'\"') ||'';
+                            let tx_index = index(parts,'tx');
+                            peer_map[hostname].tx = rtrim(parts[tx_index+1],',') || '';
+                            peer_map[hostname].rx = rtrim(parts[tx_index+3],',') || '';
+                        }
                     }
                 }
             }
@@ -200,6 +207,7 @@ methods.set_settings = {
         let new_mtu = form_data.daemon_mtu || "";
         let new_reduce_mem = form_data.daemon_reduce_memory || "0";
         if (new_mtu != null || new_mtu != '0' || new_reduce_mem != 0) {
+            try{mkdir('/etc/profile.d');} catch (e) { }
             const env_script_path = "/etc/profile.d/tailscale-env.sh";
             const env_script_content = `#!/bin/sh
 # This script is managed by luci-app-tailscale-community.
