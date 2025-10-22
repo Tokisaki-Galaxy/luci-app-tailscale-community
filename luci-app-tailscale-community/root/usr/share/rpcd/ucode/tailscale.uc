@@ -254,10 +254,30 @@ methods.do_login = {
 
 methods.get_subroutes = {
     call: function() {
-        let cmd = `ip -4 addr show | awk '!/ lo$|tailscale/ && /inet/ { split($2,c,"/");split(c[1],o,"."); p=c[2]; i=0; for(k=1;k<=4;k++) i=or(lshift(i,8),o[k]); m=lshift(4294967295,32-p); n=and(i,m); print rshift(n,24)"."and(rshift(n,16),255)"."and(rshift(n,8),255)"."and(n,255)"/"p }'`;
-        let routes =  exec(cmd);
-        return { routes: routes.stdout };
-    }
+		try {
+			let cmd = 'ip -j route';
+			let result = exec(cmd);
+			let subnets = [];
+
+			if (result.code == 0 && length(result.stdout) > 0) {
+			    let routes_json = json(join('',result.stdout));
+
+			    for (let route in routes_json) {
+                    // We need to filter out local subnets
+                    // 1. 'dst' (target address) is not' default' (default gateway)
+                    // 2. 'scope' is' link' (indicating directly connected network)
+                    // 3. It is an IPv4 address (simple judgment: including'.')
+			    	if (route.dst && route.dst != 'default' && route.scope == 'link' && index(route.dst,'.') != -1) {
+			    		push(subnets,route.dst);
+			    	}
+			    }
+            }
+			return { routes: subnets };
+		}
+		catch(e) {
+			return { routes: '[]' };
+		}
+	}
 };
 
 return { 'tailscale': methods };

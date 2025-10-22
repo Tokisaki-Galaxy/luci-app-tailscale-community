@@ -5,7 +5,7 @@ PKG_DESCRIPTION:=Provides a LuCI Web management interface for Tailscale, allowin
 PKG_VERSION:=2.0.1
 PKG_RELEASE:=1
 PKG_MAINTAINER:=Tokisaki-Galaxy <moebest@outlook.jp>
-LUCI_DEPENDS:=+tailscale +luci-base
+LUCI_DEPENDS:=+tailscale +ip +luci-base
 LUCI_PKGARCH:=all
 
 include $(TOPDIR)/feeds/luci/luci.mk
