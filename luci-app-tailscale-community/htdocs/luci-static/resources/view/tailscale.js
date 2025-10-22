@@ -26,26 +26,37 @@ const daemonConf = [
     [form.Value, 'daemon_mtu', _('Daemon MTU'), _('Set a custom MTU for the Tailscale daemon. Leave blank to use the default value.'), { datatype: 'uinteger', placeholder: '1280' }, { rmempty: false }],
     [form.Flag, 'daemon_reduce_memory', _('Reduce Memory Usage'), _('Enabling this option can reduce memory usage, but it may sacrifice some performance (set GOGC=10).'), { rmempty: false }]
 ];
+
+// this function copy from luci-app-frpc. thx
 function setParams(o, params) {
-    if (!params) return; for (const key in params) {
-        const val = params[key]; if (key === 'values') {
-            for (let j = 0; j < val.length; j++) {
-                let args = val[j]; if (!Array.isArray(args))
-                    args = [args]; o.value.apply(o, args);
-            }
+    if (!params) return;
+
+    for (const [key, val] of Object.entries(params)) {
+        if (key === 'values') {
+            [].concat(val).forEach(v =>
+                o.value.apply(o, Array.isArray(v) ? v : [v])
+            );
         } else if (key === 'depends') {
-            if (!Array.isArray(val))
-                val = [val]; const deps = []; for (let j = 0; j < val.length; j++) {
-                    const d = {}; for (const vkey in val[j])
-                        d[vkey] = val[j][vkey]; for (let k = 0; k < o.deps.length; k++) { for (const dkey in o.deps[k]) { d[dkey] = o.deps[k][dkey]; } }
-                    deps.push(d);
-                }
-            o.deps = deps;
-        } else { o[key] = params[key]; }
+            const arr = Array.isArray(val) ? val : [val];
+            o.deps = arr.map(dep => Object.assign({}, ...o.deps, dep));
+        } else {
+            o[key] = val;
+        }
     }
-    if (params['datatype'] === 'bool') { o.enabled = 'true'; o.disabled = 'false'; }
+
+    if (params.datatype === 'bool')
+        Object.assign(o, { enabled: 'true', disabled: 'false' });
 }
-function defTabOpts(s, t, opts, params) { for (let i = 0; i < opts.length; i++) { const opt = opts[i]; const o = s.taboption(t, opt[0], opt[1], opt[2], opt[3]); setParams(o, opt[4]); setParams(o, params); } }
+
+// this function copy from luci-app-frpc. thx
+function defTabOpts(s, t, opts, params) {
+    for (let i = 0; i < opts.length; i++) {
+        const opt = opts[i];
+        const o = s.taboption(t, opt[0], opt[1], opt[2], opt[3]);
+        setParams(o, opt[4]);
+        setParams(o, params);
+    }
+}
 
 function getRunningStatus() {
     return L.resolveDefault(callGetStatus(), { running: false }).then(function (res) {
@@ -56,7 +67,7 @@ function getRunningStatus() {
 function formatBytes(bytes) {
     const bytes_num = parseInt(bytes, 10);
     if (isNaN(bytes_num) || bytes_num === 0) return '-';
-    const k = 1024;
+    const k = 1000;
     const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes_num) / Math.log(k));
     return parseFloat((bytes_num / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
