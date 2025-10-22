@@ -76,7 +76,7 @@ methods.get_status = {
 				for (let p in status_data.Peer) {
 					p = status_data.Peer[p];
 					peer_map[p.ID] = {
-						ip: join('\n', p.TailscaleIPs) || '',
+						ip: join('<br>', p.TailscaleIPs) || '',
 						hostname: split(p.DNSName,'.')[0] || '',
 						ostype: p.OS,
 						online: p.Online,
