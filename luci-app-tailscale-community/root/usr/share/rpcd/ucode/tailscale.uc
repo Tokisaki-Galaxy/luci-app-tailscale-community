@@ -63,71 +63,36 @@ methods.get_status = {
 			try {
 				let status_data = json(join('',status_json_output.stdout));
 				data.version = status_data.Version || 'Unknown';
+				data.health = status_data.Health || '';
 				data.TUNMode = status_data.TUN;
 				if (status_data.BackendState == 'Running') { data.status =  'running'; }
 				if (status_data.BackendState == 'NeedsLogin') { data.status =  'logout'; }
 
 				data.ipv4 = status_data.Self.TailscaleIPs[0] || 'No IP assigned';
 				data.ipv6 = status_data.Self.TailscaleIPs[1] || null;
-			} catch (e) { /* ignore */ }
-		}
-		let status_plain_output = exec('tailscale status');
-		if (length(status_plain_output.stdout) > 0) {
-			for (let line in status_plain_output.stdout) {
-				let parts = trim(line);
-				parts = split(parts, /\s+/);
-				if (parts[0] == '#' ){break;}
-				if (length(parts) >= 5) {
-					let ip = parts[0];
-					let hostname = parts[1];
-					let ostype = parts[3];
-					let status = rtrim(parts[4],';');
-					peer_map[hostname] = {
-						ip: ip,
-						hostname: hostname,
-						ostype: ostype,
-						status: status,
-						linkadress: '',
+				data.domain_name = status_data.CurrentTailnet.Name || '';
+
+				// peers list
+				for (let p in status_data.Peer) {
+					p = status_data.Peer[p];
+					peer_map[p.ID] = {
+						ip: join('\n', p.TailscaleIPs) || '',
+						hostname: split(p.DNSName,'.')[0] || '',
+						ostype: p.OS,
+						online: p.Online,
+						linkadress: (p.CurAddr=="") ? p.Relay : p.CurAddr,
+						lastseen: p.LastSeen,
 						tx: '',
 						rx: ''
 					};
-					if (status=='active') {
-						let idx = index(parts,'direct');
-						if (idx == -1){
-							idx = index(parts,'relay');
-						}
-						if(index(parts,'tx') != -1) {
-							peer_map[hostname].linkadress = trim(rtrim(parts[idx+1],','),'\"') ||'';
-							let tx_index = index(parts,'tx');
-							peer_map[hostname].tx = rtrim(parts[tx_index+1],',') || '';
-							peer_map[hostname].rx = rtrim(parts[tx_index+3],',') || '';
-						}
-					}
 				}
-			}
+			} catch (e) { /* ignore */ }
 		}
+
 		for (let key in peer_map) {
 			push(data.peers,peer_map[key]);
 		}
 		data.peers = peer_map;
-		uci.load('tailscale');
-		let state_file_path = uci.get('tailscale', 'settings', 'state_file') || "/var/lib/tailscale/tailscaled.state";
-		if (access(state_file_path)) {
-			try {
-				let state_content = readfile(state_file_path);
-				if (state_content) {
-					let state_data = json(state_content);
-					let profiles_b64 = state_data._profiles;
-					let profiles_data = json(b64dec(profiles_b64));
-					let profiles_key = null;
-					for (let key in profiles_data) {
-						profiles_key = key;
-						break;
-					}
-					data.domain_name = profiles_data[profiles_key].NetworkProfile.DomainName||"NXDOMAIN";
-				}
-			} catch (e) { /* ignore */ }
-		}
 		return data;
 	}
 };

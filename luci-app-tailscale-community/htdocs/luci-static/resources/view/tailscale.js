@@ -73,12 +73,60 @@ function formatBytes(bytes) {
     return parseFloat((bytes_num / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
+function formatLastSeen(dateString) {
+    if (!dateString) return 'N/A';
+    if (dateString === '0001-01-01T00:00:00Z') {
+        return 'Now';
+    }
+    const lastSeenDate = new Date(dateString);
+    // Check for a valid date.
+    if (isNaN(lastSeenDate.getTime())) {
+        return 'Invalid Date';
+    }
+    const now = new Date();
+    const diffSeconds = Math.round((now - lastSeenDate) / 1000);
+    if (diffSeconds < 0) {
+        return lastSeenDate.toLocaleString();
+    }
+    if (diffSeconds < 60) {
+        return 'Just now';
+    }
+    const diffMinutes = Math.floor(diffSeconds / 60);
+    if (diffMinutes < 60) {
+        return `${diffMinutes} ${diffMinutes === 1 ? 'minute' : 'minutes'} ago`;
+    }
+    const diffHours = Math.floor(diffMinutes / 60);
+    if (diffHours < 24) {
+        return `${diffHours} ${diffHours === 1 ? 'hour' : 'hours'} ago`;
+    }
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 30) {
+        return `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`;
+    }
+    const year = lastSeenDate.getFullYear();
+    const month = String(lastSeenDate.getMonth() + 1).padStart(2, '0');
+    const day = String(lastSeenDate.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
 
 function renderStatus(status) {
     // If status object is not yet available, show a loading message.
     if (!status || !status.hasOwnProperty('status')) {
         return E('em', {}, _('Collecting data ...'));
     }
+
+    const notificationId = 'tailscale_health_notification';
+    let notificationElement = document.getElementById(notificationId);
+    if (status.health != '') {
+        const message = _('Tailscale Health Check: %s').format(status.health);
+        if (notificationElement) {
+            notificationElement.textContent = message;
+        }
+        else {
+            let newNotificationContent = E('p', { 'id': notificationId }, message);
+            ui.addNotification(null, newNotificationContent, 'info');
+        }
+    }else{try{notificationElement.remove();}catch(e){}}
 
     // --- Part 1: Handle non-running states ---
 
@@ -145,7 +193,8 @@ function renderStatus(status) {
             { text: _('OS') },
             { text: _('Connection Info') },
             { text: _('RX') },
-            { text: _('TX') }
+            { text: _('TX') },
+            { text: _('Last Seen') }
         ];
         
         // Build the peers table.
@@ -161,22 +210,22 @@ function renderStatus(status) {
             
             // Table Body Rows (one for each peer)
             ...Object.entries(peers).map(([hostname, peer]) => {
-                const isOnline = peer.status !== 'offline';
                 const td_style = 'padding-right: 20px;';
 
                 return E('tr', { 'class': 'cbi-rowstyle-1' }, [
                     E('td', { 'class': 'cbi-value-field', 'style': td_style },
                         E('span', {
-                            'style': `color:${isOnline ? 'green' : 'gray'};`,
-                            'title': isOnline ? _('Online') : _('Offline')
-                        }, isOnline ? '●' : '○')
+                            'style': `color:${peer.online ? 'green' : 'gray'};`,
+                            'title': peer.online ? _('Online') : _('Offline')
+                        }, peer.online ? '●' : '○')
                     ),
-                    E('td', { 'class': 'cbi-value-field', 'style': td_style }, E('strong', {}, hostname)),
+                    E('td', { 'class': 'cbi-value-field', 'style': td_style }, E('strong', {}, peer.hostname)),
                     E('td', { 'class': 'cbi-value-field', 'style': td_style }, peer.ip || 'N/A'),
                     E('td', { 'class': 'cbi-value-field', 'style': td_style }, peer.ostype || 'N/A'),
-                    E('td', { 'class': 'cbi-value-field', 'style': td_style }, peer.linkadress || '-'),
+                    E('td', { 'class': 'cbi-value-field', 'style': td_style }, (peer.linkadress || '-')),
                     E('td', { 'class': 'cbi-value-field', 'style': td_style }, formatBytes(peer.rx)),
-                    E('td', { 'class': 'cbi-value-field', 'style': td_style }, formatBytes(peer.tx))
+                    E('td', { 'class': 'cbi-value-field', 'style': td_style }, formatBytes(peer.tx)),
+                    E('td', { 'class': 'cbi-value-field', 'style': td_style }, formatLastSeen(peer.lastseen))
                 ]);
             })
         ]);
