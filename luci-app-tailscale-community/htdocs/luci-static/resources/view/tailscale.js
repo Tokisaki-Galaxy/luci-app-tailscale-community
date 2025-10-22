@@ -321,16 +321,18 @@ return view.extend({
         }, 1000);
         try {
         const indicator = document.querySelector('span[data-indicator="uci-changes"][data-clickable="true"]');
-        indicator.click();
-        setTimeout(function() {
+        if (indicator) {
+            indicator.click();
+            setTimeout(function() {
                 const discardButton = document.querySelector('.cbi-button.cbi-button-reset');
-            if (discardButton) {
-                console.log('Found the "Discard" button in the modal. Clicking it...');
-                discardButton.click();
-            } else {
-                console.error('Could not find the "Discard" button in the modal!');
-            }
-        }, 100);
+                if (discardButton) {
+                    console.log('Found the "Discard" button in the modal. Clicking it...');
+                    discardButton.click();
+                } else {
+                    console.error('Could not find the "Discard" button in the modal!');
+                }
+            }, 100);
+        }
             
         } catch (error) {
             ui.addNotification(null, E('p', _('Error saving settings: %s').format(error || 'Unknown error')), 'error');
