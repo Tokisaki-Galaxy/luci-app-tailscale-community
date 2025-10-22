@@ -158,7 +158,7 @@ function renderStatus(status) {
             let newNotificationContent = E('p', { 'id': notificationId }, message);
             ui.addNotification(null, newNotificationContent, 'info');
         }
-    }else{try{notificationElement.remove();}catch(e){}}
+    }else{try{ notificationElement.parentNode.parentNode.remove(); }catch(e){}}
 
     if (Object.keys(regionCodeMap).length === 0) {
         initializeRegionMap();
