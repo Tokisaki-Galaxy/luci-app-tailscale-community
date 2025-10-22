@@ -65,104 +65,122 @@ function formatBytes(bytes) {
 
 
 function renderStatus(status) {
-    // 如果 status 对象为空或没有 running 属性，则显示加载中
+    // If status object is not yet available, show a loading message.
     if (!status || !status.hasOwnProperty('status')) {
-        return _('Collecting data ...');
+        return E('em', {}, _('Collecting data ...'));
     }
 
-    let finalHtml = [];
+    // --- Part 1: Handle non-running states ---
 
-    // --- Part 1: 渲染水平状态表格 ---
+    // State: Tailscale binary not found.
     if (status.status == 'not_installed') {
-        finalHtml.push('<dl class="cbi-value"><dt>' + _('Service Status') + '</dt>');
-        finalHtml.push('<dd><span style="color:red;"><strong>' + _('NO FOUND TAILSCALE') + '</strong></span></dd></dl>');
-        return finalHtml.join('');
+        return E('dl', { 'class': 'cbi-value' }, [
+            E('dt', {}, _('Service Status')),
+            E('dd', {}, E('span', { 'style': 'color:red;' }, E('strong', {}, _('NO FOUND TAILSCALE'))))
+        ]);
     }
+
+    // State: Logged out, requires user action.
     if (status.status == 'logout') {
-        finalHtml.push('<dl class="cbi-value"><dt>' + _('Service Status') + '</dt>');
-        finalHtml.push('<dd><span style="color:orange;"><strong>' + _('LOGGED OUT') + '</strong></span></br><span>' + _('Please use the login button in the settings below to authenticate.') + '</span></dd></dl>');
-        return finalHtml.join('');
+        return E('dl', { 'class': 'cbi-value' }, [
+            E('dt', {}, _('Service Status')),
+            E('dd', {}, [
+                E('span', { 'style': 'color:orange;' }, E('strong', {}, _('LOGGED OUT'))),
+                E('br'),
+                E('span', {}, _('Please use the login button in the settings below to authenticate.'))
+            ])
+        ]);
     }
-    // ** MODIFICATION END **
+
+    // State: Service is installed but not running.
     if (status.status != 'running') {
-        finalHtml.push('<dl class="cbi-value"><dt>' + _('Service Status') + '</dt>');
-        finalHtml.push('<dd><span style="color:red;"><strong>' + _('NOT RUNNING') + '</strong></span></dd></dl>');
-        return finalHtml.join('');
+        return E('dl', { 'class': 'cbi-value' }, [
+            E('dt', {}, _('Service Status')),
+            E('dd', {}, E('span', { 'style': 'color:red;' }, E('strong', {}, _('NOT RUNNING'))))
+        ]);
     }
+
+    // --- Part 2: Render the full status display for a running service ---
+
+    // A helper array to define the data for the main status table.
+    const statusData = [
+        { label: _('Service Status'), value: E('span', { 'style': 'color:green;' }, E('strong', {}, _('RUNNING'))) },
+        { label: _('Version'), value: status.version || 'N/A' },
+        { label: _('TUN Mode'), value: status.TUNMode ? _('Enabled') : _('Disabled') },
+        { label: _('Tailscale IPv4'), value: status.ipv4 || 'N/A' },
+        { label: _('Tailscale IPv6'), value: status.ipv6 || 'N/A' },
+        { label: _('Tailnet Name'), value: status.domain_name || 'N/A' }
+    ];
+
+    // Build the horizontal status table using the data array.
+    const statusTable = E('table', { 'style': 'width: 100%; border-spacing: 0 5px;' }, [
+        E('tr', {}, statusData.map(item => E('td', { 'style': 'padding-right: 20px;' }, E('strong', {}, item.label)))),
+        E('tr', {}, statusData.map(item => E('td', { 'style': 'padding-right: 20px;' }, item.value)))
+    ]);
+
+    // --- Part 3: Render the Peers/Network Devices table ---
     
-    let labels = [];
-    let values = [];
-    labels.push('<strong>' + _('Service Status') + '</strong>');
-    values.push('<span style="color:green;"><strong>' + _('RUNNING') + '</strong></span>');
-    labels.push('<strong>' + _('Version') + '</strong>');
-    values.push(status.version || 'N/A');
-    labels.push('<strong>' + _('TUN Mode') + '</strong>');
-    values.push(status.TUNMode ? _('Enabled') : _('Disabled'));
-    labels.push('<strong>' + _('Tailscale IPv4') + '</strong>');
-    values.push(status.ipv4 || 'N/A');
-    labels.push('<strong>' + _('Tailscale IPv6') + '</strong>');
-    values.push(status.ipv6 || 'N/A');
-    labels.push('<strong>' + _('Tailnet Name') + '</strong>');
-    values.push(status.domain_name || 'N/A');
+    const peers = status.peers;
+    let peersContent;
 
-    let statusTable = '<table style="width: 100%; border-spacing: 0 5px;">';
-    statusTable += '<tr>';
-    for (let i = 0; i < labels.length; i++) {
-        statusTable += '<td style="padding-right: 20px;">' + labels[i] + '</td>';
-    }
-    statusTable += '</tr><tr>';
-    for (let i = 0; i < values.length; i++) {
-        statusTable += '<td style="padding-right: 20px;">' + values[i] + '</td>';
-    }
-    statusTable += '</tr></table>';
-    finalHtml.push(statusTable);
-
-
-    // --- Part 2: 渲染 Peers 设备表格 ---
-    finalHtml.push('<div style="margin-top: 25px;">');
-    finalHtml.push('<h4>' + _('Network Devices') + '</h4>');
-
-    let peers = status.peers;
     if (!peers || Object.keys(peers).length === 0) {
-        finalHtml.push('<p>' + _('No peer devices found.') + '</p>');
+        // Display a message if no peers are found.
+        peersContent = E('p', {}, _('No peer devices found.'));
     } else {
-        let peersTable = '<table class="cbi-table">';
-        peersTable += '<tr class="cbi-table-header">';
-        let th_style = 'padding-right: 20px; text-align: left;';
-        peersTable += '<th class="cbi-table-cell" style="' + th_style + 'width: 80px;">' + _('Status') + '</th>';
-        peersTable += '<th class="cbi-table-cell" style="' + th_style + '">' + _('Hostname') + '</th>';
-        peersTable += '<th class="cbi-table-cell" style="' + th_style + '">' + _('Tailscale IP') + '</th>';
-        peersTable += '<th class="cbi-table-cell" style="' + th_style + '">' + _('OS') + '</th>';
-        peersTable += '<th class="cbi-table-cell" style="' + th_style + '">' + _('Connection Info') + '</th>';
-        peersTable += '<th class="cbi-table-cell" style="' + th_style + '">' + _('RX') + '</th>';
-        peersTable += '<th class="cbi-table-cell" style="' + th_style + '">' + _('TX') + '</th>';
-        peersTable += '</tr>';
+        // Define headers for the peers table.
+        const peerTableHeaders = [
+            { text: _('Status'), style: 'width: 80px;' },
+            { text: _('Hostname') },
+            { text: _('Tailscale IP') },
+            { text: _('OS') },
+            { text: _('Connection Info') },
+            { text: _('RX') },
+            { text: _('TX') }
+        ];
+        
+        // Build the peers table.
+        peersContent = E('table', { 'class': 'cbi-table' }, [
+            // Table Header Row
+            E('tr', { 'class': 'cbi-table-header' }, peerTableHeaders.map(header => {
+                let th_style = 'padding-right: 20px; text-align: left;';
+                if (header.style) {
+                    th_style += header.style;
+                }
+                return E('th', { 'class': 'cbi-table-cell', 'style': th_style }, header.text);
+            })),
+            
+            // Table Body Rows (one for each peer)
+            ...Object.entries(peers).map(([hostname, peer]) => {
+                const isOnline = peer.status !== 'offline';
+                const td_style = 'padding-right: 20px;';
 
-        for (let hostname in peers) {
-            if (peers.hasOwnProperty(hostname)) {
-                let peer = peers[hostname];
-                peersTable += '<tr class="cbi-rowstyle-1">';
-                let status_indicator = (peer.status != 'offline')
-                    ? '<span style="color:green;" title="' + _("Online") + '">●</span>'
-                    : '<span style="color:gray;" title="' + _("Offline") + '">○</span>';
-                let td_style = 'padding-right: 20px;';
-                peersTable += '<td class="cbi-value-field" style="' + td_style + '">' + status_indicator + '</td>';
-                peersTable += '<td class="cbi-value-field" style="' + td_style + '"><strong>' + hostname + '</strong></td>';
-                peersTable += '<td class="cbi-value-field" style="' + td_style + '">' + (peer.ip || 'N/A') + '</td>';
-                peersTable += '<td class="cbi-value-field" style="' + td_style + '">' + (peer.ostype || 'N/A') + '</td>';
-                peersTable += '<td class="cbi-value-field" style="' + td_style + '">' + (peer.linkadress || '-') + '</td>';
-                peersTable += '<td class="cbi-value-field" style="' + td_style + '">' + formatBytes(peer.rx) + '</td>';
-                peersTable += '<td class="cbi-value-field" style="' + td_style + '">' + formatBytes(peer.tx) + '</td>';
-                peersTable += '</tr>';
-            }
-        }
-        peersTable += '</table>';
-        finalHtml.push(peersTable);
+                return E('tr', { 'class': 'cbi-rowstyle-1' }, [
+                    E('td', { 'class': 'cbi-value-field', 'style': td_style },
+                        E('span', {
+                            'style': `color:${isOnline ? 'green' : 'gray'};`,
+                            'title': isOnline ? _('Online') : _('Offline')
+                        }, isOnline ? '●' : '○')
+                    ),
+                    E('td', { 'class': 'cbi-value-field', 'style': td_style }, E('strong', {}, hostname)),
+                    E('td', { 'class': 'cbi-value-field', 'style': td_style }, peer.ip || 'N/A'),
+                    E('td', { 'class': 'cbi-value-field', 'style': td_style }, peer.ostype || 'N/A'),
+                    E('td', { 'class': 'cbi-value-field', 'style': td_style }, peer.linkadress || '-'),
+                    E('td', { 'class': 'cbi-value-field', 'style': td_style }, formatBytes(peer.rx)),
+                    E('td', { 'class': 'cbi-value-field', 'style': td_style }, formatBytes(peer.tx))
+                ]);
+            })
+        ]);
     }
 
-    finalHtml.push('</div>');
-
-    return finalHtml.join('');
+    // Combine all parts into a single DocumentFragment.
+    // Using E() without a tag name creates a fragment, which is perfect for grouping elements.
+    return E([
+        statusTable,
+        E('div', { 'style': 'margin-top: 25px;' }, [
+            E('h4', {}, _('Network Devices')),
+            peersContent
+        ])
+    ]);
 }
 
 return view.extend({
@@ -218,9 +236,10 @@ return view.extend({
 
                         let view = document.getElementById("service_status_display");
                         if (view) {
-                            view.innerHTML = renderStatus(res);
+                            let content = renderStatus(res);
+                            view.replaceChildren(content);
                         }
-                        
+
                         let btn = document.getElementById('tailscale_login_btn');
                         if (btn) {
                             btn.disabled = (res.status != 'logout');
