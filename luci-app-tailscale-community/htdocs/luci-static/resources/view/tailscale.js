@@ -27,6 +27,9 @@ const daemonConf = [
     [form.Flag, 'daemon_reduce_memory', _('Reduce Memory Usage'), _('Enabling this option can reduce memory usage, but it may sacrifice some performance (set GOGC=10).'), { rmempty: false }]
 ];
 
+const derpMapUrl = 'https://controlplane.tailscale.com/derpmap/default';
+let regionCodeMap = {};
+
 // this function copy from luci-app-frpc. thx
 function setParams(o, params) {
     if (!params) return;
@@ -109,6 +112,35 @@ function formatLastSeen(dateString) {
     return `${year}-${month}-${day}`;
 }
 
+async function initializeRegionMap() {
+    try {
+        const response = await fetch(derpMapUrl);
+        if (!response.ok) {
+            console.error('Failed to fetch region map:', response.statusText);
+            return;
+        }
+        const data = await response.json();
+        for (const regionId in data.Regions) {
+            const region = data.Regions[regionId];
+            const code = region.RegionCode.toLowerCase();
+            const name = region.RegionName;
+            regionCodeMap[code] = name;
+        }
+        console.log('Region map initialized successfully.');
+    } catch (error) {
+        console.error('Error initializing region map:', error);
+    }
+}
+
+function formatConnectionInfo(info) {
+    if (!info) { return '-'; }
+    if (typeof info === 'string' && info.length === 3) {
+        const lowerCaseInfo = info.toLowerCase();
+        return regionCodeMap[lowerCaseInfo] || info;
+    }
+    return info;
+}
+
 function renderStatus(status) {
     // If status object is not yet available, show a loading message.
     if (!status || !status.hasOwnProperty('status')) {
@@ -127,6 +159,10 @@ function renderStatus(status) {
             ui.addNotification(null, newNotificationContent, 'info');
         }
     }else{try{notificationElement.remove();}catch(e){}}
+
+    if (Object.keys(regionCodeMap).length === 0) {
+        initializeRegionMap();
+    }
 
     // --- Part 1: Handle non-running states ---
 
@@ -222,7 +258,7 @@ function renderStatus(status) {
                     E('td', { 'class': 'cbi-value-field', 'style': td_style }, E('strong', {}, peer.hostname)),
                     E('td', { 'class': 'cbi-value-field', 'style': td_style }, peer.ip || 'N/A'),
                     E('td', { 'class': 'cbi-value-field', 'style': td_style }, peer.ostype || 'N/A'),
-                    E('td', { 'class': 'cbi-value-field', 'style': td_style }, (peer.linkadress || '-')),
+                    E('td', { 'class': 'cbi-value-field', 'style': td_style }, formatConnectionInfo(peer.linkadress || '-')),
                     E('td', { 'class': 'cbi-value-field', 'style': td_style }, formatBytes(peer.rx)),
                     E('td', { 'class': 'cbi-value-field', 'style': td_style }, formatBytes(peer.tx)),
                     E('td', { 'class': 'cbi-value-field', 'style': td_style }, formatLastSeen(peer.lastseen))
