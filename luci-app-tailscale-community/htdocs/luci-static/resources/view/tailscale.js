@@ -245,7 +245,7 @@ function renderStatus(status) {
             })),
             
             // Table Body Rows (one for each peer)
-            ...Object.entries(peers).map(([hostname, peer]) => {
+            ...Object.entries(peers).map(([peerid, peer]) => {
                 const td_style = 'padding-right: 20px;';
 
                 return E('tr', { 'class': 'cbi-rowstyle-1' }, [
@@ -279,15 +279,13 @@ function renderStatus(status) {
 }
 
 return view.extend({
-    load: function() {
+    load() {
         return Promise.all([
             L.resolveDefault(callGetStatus(), { running: '', peers: [] }),
             L.resolveDefault(callGetSettings(), { accept_routes: false }),
             L.resolveDefault(callGetSubroutes(), { routes: [] })
         ])
-        .then(function(rpc_data) {
-            // rpc_data is an array: [status_result, settings_result, subroutes_result]
-            const settings_from_rpc = rpc_data[1];
+        .then(function([status, settings_from_rpc, subroutes]) { 
 
             return uci.load('tailscale').then(function() {
                 if (uci.get('tailscale', 'settings') === null) {
@@ -307,18 +305,17 @@ return view.extend({
                     return uci.save();
                 }
             }).then(function() {
-                return rpc_data;
+                return [status, settings_from_rpc, subroutes];
             });
         });
     },
 
-    render: function (data) {
-        const [status = {}, settings = {}, subroutes_obj] = data;
+    render ([status = {}, settings = {}, subroutes_obj]) {
         const subroutes = (subroutes_obj && subroutes_obj.routes) ? subroutes_obj.routes : [];
-        
+
         let s;
         map = new form.Map('tailscale', _('Tailscale'), _('Tailscale is a mesh VPN solution that makes it easy to connect your devices securely. This configuration page allows you to manage Tailscale settings on your OpenWrt device.'));
-        
+
         s = map.section(form.NamedSection, '_status');
         s.anonymous = true;
         s.render = function (section_id) {
@@ -404,7 +401,7 @@ return view.extend({
     },
 
     // The handleSaveApply function is executed after clicking "Save & Apply"
-    handleSaveApply: function (ev) {
+    handleSaveApply(ev) {
         return map.save().then(function () {
             const data = map.data.get('tailscale', 'settings');
             ui.showModal(_('Applying changes...'), E('em', {}, _('Please wait.')));
@@ -412,29 +409,28 @@ return view.extend({
             return callSetSettings(data).then(function (response) {
                 if (response.success) {
                     ui.hideModal();
-        setTimeout(function() {
-                ui.addNotification(null, E('p', _('Tailscale settings applied successfully.')), 'info');
-        }, 1000);
+                setTimeout(function() {
+                        ui.addNotification(null, E('p', _('Tailscale settings applied successfully.')), 'info');
+                }, 1000);
         try {
-        const indicator = document.querySelector('span[data-indicator="uci-changes"][data-clickable="true"]');
-        if (indicator) {
-            indicator.click();
-            setTimeout(function() {
-                const discardButton = document.querySelector('.cbi-button.cbi-button-reset');
-                if (discardButton) {
-                    console.log('Found the "Discard" button in the modal. Clicking it...');
-                    discardButton.click();
-                } else {
-                    console.error('Could not find the "Discard" button in the modal!');
-                }
-            }, 100);
-        }
-            
+            const indicator = document.querySelector('span[data-indicator="uci-changes"][data-clickable="true"]');
+            if (indicator) {
+                indicator.click();
+                setTimeout(function() {
+                    const discardButton = document.querySelector('.cbi-button.cbi-button-reset');
+                    if (discardButton) {
+                        console.log('Found the "Discard" button in the modal. Clicking it...');
+                        discardButton.click();
+                    } else {
+                        console.error('Could not find the "Discard" button in the modal!');
+                    }
+                }, 100);
+            }
         } catch (error) {
             ui.addNotification(null, E('p', _('Error saving settings: %s').format(error || 'Unknown error')), 'error');
-            }
-                    // Reload the page to display the latest status
-                    setTimeout(function () { window.location.reload(); }, 2000);
+        }
+                // Reload the page to display the latest status
+                setTimeout(function () { window.location.reload(); }, 2000);
                 } else {
                     ui.hideModal();
                     ui.addNotification(null, E('p', _('Error applying settings: %s').format(response.error || 'Unknown error')), 'error');
