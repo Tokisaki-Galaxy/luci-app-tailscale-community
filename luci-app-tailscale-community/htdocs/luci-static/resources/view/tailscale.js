@@ -6,14 +6,14 @@
 'require uci';
 'require tools.widgets as widgets';
 
-let callGetStatus = rpc.declare({ object: 'tailscale', method: 'get_status' });
-let callGetSettings = rpc.declare({ object: 'tailscale', method: 'get_settings' });
-let callSetSettings = rpc.declare({ object: 'tailscale', method: 'set_settings', params: ['form_data'] });
-let callDoLogin = rpc.declare({ object: 'tailscale', method: 'do_login' });
-let callGetSubroutes = rpc.declare({ object: 'tailscale', method: 'get_subroutes' });
+const callGetStatus = rpc.declare({ object: 'tailscale', method: 'get_status' });
+const callGetSettings = rpc.declare({ object: 'tailscale', method: 'get_settings' });
+const callSetSettings = rpc.declare({ object: 'tailscale', method: 'set_settings', params: ['form_data'] });
+const callDoLogin = rpc.declare({ object: 'tailscale', method: 'do_login' });
+const callGetSubroutes = rpc.declare({ object: 'tailscale', method: 'get_subroutes' });
 let map;
 
-let tailscaleSettingsConf = [
+const tailscaleSettingsConf = [
     [form.Flag, 'accept_routes', _('Accept Routes'), _('Allow accepting routes announced by other nodes.'), { rmempty: false }],
     [form.Flag, 'advertise_exit_node', _('Advertise Exit Node'), _('Declare this device as an Exit Node.'), { rmempty: false }],
     [form.Value, 'exit_node', _('Exit Node'), _('Specify an exit node. Leave it blank and it will not be used.'), { rmempty: true }],
@@ -22,22 +22,22 @@ let tailscaleSettingsConf = [
     [form.Flag, 'ssh', _('Enable Tailscale SSH'), _('Allow connecting to this device through the SSH function of Tailscale.'), { rmempty: false }]
 ];
 
-let daemonConf = [
+const daemonConf = [
     [form.Value, 'daemon_mtu', _('Daemon MTU'), _('Set a custom MTU for the Tailscale daemon. Leave blank to use the default value.'), { datatype: 'uinteger', placeholder: '1280' }, { rmempty: false }],
     [form.Flag, 'daemon_reduce_memory', _('Reduce Memory Usage'), _('Enabling this option can reduce memory usage, but it may sacrifice some performance (set GOGC=10).'), { rmempty: false }]
 ];
 function setParams(o, params) {
-    if (!params) return; for (let key in params) {
-        let val = params[key]; if (key === 'values') {
+    if (!params) return; for (const key in params) {
+        const val = params[key]; if (key === 'values') {
             for (let j = 0; j < val.length; j++) {
                 let args = val[j]; if (!Array.isArray(args))
                     args = [args]; o.value.apply(o, args);
             }
         } else if (key === 'depends') {
             if (!Array.isArray(val))
-                val = [val]; let deps = []; for (let j = 0; j < val.length; j++) {
-                    let d = {}; for (let vkey in val[j])
-                        d[vkey] = val[j][vkey]; for (let k = 0; k < o.deps.length; k++) { for (let dkey in o.deps[k]) { d[dkey] = o.deps[k][dkey]; } }
+                val = [val]; const deps = []; for (let j = 0; j < val.length; j++) {
+                    const d = {}; for (const vkey in val[j])
+                        d[vkey] = val[j][vkey]; for (let k = 0; k < o.deps.length; k++) { for (const dkey in o.deps[k]) { d[dkey] = o.deps[k][dkey]; } }
                     deps.push(d);
                 }
             o.deps = deps;
@@ -45,7 +45,7 @@ function setParams(o, params) {
     }
     if (params['datatype'] === 'bool') { o.enabled = 'true'; o.disabled = 'false'; }
 }
-function defTabOpts(s, t, opts, params) { for (let i = 0; i < opts.length; i++) { let opt = opts[i]; let o = s.taboption(t, opt[0], opt[1], opt[2], opt[3]); setParams(o, opt[4]); setParams(o, params); } }
+function defTabOpts(s, t, opts, params) { for (let i = 0; i < opts.length; i++) { const opt = opts[i]; const o = s.taboption(t, opt[0], opt[1], opt[2], opt[3]); setParams(o, opt[4]); setParams(o, params); } }
 
 function getRunningStatus() {
     return L.resolveDefault(callGetStatus(), { running: false }).then(function (res) {
@@ -54,11 +54,11 @@ function getRunningStatus() {
 }
 
 function formatBytes(bytes) {
-    let bytes_num = parseInt(bytes, 10);
+    const bytes_num = parseInt(bytes, 10);
     if (isNaN(bytes_num) || bytes_num === 0) return '-';
-    let k = 1024;
-    let sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-    let i = Math.floor(Math.log(bytes_num) / Math.log(k));
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes_num) / Math.log(k));
     return parseFloat((bytes_num / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
@@ -191,7 +191,7 @@ return view.extend({
         ])
         .then(function(rpc_data) {
             // rpc_data is an array: [status_result, settings_result, subroutes_result]
-            let settings_from_rpc = rpc_data[1];
+            const settings_from_rpc = rpc_data[1];
 
             return uci.load('tailscale').then(function() {
                 if (uci.get('tailscale', 'settings') === null) {
@@ -217,10 +217,10 @@ return view.extend({
     },
 
     render: function (data) {
-        let [status = {}, settings = {}, subroutes_obj] = data;
-        let subroutes = (subroutes_obj && subroutes_obj.routes) ? subroutes_obj.routes : [];
+        const [status = {}, settings = {}, subroutes_obj] = data;
+        const subroutes = (subroutes_obj && subroutes_obj.routes) ? subroutes_obj.routes : [];
         
-        let s, o, loginBtn, loginUrl;
+        let s;
         map = new form.Map('tailscale', _('Tailscale'), _('Tailscale is a mesh VPN solution that makes it easy to connect your devices securely. This configuration page allows you to manage Tailscale settings on your OpenWrt device.'));
         
         s = map.section(form.NamedSection, '_status');
@@ -233,13 +233,13 @@ return view.extend({
                             document.getElementsByClassName('cbi-button cbi-button-apply')[0].disabled = true;
                         }
 
-                        let view = document.getElementById("service_status_display");
+                        const view = document.getElementById("service_status_display");
                         if (view) {
-                            let content = renderStatus(res);
+                            const content = renderStatus(res);
                             view.replaceChildren(content);
                         }
 
-                        let btn = document.getElementById('tailscale_login_btn');
+                        const btn = document.getElementById('tailscale_login_btn');
                         if (btn) {
                             btn.disabled = (res.status != 'logout');
                         }
@@ -258,14 +258,14 @@ return view.extend({
         // Create the "General Settings" tab and apply tailscaleSettingsConf
         s.tab('general', _('General Settings'));
 
-        loginBtn = s.taboption('general', form.Button, '_login', _('Login'), _('Click to get a login URL for this device.'));
+        const loginBtn = s.taboption('general', form.Button, '_login', _('Login'), _('Click to get a login URL for this device.'));
         loginBtn.inputstyle = 'apply';
         loginBtn.id = 'tailscale_login_btn';
         // Set initial state based on loaded data
         loginBtn.disabled = (status.status != 'logout');
 
         loginBtn.onclick = function() {
-            let loginWindow = window.open('', '_blank');
+            const loginWindow = window.open('', '_blank');
             if (!loginWindow) {
                 ui.addNotification(null, E('p', _('Could not open a new tab. Please disable your pop-up blocker for this site and try again.')), 'error');
                 return;
@@ -292,7 +292,7 @@ return view.extend({
         };
 
         defTabOpts(s, 'general', tailscaleSettingsConf, { optional: false });
-        o = s.taboption('general', form.DynamicList, 'advertise_routes', _('Advertise Routes'),_('Advertise subnet routes behind this device. Select from the detected subnets below or enter custom routes (comma-separated).'));
+        const o = s.taboption('general', form.DynamicList, 'advertise_routes', _('Advertise Routes'),_('Advertise subnet routes behind this device. Select from the detected subnets below or enter custom routes (comma-separated).'));
         if (subroutes.length > 0) {
             subroutes.forEach(function(subnet) {
                 o.value(subnet, subnet);
@@ -310,7 +310,7 @@ return view.extend({
     // The handleSaveApply function is executed after clicking "Save & Apply"
     handleSaveApply: function (ev) {
         return map.save().then(function () {
-            let data = map.data.get('tailscale', 'settings');
+            const data = map.data.get('tailscale', 'settings');
             ui.showModal(_('Applying changes...'), E('em', {}, _('Please wait.')));
 
             return callSetSettings(data).then(function (response) {
