@@ -45,6 +45,7 @@ methods.get_status = {
             status: '',
             version: '',
             TUNMode: '',
+			health: '',
             ipv4: "Not running",
             ipv6: null,
             domain_name: '',
@@ -55,11 +56,7 @@ methods.get_status = {
             data.status = 'not_installed';
             return data;
         }
-        let ip_output = exec('tailscale ip');
-        if (ip_output.code == 0 && length(ip_output.stdout) > 0) {
-            data.ipv4 = ip_output.stdout[0];
-            data.ipv6 = ip_output.stdout[1];
-        }
+
         let status_json_output = exec('tailscale status --json');
         let peer_map = {};
         if (status_json_output.code == 0 && length(status_json_output.stdout) > 0) {
@@ -67,19 +64,17 @@ methods.get_status = {
                 let status_data = json(join('',status_json_output.stdout));
                 data.version = status_data.Version || 'Unknown';
                 data.TUNMode = status_data.TUN;
-                if (status_data.BackendState == 'Running') {
-                    data.status =  'running';
-                }
+                if (status_data.BackendState == 'Running') { data.status =  'running'; }
+				if (status_data.BackendState == 'NeedsLogin') { data.status =  'logout'; }
+
+                data.ipv4 = status_data.Self.TailscaleIPs[0] || 'No IP assigned';
+                data.ipv6 = status_data.Self.TailscaleIPs[1] || null;
             } catch (e) { /* ignore */ }
         }
         let status_plain_output = exec('tailscale status');
         if (length(status_plain_output.stdout) > 0) {
             for (let line in status_plain_output.stdout) {
                 let parts = trim(line);
-                if (index(parts, 'Logged') != -1) {
-                    data.status='logout';
-                    break;
-                    }
                 parts = split(parts, /\s+/);
                 if (parts[0] == '#' ){break;}
                 if (length(parts) >= 5) {
