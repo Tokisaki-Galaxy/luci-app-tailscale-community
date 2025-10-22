@@ -53,7 +53,6 @@ function getRunningStatus() {
     });
 }
 
-// NEW: Helper function to format bytes into a human-readable string.
 function formatBytes(bytes) {
     let bytes_num = parseInt(bytes, 10);
     if (isNaN(bytes_num) || bytes_num === 0) return '-';
@@ -191,7 +190,7 @@ return view.extend({
             L.resolveDefault(callGetSubroutes(), { routes: [] })
         ])
         .then(function(rpc_data) {
-            // rpc_data 是数组: [status_result, settings_result, subroutes_result]
+            // rpc_data is an array: [status_result, settings_result, subroutes_result]
             let settings_from_rpc = rpc_data[1];
 
             return uci.load('tailscale').then(function() {
@@ -247,17 +246,16 @@ return view.extend({
                     });
                 }, 10);
 
-            // 初始的容器，ID 用于被轮询更新
             return E('div', { 'id': 'service_status_display', 'class': 'cbi-value' }, 
                 _('Collecting data ...')
             );
         }
 
-        // 将设置绑定到 uci 的 'settings' section
+        // Bind settings to the 'settings' section of uci
         s = map.section(form.NamedSection, 'settings', 'settings', _('Settings'));
         s.dynamic = true;
 
-        // 创建 "常规设置" 标签页，并应用 tailscaleSettingsConf
+        // Create the "General Settings" tab and apply tailscaleSettingsConf
         s.tab('general', _('General Settings'));
 
         loginBtn = s.taboption('general', form.Button, '_login', _('Login'), _('Click to get a login URL for this device.'));
@@ -272,18 +270,18 @@ return view.extend({
                 ui.addNotification(null, E('p', _('Could not open a new tab. Please disable your pop-up blocker for this site and try again.')), 'error');
                 return;
             }
-            // 在新窗口显示提示信息
+            // Display a prompt message in the new window
             loginWindow.document.write(_('Requesting Tailscale login URL... Please wait...<br>The looggest time to get the URL is about 30 seconds.'));
 
-            // 显示“加载中”的模态框，并执行异步的RPC调用
+            // Show a "loading" modal and execute the asynchronous RPC call
             ui.showModal(_('Requesting Login URL...'), E('em', {}, _('Please wait.')));
             return callDoLogin().then(function(res) {
                 ui.hideModal();
                 if (res && res.url) {
-                    // 成功获取URL后，重定向之前已打开的标签页
+                    // After successfully obtaining the URL, redirect the previously opened tab
                     loginWindow.location.href = res.url;
                 } else {
-                    // 如果失败，告知用户并可以关闭新标签页
+                    // If it fails, inform the user and they can close the new tab
                     loginWindow.document.write(_('<br>Failed to get login URL. You may close this tab.'));
                     ui.addNotification(null, E('p', _('>Failed to get login URL: Invalid response from server.')), 'error');
                 }
@@ -302,14 +300,14 @@ return view.extend({
         }
 		o.rmempty = true;
 
-        // 创建 "守护设置" 标签页，并应用 daemonConf
+        // Create the "Daemon Settings" tab and apply daemonConf
         s.tab('daemon', _('Daemon Settings'));
         defTabOpts(s, 'daemon', daemonConf, { optional: false });
 
         return map.render();
     },
 
-    // handleSaveApply 函数在点击 "Save & Apply" 后执行
+    // The handleSaveApply function is executed after clicking "Save & Apply"
     handleSaveApply: function (ev) {
         return map.save().then(function () {
             let data = map.data.get('tailscale', 'settings');
@@ -337,7 +335,7 @@ return view.extend({
         } catch (error) {
             ui.addNotification(null, E('p', _('Error saving settings: %s').format(error || 'Unknown error')), 'error');
             }
-                    // 重新加载页面以显示最新状态
+                    // Reload the page to display the latest status
                     setTimeout(function () { window.location.reload(); }, 2000);
                 } else {
                     ui.hideModal();
