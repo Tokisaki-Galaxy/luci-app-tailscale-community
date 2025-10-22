@@ -169,16 +169,14 @@ methods.set_settings = {
 		let new_mtu = form_data.daemon_mtu || "";
 		let new_reduce_mem = form_data.daemon_reduce_memory || "0";
 		if (access('/etc/profile.d/tailscale-env.sh')==false) {
-			if (new_mtu != null || new_mtu != '0' || new_reduce_mem != 0) {
-				try{mkdir('/etc/profile.d');} catch (e) { }
-				if (new_mtu !== "" || new_reduce_mem === "1") {
-					writefile(env_script_path, env_script_content);
-					exec('chmod 755 '+env_script_path);
-				} else {
-					unlink(env_script_path);
-				}
+			if (new_mtu != "" || new_reduce_mem == "1") {
+				try{ mkdir('/etc/profile.d'); } catch (e) { }
+				writefile(env_script_path, env_script_content);
+				exec('chmod 755 '+env_script_path);
 				popen('/bin/sh -c /etc/init.d/tailscale restart &');
 			}
+		}else{
+			if (new_mtu == "" || new_reduce_mem == "0") { unlink(env_script_path); }
 		}
 		return { success: true };
 	}
