@@ -6,14 +6,14 @@
 'require uci';
 'require tools.widgets as widgets';
 
-var callGetStatus = rpc.declare({ object: 'tailscale', method: 'get_status' });
-var callGetSettings = rpc.declare({ object: 'tailscale', method: 'get_settings' });
-var callSetSettings = rpc.declare({ object: 'tailscale', method: 'set_settings', params: ['form_data'] });
-var callDoLogin = rpc.declare({ object: 'tailscale', method: 'do_login' });
-var callGetSubroutes = rpc.declare({ object: 'tailscale', method: 'get_subroutes' });
-var map;
+let callGetStatus = rpc.declare({ object: 'tailscale', method: 'get_status' });
+let callGetSettings = rpc.declare({ object: 'tailscale', method: 'get_settings' });
+let callSetSettings = rpc.declare({ object: 'tailscale', method: 'set_settings', params: ['form_data'] });
+let callDoLogin = rpc.declare({ object: 'tailscale', method: 'do_login' });
+let callGetSubroutes = rpc.declare({ object: 'tailscale', method: 'get_subroutes' });
+let map;
 
-var tailscaleSettingsConf = [
+let tailscaleSettingsConf = [
     [form.Flag, 'accept_routes', _('Accept Routes'), _('Allow accepting routes announced by other nodes.'), { rmempty: false }],
     [form.Flag, 'advertise_exit_node', _('Advertise Exit Node'), _('Declare this device as an Exit Node.'), { rmempty: false }],
     [form.Value, 'exit_node', _('Exit Node'), _('Specify an exit node. Leave it blank and it will not be used.'), { rmempty: true }],
@@ -22,22 +22,22 @@ var tailscaleSettingsConf = [
     [form.Flag, 'ssh', _('Enable Tailscale SSH'), _('Allow connecting to this device through the SSH function of Tailscale.'), { rmempty: false }]
 ];
 
-var daemonConf = [
+let daemonConf = [
     [form.Value, 'daemon_mtu', _('Daemon MTU'), _('Set a custom MTU for the Tailscale daemon. Leave blank to use the default value.'), { datatype: 'uinteger', placeholder: '1280' }, { rmempty: false }],
     [form.Flag, 'daemon_reduce_memory', _('Reduce Memory Usage'), _('Enabling this option can reduce memory usage, but it may sacrifice some performance (set GOGC=10).'), { rmempty: false }]
 ];
 function setParams(o, params) {
-    if (!params) return; for (var key in params) {
-        var val = params[key]; if (key === 'values') {
-            for (var j = 0; j < val.length; j++) {
-                var args = val[j]; if (!Array.isArray(args))
+    if (!params) return; for (let key in params) {
+        let val = params[key]; if (key === 'values') {
+            for (let j = 0; j < val.length; j++) {
+                let args = val[j]; if (!Array.isArray(args))
                     args = [args]; o.value.apply(o, args);
             }
         } else if (key === 'depends') {
             if (!Array.isArray(val))
-                val = [val]; var deps = []; for (var j = 0; j < val.length; j++) {
-                    var d = {}; for (var vkey in val[j])
-                        d[vkey] = val[j][vkey]; for (var k = 0; k < o.deps.length; k++) { for (var dkey in o.deps[k]) { d[dkey] = o.deps[k][dkey]; } }
+                val = [val]; let deps = []; for (let j = 0; j < val.length; j++) {
+                    let d = {}; for (let vkey in val[j])
+                        d[vkey] = val[j][vkey]; for (let k = 0; k < o.deps.length; k++) { for (let dkey in o.deps[k]) { d[dkey] = o.deps[k][dkey]; } }
                     deps.push(d);
                 }
             o.deps = deps;
@@ -45,7 +45,7 @@ function setParams(o, params) {
     }
     if (params['datatype'] === 'bool') { o.enabled = 'true'; o.disabled = 'false'; }
 }
-function defTabOpts(s, t, opts, params) { for (var i = 0; i < opts.length; i++) { var opt = opts[i]; var o = s.taboption(t, opt[0], opt[1], opt[2], opt[3]); setParams(o, opt[4]); setParams(o, params); } }
+function defTabOpts(s, t, opts, params) { for (let i = 0; i < opts.length; i++) { let opt = opts[i]; let o = s.taboption(t, opt[0], opt[1], opt[2], opt[3]); setParams(o, opt[4]); setParams(o, params); } }
 
 function getRunningStatus() {
     return L.resolveDefault(callGetStatus(), { running: false }).then(function (res) {
@@ -55,11 +55,11 @@ function getRunningStatus() {
 
 // NEW: Helper function to format bytes into a human-readable string.
 function formatBytes(bytes) {
-    var bytes_num = parseInt(bytes, 10);
+    let bytes_num = parseInt(bytes, 10);
     if (isNaN(bytes_num) || bytes_num === 0) return '-';
-    var k = 1024;
-    var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-    var i = Math.floor(Math.log(bytes_num) / Math.log(k));
+    let k = 1024;
+    let sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    let i = Math.floor(Math.log(bytes_num) / Math.log(k));
     return parseFloat((bytes_num / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
@@ -70,7 +70,7 @@ function renderStatus(status) {
         return _('Collecting data ...');
     }
 
-    var finalHtml = [];
+    let finalHtml = [];
 
     // --- Part 1: 渲染水平状态表格 ---
     if (status.status == 'not_installed') {
@@ -90,8 +90,8 @@ function renderStatus(status) {
         return finalHtml.join('');
     }
     
-    var labels = [];
-    var values = [];
+    let labels = [];
+    let values = [];
     labels.push('<strong>' + _('Service Status') + '</strong>');
     values.push('<span style="color:green;"><strong>' + _('RUNNING') + '</strong></span>');
     labels.push('<strong>' + _('Version') + '</strong>');
@@ -105,13 +105,13 @@ function renderStatus(status) {
     labels.push('<strong>' + _('Tailnet Name') + '</strong>');
     values.push(status.domain_name || 'N/A');
 
-    var statusTable = '<table style="width: 100%; border-spacing: 0 5px;">';
+    let statusTable = '<table style="width: 100%; border-spacing: 0 5px;">';
     statusTable += '<tr>';
-    for (var i = 0; i < labels.length; i++) {
+    for (let i = 0; i < labels.length; i++) {
         statusTable += '<td style="padding-right: 20px;">' + labels[i] + '</td>';
     }
     statusTable += '</tr><tr>';
-    for (var i = 0; i < values.length; i++) {
+    for (let i = 0; i < values.length; i++) {
         statusTable += '<td style="padding-right: 20px;">' + values[i] + '</td>';
     }
     statusTable += '</tr></table>';
@@ -122,13 +122,13 @@ function renderStatus(status) {
     finalHtml.push('<div style="margin-top: 25px;">');
     finalHtml.push('<h4>' + _('Network Devices') + '</h4>');
 
-    var peers = status.peers;
+    let peers = status.peers;
     if (!peers || Object.keys(peers).length === 0) {
         finalHtml.push('<p>' + _('No peer devices found.') + '</p>');
     } else {
-        var peersTable = '<table class="cbi-table">';
+        let peersTable = '<table class="cbi-table">';
         peersTable += '<tr class="cbi-table-header">';
-        var th_style = 'padding-right: 20px; text-align: left;';
+        let th_style = 'padding-right: 20px; text-align: left;';
         peersTable += '<th class="cbi-table-cell" style="' + th_style + 'width: 80px;">' + _('Status') + '</th>';
         peersTable += '<th class="cbi-table-cell" style="' + th_style + '">' + _('Hostname') + '</th>';
         peersTable += '<th class="cbi-table-cell" style="' + th_style + '">' + _('Tailscale IP') + '</th>';
@@ -138,14 +138,14 @@ function renderStatus(status) {
         peersTable += '<th class="cbi-table-cell" style="' + th_style + '">' + _('TX') + '</th>';
         peersTable += '</tr>';
 
-        for (var hostname in peers) {
+        for (let hostname in peers) {
             if (peers.hasOwnProperty(hostname)) {
-                var peer = peers[hostname];
+                let peer = peers[hostname];
                 peersTable += '<tr class="cbi-rowstyle-1">';
-                var status_indicator = (peer.status != 'offline')
+                let status_indicator = (peer.status != 'offline')
                     ? '<span style="color:green;" title="' + _("Online") + '">●</span>'
                     : '<span style="color:gray;" title="' + _("Offline") + '">○</span>';
-                var td_style = 'padding-right: 20px;';
+                let td_style = 'padding-right: 20px;';
                 peersTable += '<td class="cbi-value-field" style="' + td_style + '">' + status_indicator + '</td>';
                 peersTable += '<td class="cbi-value-field" style="' + td_style + '"><strong>' + hostname + '</strong></td>';
                 peersTable += '<td class="cbi-value-field" style="' + td_style + '">' + (peer.ip || 'N/A') + '</td>';
@@ -174,7 +174,7 @@ return view.extend({
         ])
         .then(function(rpc_data) {
             // rpc_data 是数组: [status_result, settings_result, subroutes_result]
-            var settings_from_rpc = rpc_data[1];
+            let settings_from_rpc = rpc_data[1];
 
             return uci.load('tailscale').then(function() {
                 if (uci.get('tailscale', 'settings') === null) {
@@ -200,11 +200,10 @@ return view.extend({
     },
 
     render: function (data) {
-        var status = data[0] || {};
-        var settings = data[1] || {};
-        var subroutes = (data[2] && data[2].routes) ? data[2].routes : [];
+        let [status = {}, settings = {}, subroutes_obj] = data;
+        let subroutes = (subroutes_obj && subroutes_obj.routes) ? subroutes_obj.routes : [];
         
-        var s, o, loginBtn, loginUrl;
+        let s, o, loginBtn, loginUrl;
         map = new form.Map('tailscale', _('Tailscale'), _('Tailscale is a mesh VPN solution that makes it easy to connect your devices securely. This configuration page allows you to manage Tailscale settings on your OpenWrt device.'));
         
         s = map.section(form.NamedSection, '_status');
@@ -217,12 +216,12 @@ return view.extend({
                             document.getElementsByClassName('cbi-button cbi-button-apply')[0].disabled = true;
                         }
 
-                        var view = document.getElementById("service_status_display");
+                        let view = document.getElementById("service_status_display");
                         if (view) {
                             view.innerHTML = renderStatus(res);
                         }
                         
-                        var btn = document.getElementById('tailscale_login_btn');
+                        let btn = document.getElementById('tailscale_login_btn');
                         if (btn) {
                             btn.disabled = (res.status != 'logout');
                         }
@@ -249,7 +248,7 @@ return view.extend({
         loginBtn.disabled = (status.status != 'logout');
 
         loginBtn.onclick = function() {
-            var loginWindow = window.open('', '_blank');
+            let loginWindow = window.open('', '_blank');
             if (!loginWindow) {
                 ui.addNotification(null, E('p', _('Could not open a new tab. Please disable your pop-up blocker for this site and try again.')), 'error');
                 return;
@@ -294,7 +293,7 @@ return view.extend({
     // handleSaveApply 函数在点击 "Save & Apply" 后执行
     handleSaveApply: function (ev) {
         return map.save().then(function () {
-            var data = map.data.get('tailscale', 'settings');
+            let data = map.data.get('tailscale', 'settings');
             ui.showModal(_('Applying changes...'), E('em', {}, _('Please wait.')));
 
             return callSetSettings(data).then(function (response) {
@@ -316,8 +315,9 @@ return view.extend({
             }
         }, 100);
             
-        } catch (error) {   
-        }
+        } catch (error) {
+            ui.addNotification(null, E('p', _('Error saving settings: %s').format(error || 'Unknown error')), 'error');
+            }
                     // 重新加载页面以显示最新状态
                     setTimeout(function () { window.location.reload(); }, 2000);
                 } else {
