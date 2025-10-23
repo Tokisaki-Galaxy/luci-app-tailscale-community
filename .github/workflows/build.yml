@@ -8,6 +8,7 @@ on:
 env:
   OPENWRT_VERSION: v24.10.3
   PACKAGE_NAME: luci-app-tailscale-community
+  SDK_DIR: /home/runner/work/openwrt-sdk
 
 jobs:
   build:
@@ -21,22 +22,37 @@ jobs:
             path: x86/64
 
     steps:
-      # 步骤 1: 安装依赖
+      # 步骤 1: 检出代码
+      - name: Checkout package repository
+        uses: actions/checkout@v4
+
+      # 步骤 2: 安装依赖
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential rsync unzip zstd
 
-      # 步骤 2: 检出代码
-      - name: Checkout package repository
-        uses: actions/checkout@v4
+      # 步骤 3: 缓存 OpenWrt SDK
+      # 缓存已下载和初步设置好的 SDK 目录。
+      - name: Cache OpenWrt SDK
+        id: cache-sdk
+        uses: actions/cache@v4
+        with:
+          # 需要缓存的目录路径
+          path: ${{ env.SDK_DIR }}
+          # 缓存键：结合操作系统、目标架构和 OpenWrt 版本，确保环境变化时缓存失效
+          key: ${{ runner.os }}-sdk-${{ matrix.target.name }}-${{ env.OPENWRT_VERSION }}
 
-      # 步骤 3: 下载并解压 OpenWrt SDK
-      - name: Download and extract OpenWrt SDK
+      # 步骤 4: 准备 SDK (仅在缓存未命中时运行)
+      # 这个组合步骤包含了下载、解压 SDK 和更新 feeds，因为这些都是 SDK 准备过程的一部分，应该一起被缓存。
+      - name: Download, extract OpenWrt SDK and update feeds
+        if: steps.cache-sdk.outputs.cache-hit != 'true'
         run: |
           # 从环境变量中移除 'v' 前缀以匹配版本号
           release_version="${OPENWRT_VERSION#v}"
           sdk_url_prefix="https://downloads.openwrt.org/releases/${release_version}/targets/${{ matrix.target.path }}"
+          
+          # 查找 SDK 文件名
           sdk_filename=$(curl -s "$sdk_url_prefix/" | \
                         grep -o '<a href="openwrt-sdk-.*-x86_64\.tar\.\(xz\|zst\)">' | \
                         sed -e 's/.*<a href="//' -e 's/">//' | \
@@ -53,27 +69,38 @@ jobs:
           wget -q "${sdk_url_prefix}/${sdk_filename}"
           
           echo "Extracting SDK..."
+          # 解压 SDK 并重命名为固定的目录名，以匹配缓存路径
           tar -xf "$sdk_filename"
-          
-          echo "SDK_DIR=$(find . -maxdepth 1 -type d -name 'openwrt-sdk-*')" >> $GITHUB_ENV
+          mv $(find . -maxdepth 1 -type d -name 'openwrt-sdk-*') ${{ env.SDK_DIR }}
 
-      # 步骤 4: 准备构建
-      - name: Copy package and update feeds
-        working-directory: ${{ env.SDK_DIR }}
-        run: |
-          cp -r ../${{ env.PACKAGE_NAME }} ./package/
+          echo "Updating feeds..."
+          cd ${{ env.SDK_DIR }}
           ./scripts/feeds update -a
           ./scripts/feeds install -a
+          cd ..
+
+      # 步骤 5: 准备构建配置
+      - name: Prepare build environment
+        working-directory: ${{ env.SDK_DIR }}
+        run: |
+          rm -rf package/${{ env.PACKAGE_NAME }}
+          cp -r ${{ github.workspace }} ./package/
           echo "CONFIG_PACKAGE_${{ env.PACKAGE_NAME }}=m" > .config
           make defconfig
 
-      # 步骤 5: 编译软件包
+      # 步骤 6a: 编译软件包
       - name: Compile the package
         working-directory: ${{ env.SDK_DIR }}
         run: |
-          make package/${{ env.PACKAGE_NAME }}/compile V=s
+          make package/${{ env.PACKAGE_NAME }}/compile V=s -j$(($(nproc) + 1))
 
-      # 步骤 6: 查找并准备 .ipk 文件
+      # 步骤 6b: 编译i18n资源
+      - name: Compile i18n resources
+        working-directory: ${{ env.SDK_DIR }}
+        run: |
+          ${{ env.SDK_DIR }}/staging_dir/host/bin/po2lmo package/${{ env.PACKAGE_NAME }}/po/zh-cn/tailscale.po ./bin/
+
+      # 步骤 7: 查找并准备 .ipk 文件
       - name: Find and prepare .ipk file
         id: find_ipk
         working-directory: ${{ env.SDK_DIR }}
@@ -89,30 +116,10 @@ jobs:
           echo "Found IPK: $ipk_path"
           echo "path=$ipk_path" >> $GITHUB_OUTPUT
 
-      # 步骤 7: 上传 .ipk 文件作为构建产物
+      # 步骤 8: 上传 .ipk 文件作为构建产物
       - name: Upload .ipk artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.PACKAGE_NAME }}-${{ matrix.target.name }}
           path: ${{ env.SDK_DIR }}/${{ steps.find_ipk.outputs.path }}
           if-no-files-found: error
-
-  # 成功后发表评论
-  comment-on-commit:
-    name: Post comment on commit
-    runs-on: ubuntu-latest
-    needs: build
-    if: success()
-    permissions:
-      contents: write
-    steps:
-      - name: Comment on commit
-        uses: peter-evans/commit-comment@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          body: |
-            ✅ **${{ env.PACKAGE_NAME }}** SDK build successful for all targets!
-
-            Download compiled `.ipk` packages from the artifacts section below (login required):
-
-            [**View Action Run and Download Artifacts**](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
