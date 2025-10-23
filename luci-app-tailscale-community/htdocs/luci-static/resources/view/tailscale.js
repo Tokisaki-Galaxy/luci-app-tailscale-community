@@ -14,6 +14,7 @@ const callGetSubroutes = rpc.declare({ object: 'tailscale', method: 'get_subrout
 let map;
 
 const tailscaleSettingsConf = [
+    [form.ListValue, 'fw_mode', _('Firewall Mode'), _('Select the firewall backend for Tailscale to use. Requires service restart to take effect.'), {values: ['nftables','iptables'],rmempty: false}],
     [form.Flag, 'accept_routes', _('Accept Routes'), _('Allow accepting routes announced by other nodes.'), { rmempty: false }],
     [form.Flag, 'advertise_exit_node', _('Advertise Exit Node'), _('Declare this device as an Exit Node.'), { rmempty: false }],
     [form.Value, 'exit_node', _('Exit Node'), _('Specify an exit node. Leave it blank and it will not be used.'), { rmempty: true }],
@@ -23,7 +24,7 @@ const tailscaleSettingsConf = [
 ];
 
 const daemonConf = [
-    [form.Value, 'daemon_mtu', _('Daemon MTU'), _('Set a custom MTU for the Tailscale daemon. Leave blank to use the default value.'), { datatype: 'uinteger', placeholder: '1280' }, { rmempty: false }],
+    //[form.Value, 'daemon_mtu', _('Daemon MTU'), _('Set a custom MTU for the Tailscale daemon. Leave blank to use the default value.'), { datatype: 'uinteger', placeholder: '1280' }, { rmempty: false }],
     [form.Flag, 'daemon_reduce_memory', _('Reduce Memory Usage'), _('Enabling this option can reduce memory usage, but it may sacrifice some performance (set GOGC=10).'), { rmempty: false }]
 ];
 
@@ -285,12 +286,12 @@ return view.extend({
             L.resolveDefault(callGetSettings(), { accept_routes: false }),
             L.resolveDefault(callGetSubroutes(), { routes: [] })
         ])
-        .then(function([status, settings_from_rpc, subroutes]) { 
-
+        .then(function([status, settings_from_rpc, subroutes]) {
             return uci.load('tailscale').then(function() {
                 if (uci.get('tailscale', 'settings') === null) {
+                    // No existing settings found; initialize UCI with RPC settings
                     uci.add('tailscale', 'settings', 'settings');
-
+                    uci.set('tailscale', 'settings', 'fw_mode', settings_from_rpc.fw_mode);
                     uci.set('tailscale', 'settings', 'accept_routes', (settings_from_rpc.accept_routes ? '1' : '0'));
                     uci.set('tailscale', 'settings', 'advertise_exit_node', ((settings_from_rpc.advertise_exit_node || false) ? '1' : '0'));
                     uci.set('tailscale', 'settings', 'advertise_routes', (settings_from_rpc.advertise_routes || []).join(', '));
@@ -397,7 +398,22 @@ return view.extend({
         s.tab('daemon', _('Daemon Settings'));
         defTabOpts(s, 'daemon', daemonConf, { optional: false });
 
-        return map.render();
+        // Workaround to ensure the fw_mode dropdown reflects the correct value after rendering
+        const renderedMap = map.render();
+        return renderedMap.then(function(node) {
+            const correctFwMode = (settings.fw_mode || 'nftables').split(' ')[0];
+            setTimeout(function() {
+                const fwModeSelect = node.querySelector('#widget\\.cbid\\.tailscale\\.settings\\.fw_mode');
+                if (fwModeSelect) {
+                    console.log(`[Workaround] Forcing dropdown value to: '${correctFwMode}' after view has rendered.`);
+                    fwModeSelect.value = correctFwMode;
+                    fwModeSelect.dispatchEvent(new Event('change'));
+                } else {
+                    console.error('[Workaround] Could not find the fw_mode dropdown to apply fix.');
+                }
+            }, 0);
+        return node;
+        });
     },
 
     // The handleSaveApply function is executed after clicking "Save & Apply"
