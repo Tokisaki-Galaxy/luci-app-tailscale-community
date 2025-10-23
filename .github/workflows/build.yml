@@ -94,12 +94,6 @@ jobs:
         run: |
           make package/${{ env.PACKAGE_NAME }}/compile V=s -j$(($(nproc) + 1))
 
-      # 步骤 6b: 编译i18n资源
-      - name: Compile i18n resources
-        working-directory: ${{ env.SDK_DIR }}
-        run: |
-          ${{ env.SDK_DIR }}/staging_dir/host/bin/po2lmo package/${{ env.PACKAGE_NAME }}/po/zh-cn/tailscale.po ./bin/
-
       # 步骤 7: 查找并准备 .ipk 文件
       - name: Find and prepare .ipk file
         id: find_ipk

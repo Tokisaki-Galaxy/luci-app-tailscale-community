@@ -7,14 +7,15 @@ import { cursor } from 'uci';
 
 const uci = cursor();
 // Keep in doubt about its usefulness
-//const env_script_path = "/etc/profile.d/tailscale-env.sh";
-//const ori_env_script_content = `#!/bin/sh
-//# This script is managed by luci-app-tailscale-community.
-//uci_get_state() { uci get tailscale.settings."$1" 2>/dev/null; }
-//TS_MTU=$(uci_get_state daemon_mtu)
-//if [ -n "$TS_MTU" ]; then export TS_DEBUG_MTU="$TS_MTU"; fi
-//`;
-//const env_script_content = replace(ori_env_script_content, /\r/g, '');
+const env_script_path = "/etc/profile.d/tailscale-env.sh";
+const ori_env_script_content = `#!/bin/sh
+# This script is managed by luci-app-tailscale-community.
+uci_get_state() { uci get tailscale.settings."$1" 2>/dev/null; }
+if [ "$(uci_get_state daemon_reduce_memory)" = "1" ]; then export GOGC=10; fi
+TS_MTU=$(uci_get_state daemon_mtu)
+if [ -n "$TS_MTU" ]; then export TS_DEBUG_MTU="$TS_MTU"; fi
+`;
+const env_script_content = replace(ori_env_script_content, /\r/g, '');
 
 function exec(command) {
 	let stdout_content = '';
@@ -63,7 +64,7 @@ methods.get_status = {
 				let status_data = json(join('',status_json_output.stdout));
 				data.version = status_data.Version || 'Unknown';
 				data.health = status_data.Health || '';
-				data.TUNMode = status_data.TUN;
+				data.TUNMode = status_data.TUN || 'true';
 				if (status_data.BackendState == 'Running') { data.status =  'running'; }
 				if (status_data.BackendState == 'NeedsLogin') { data.status =  'logout'; }
 
@@ -79,7 +80,7 @@ methods.get_status = {
 						hostname: split(p.DNSName,'.')[0] || '',
 						ostype: p.OS,
 						online: p.Online,
-						linkadress: (p.CurAddr=="") ? p.Relay : p.CurAddr,
+						linkadress: (!p.CurAddr) ? p.Relay : p.CurAddr,
 						lastseen: p.LastSeen,
 						tx: '',
 						rx: ''
@@ -117,15 +118,15 @@ methods.get_settings = {
 
 				let status_data = json(b64dec(state_data[profiles_key]));
 				if (status_data != null) {
-					settings.accept_routes = status_data.RouteAll;
-					settings.advertise_exit_node = status_data.AdvertiseExitNode;
+					settings.accept_routes = status_data.RouteAll || false;
+					settings.advertise_exit_node = status_data.AdvertiseExitNode || false;
 					settings.advertise_routes = status_data.AdvertiseRoutes || [];
 					settings.exit_node = status_data.ExitNodeID || "";
-					settings.exit_node_allow_lan_access = status_data.ExitNodeAllowLANAccess;
-					settings.shields_up = status_data.ShieldsUp;
-					settings.ssh = status_data.RunSSH;
-					settings.runwebclient = status_data.RunWebClient;
-					settings.nosnat = status_data.NoSNAT;
+					settings.exit_node_allow_lan_access = status_data.ExitNodeAllowLANAccess || false;
+					settings.shields_up = status_data.ShieldsUp || false;
+					settings.ssh = status_data.RunSSH || false;
+					settings.runwebclient = status_data.RunWebClient || false;
+					settings.nosnat = status_data.NoSNAT || false;
 					settings.fw_mode = split(uci.get('tailscale', 'settings', 'fw_mode'),' ')[0] || 'nftables';
 				}
 				}
@@ -163,22 +164,21 @@ methods.set_settings = {
 		for (let key in form_data) {
 			uci.set('tailscale', 'settings', key, form_data[key]);
 		}
-		// process reduce memory https://github.com/GuNanOvO/openwrt-tailscale
-		uci.set('tailscale', 'settings', 'fw_mode', form_data.fw_mode+(form_data.daemon_reduce_memory == '1' ? ' GOGC=10' : ''));
-
 		uci.save('tailscale');
 		uci.commit('tailscale');
 
-		/*if (access(env_script_path)==false) {
-			if (form_data.daemon_mtu != "") {
+		// process reduce memory https://github.com/GuNanOvO/openwrt-tailscale
+		// some new versions of Tailscale may not work well with this method
+		if (access(env_script_path)==false) {
+			if (form_data.daemon_mtu != "" || form_data.daemon_reduce_memory != "") {
 				try{ mkdir('/etc/profile.d'); } catch (e) { }
 				writefile(env_script_path, env_script_content);
 				exec('chmod 755 '+env_script_path);
 				popen('/bin/sh -c /etc/init.d/tailscale restart &');
 			}
 		}else{
-			if (form_data.daemon_mtu == "") { unlink(env_script_path); }
-		}*/
+			if (form_data.daemon_mtu == "" && form_data.daemon_reduce_memory == "") { unlink(env_script_path); }
+		}
 		return { success: true };
 	}
 };

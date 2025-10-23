@@ -77,47 +77,30 @@ function formatBytes(bytes) {
     return parseFloat((bytes_num / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-function formatLastSeen(dateString) {
-    if (!dateString) return 'N/A';
-    if (dateString === '0001-01-01T00:00:00Z') {
-        return 'Now';
-    }
-    const lastSeenDate = new Date(dateString);
-    // Check for a valid date.
-    if (isNaN(lastSeenDate.getTime())) {
-        return 'Invalid Date';
-    }
-    const now = new Date();
-    const diffSeconds = Math.round((now - lastSeenDate) / 1000);
-    if (diffSeconds < 0) {
-        return lastSeenDate.toLocaleString();
-    }
-    if (diffSeconds < 60) {
-        return 'Just now';
-    }
-    const diffMinutes = Math.floor(diffSeconds / 60);
-    if (diffMinutes < 60) {
-        return `${diffMinutes} ${diffMinutes === 1 ? 'minute' : 'minutes'} ago`;
-    }
-    const diffHours = Math.floor(diffMinutes / 60);
-    if (diffHours < 24) {
-        return `${diffHours} ${diffHours === 1 ? 'hour' : 'hours'} ago`;
-    }
-    const diffDays = Math.floor(diffHours / 24);
-    if (diffDays < 30) {
-        return `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`;
-    }
-    const year = lastSeenDate.getFullYear();
-    const month = String(lastSeenDate.getMonth() + 1).padStart(2, '0');
-    const day = String(lastSeenDate.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+function formatLastSeen(d) {
+	if (!d) return _('N/A');
+	if (d === '0001-01-01T00:00:00Z') return _('Now');
+	const t = new Date(d);
+	if (isNaN(t)) return _('Invalid Date');
+	const diff = (Date.now() - t) / 1000;
+	if (diff < 0) return t.toLocaleString();
+	if (diff < 60) return _('Just now');
+
+	const mins = diff / 60, hrs = mins / 60, days = hrs / 24;
+	const fmt = (n, s, p) => `${Math.floor(n)} ${Math.floor(n) === 1 ? _(s) : _(p)} ${_('ago')}`;
+
+	if (mins < 60) return fmt(mins, 'minute', 'minutes');
+	if (hrs < 24) return fmt(hrs, 'hour', 'hours');
+	if (days < 30) return fmt(days, 'day', 'days');
+
+	return t.toISOString().slice(0, 10);
 }
 
 async function initializeRegionMap() {
     try {
         const response = await fetch(derpMapUrl);
         if (!response.ok) {
-            console.error('Failed to fetch region map:', response.statusText);
+            //error('Failed to fetch region map:', response.statusText);
             return;
         }
         const data = await response.json();
@@ -127,9 +110,8 @@ async function initializeRegionMap() {
             const name = region.RegionName;
             regionCodeMap[code] = name;
         }
-        console.log('Region map initialized successfully.');
     } catch (error) {
-        console.error('Error initializing region map:', error);
+        //console.error('Error initializing region map:', error);
     }
 }
 
@@ -398,22 +380,7 @@ return view.extend({
         s.tab('daemon', _('Daemon Settings'));
         defTabOpts(s, 'daemon', daemonConf, { optional: false });
 
-        // Workaround to ensure the fw_mode dropdown reflects the correct value after rendering
-        const renderedMap = map.render();
-        return renderedMap.then(function(node) {
-            const correctFwMode = (settings.fw_mode || 'nftables').split(' ')[0];
-            setTimeout(function() {
-                const fwModeSelect = node.querySelector('#widget\\.cbid\\.tailscale\\.settings\\.fw_mode');
-                if (fwModeSelect) {
-                    console.log(`[Workaround] Forcing dropdown value to: '${correctFwMode}' after view has rendered.`);
-                    fwModeSelect.value = correctFwMode;
-                    fwModeSelect.dispatchEvent(new Event('change'));
-                } else {
-                    console.error('[Workaround] Could not find the fw_mode dropdown to apply fix.');
-                }
-            }, 0);
-        return node;
-        });
+        return map.render();
     },
 
     // The handleSaveApply function is executed after clicking "Save & Apply"
@@ -434,11 +401,8 @@ return view.extend({
                 indicator.click();
                 setTimeout(function() {
                     const discardButton = document.querySelector('.cbi-button.cbi-button-reset');
-                    if (discardButton) {
-                        console.log('Found the "Discard" button in the modal. Clicking it...');
-                        discardButton.click();
-                    } else {
-                        console.error('Could not find the "Discard" button in the modal!');
+                    if (discardButton) { discardButton.click(); } else {
+                        //console.error('Could not find the "Discard" button in the modal!');
                     }
                 }, 100);
             }
@@ -454,7 +418,7 @@ return view.extend({
             });
         }).catch(function(err) {
             ui.hideModal(); 
-            console.error('Save failed:', err); 
+            //console.error('Save failed:', err); 
             ui.addNotification(null, E('p', _('Failed to save settings: %s').format(err.message)), 'error');
         });
     },
