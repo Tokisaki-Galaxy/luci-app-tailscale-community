@@ -184,7 +184,14 @@ methods.set_settings = {
 };
 
 methods.do_login = {
-	call: function() {
+	args: { form_data: {} },
+	call: function(request) {
+		const form_data = request.args.form_data;
+		let loginargs;
+		if (form_data == null || length(form_data) == 0) {
+			return { error: 'Missing or invalid form_data parameter. Please provide login data.' };
+		}
+
 		let status=methods.get_status.call();
 		if (status.status != 'logout') {
 			return { error: 'Tailscale is already logged in and running.' };
@@ -197,16 +204,22 @@ methods.do_login = {
 			let tresult = exec('tailscale status');
 			for (let line in tresult.stdout) {
 				let trline = trim(line);
-				if (index(trline, 'login.tailscale.com') != -1) {
+				if (index(trline, 'http') != -1) {
 					let parts = split(trline, ' ');
 					for (let part in parts) {
-						if (index(part, 'login.tailscale.com') != -1) {
+						if (index(part, 'http') != -1) {
 							return { url: part };
 						}
 					}
 				}
 			}
-			popen('tailscale login&','r');
+			// tailscale login --login-server https://myvlan.example.com&
+			if (form_data.loginserver!='') {
+				loginargs = '--login-server '+form_data.loginserver+' &';
+			} else{
+				loginargs = '&';
+			}
+			popen('tailscale login '+loginargs,'r');
 			sleep(interval);
 		}
 		return { error: 'Could not retrieve login URL from tailscale command.' };

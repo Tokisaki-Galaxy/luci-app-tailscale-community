@@ -9,7 +9,7 @@
 const callGetStatus = rpc.declare({ object: 'tailscale', method: 'get_status' });
 const callGetSettings = rpc.declare({ object: 'tailscale', method: 'get_settings' });
 const callSetSettings = rpc.declare({ object: 'tailscale', method: 'set_settings', params: ['form_data'] });
-const callDoLogin = rpc.declare({ object: 'tailscale', method: 'do_login' });
+const callDoLogin = rpc.declare({ object: 'tailscale', method: 'do_login', params: ['form_data'] });
 const callGetSubroutes = rpc.declare({ object: 'tailscale', method: 'get_subroutes' });
 let map;
 
@@ -334,6 +334,13 @@ return view.extend({
         // Create the "General Settings" tab and apply tailscaleSettingsConf
         s.tab('general', _('General Settings'));
 
+        const customLoginUrl = s.taboption('general', form.Value, 'custom_login_url', 
+            _('Custom Login Server'), 
+            _('Optional: Specify a custom control server URL (e.g., a Headscale instance). Leave blank for default Tailscale control plane.')
+        );
+        customLoginUrl.placeholder = '';
+        customLoginUrl.rmempty = true;
+
         const loginBtn = s.taboption('general', form.Button, '_login', _('Login'), _('Click to get a login URL for this device.'));
         loginBtn.inputstyle = 'apply';
         loginBtn.id = 'tailscale_login_btn';
@@ -341,6 +348,8 @@ return view.extend({
         loginBtn.disabled = (status.status != 'logout');
 
         loginBtn.onclick = function() {
+            const customUrlInput = document.getElementById('widget.cbid.tailscale.settings.custom_login_url');
+            const customUrl = customUrlInput ? customUrlInput.value : '';
             const loginWindow = window.open('', '_blank');
             if (!loginWindow) {
                 ui.addNotification(null, E('p', _('Could not open a new tab. Please disable your pop-up blocker for this site and try again.')), 'error');
@@ -348,10 +357,13 @@ return view.extend({
             }
             // Display a prompt message in the new window
             loginWindow.document.write(_('Requesting Tailscale login URL... Please wait...<br>The looggest time to get the URL is about 30 seconds.'));
-
+            ui.showModal(_('Requesting Login URL...'), E('em', {}, _('Please wait.')));
+            const payload = {
+                loginurl: customUrl || ''
+            };
             // Show a "loading" modal and execute the asynchronous RPC call
             ui.showModal(_('Requesting Login URL...'), E('em', {}, _('Please wait.')));
-            return callDoLogin().then(function(res) {
+            return callDoLogin(payload).then(function(res) {
                 ui.hideModal();
                 if (res && res.url) {
                     // After successfully obtaining the URL, redirect the previously opened tab
