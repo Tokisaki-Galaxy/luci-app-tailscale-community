@@ -404,25 +404,25 @@ return view.extend({
             return callSetSettings(data).then(function (response) {
                 if (response.success) {
                     ui.hideModal();
-                setTimeout(function() {
-                        ui.addNotification(null, E('p', _('Tailscale settings applied successfully.')), 'info');
-                }, 1000);
-        try {
-            const indicator = document.querySelector('span[data-indicator="uci-changes"][data-clickable="true"]');
-            if (indicator) {
-                indicator.click();
-                setTimeout(function() {
-                    const discardButton = document.querySelector('.cbi-button.cbi-button-reset');
-                    if (discardButton) { discardButton.click(); } else {
-                        //console.error('Could not find the "Discard" button in the modal!');
+                    setTimeout(function() {
+                            ui.addNotification(null, E('p', _('Tailscale settings applied successfully.')), 'info');
+                    }, 1000);
+                    try {
+                        const indicator = document.querySelector('span[data-indicator="uci-changes"][data-clickable="true"]');
+                        if (indicator) {
+                            indicator.click();
+                            setTimeout(function() {
+                                const discardButton = document.querySelector('.cbi-button.cbi-button-reset');
+                                if (discardButton) { discardButton.click(); } else {
+                                    //console.error('Could not find the "Discard" button in the modal!');
+                                }
+                            }, 100);
+                        }
+                    } catch (error) {
+                        ui.addNotification(null, E('p', _('Error saving settings: %s').format(error || 'Unknown error')), 'error');
                     }
-                }, 100);
-            }
-        } catch (error) {
-            ui.addNotification(null, E('p', _('Error saving settings: %s').format(error || 'Unknown error')), 'error');
-        }
-                // Reload the page to display the latest status
-                setTimeout(function () { window.location.reload(); }, 2000);
+                    // Reload the page to display the latest status
+                    setTimeout(function () { window.location.reload(); }, 2000);
                 } else {
                     ui.hideModal();
                     ui.addNotification(null, E('p', _('Error applying settings: %s').format(response.error || 'Unknown error')), 'error');
