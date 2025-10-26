@@ -97,21 +97,51 @@ function formatLastSeen(d) {
 }
 
 async function initializeRegionMap() {
+    const cacheKey = 'tailscale_derp_map_cache';
+    const ttl = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+
+    try {
+        const cachedItem = localStorage.getItem(cacheKey);
+        if (cachedItem) {
+            const cached = JSON.parse(cachedItem);
+            // Check if the cached data is still valid (not expired)
+            if (Date.now() - cached.timestamp < ttl) {
+                regionCodeMap = cached.data;
+                return;
+            }
+        }
+    } catch (e) {
+        ui.addNotification(null, E('p', _('Error reading cached DERP region map: %s').format(e.message || 'Unknown error')), 'error');
+    }
+
+    // If no valid cache, fetch from the network
     try {
         const response = await fetch(derpMapUrl);
         if (!response.ok) {
-            //error('Failed to fetch region map:', response.statusText);
             return;
         }
         const data = await response.json();
+        const newRegionMap = {};
         for (const regionId in data.Regions) {
             const region = data.Regions[regionId];
             const code = region.RegionCode.toLowerCase();
             const name = region.RegionName;
-            regionCodeMap[code] = name;
+            newRegionMap[code] = name;
+        }
+        regionCodeMap = newRegionMap;
+
+        // Save the newly fetched data to the cache
+        try {
+            const itemToCache = {
+                timestamp: Date.now(),
+                data: regionCodeMap
+            };
+            localStorage.setItem(cacheKey, JSON.stringify(itemToCache));
+        } catch (e) {
+            ui.addNotification(null, E('p', _('Error caching DERP region map: %s').format(e.message || 'Unknown error')), 'error');
         }
     } catch (error) {
-        //console.error('Error initializing region map:', error);
+        ui.addNotification(null, E('p', _('Error fetching DERP region map: %s').format(error.message || 'Unknown error')), 'error');
     }
 }
 
