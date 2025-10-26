@@ -419,16 +419,7 @@ return view.extend({
                             ui.addNotification(null, E('p', _('Tailscale settings applied successfully.')), 'info');
                     }, 1000);
                     try {
-                        const indicator = document.querySelector('span[data-indicator="uci-changes"][data-clickable="true"]');
-                        if (indicator) {
-                            indicator.click();
-                            setTimeout(function() {
-                                const discardButton = document.querySelector('.cbi-button.cbi-button-reset');
-                                if (discardButton) { discardButton.click(); } else {
-                                    //console.error('Could not find the "Discard" button in the modal!');
-                                }
-                            }, 100);
-                        }
+                        L.ui.changes.revert();
                     } catch (error) {
                         ui.addNotification(null, E('p', _('Error saving settings: %s').format(error || 'Unknown error')), 'error');
                     }
