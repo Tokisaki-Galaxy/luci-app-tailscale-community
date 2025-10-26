@@ -352,14 +352,14 @@ return view.extend({
 
         const customLoginUrl = s.taboption('general', form.Value, 'custom_login_url', 
             _('Custom Login Server'), 
-            _('Optional: Specify a custom control server URL (e.g., a Headscale instance, http(s)://ex.com). Leave blank for default Tailscale control plane.')
+            _('Optional: Specify a custom control server URL (e.g., a Headscale instance, http(s)://ex.com).<br>Leave blank for default Tailscale control plane.')
         );
         customLoginUrl.placeholder = '';
         customLoginUrl.rmempty = true;
         
         const customLoginAuthKey = s.taboption('general', form.Value, 'custom_login_AuthKey', 
             _('Custom Login Server Auth Key'), 
-            _('Optional: Specify an authentication key for the custom control server. Leave blank if not required.')
+            _('Optional: Specify an authentication key for the custom control server. Leave blank if not required.<br>If you are using custom login server but not providing an Auth Key, will redirect to the login page without pre-filling the key.')
         );
         customLoginAuthKey.placeholder = '';
         customLoginAuthKey.rmempty = true;
