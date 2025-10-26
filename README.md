@@ -1,8 +1,22 @@
 # LuCI App for Tailscale (Community)
 
-[![Build OpenWrt Package](https://github.com/Tokisaki-Galaxy/luci-app-tailscale-community/actions/workflows/build.yml/badge.svg)](https://github.com/Tokisaki-Galaxy/luci-app-tailscale-community/actions/workflows/build.yml)
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![OpenWrt Version](https://img.shields.io/badge/OpenWrt-24.10.3-orange.svg)](https://openwrt.org/)
+<p align="center">
+  <img src="https://github.com/Tokisaki-Galaxy/luci-app-tailscale-community/actions/workflows/build.yml/badge.svg" alt="构建状态">
+  <img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" alt="许可证">
+  <img src="https://img.shields.io/badge/OpenWrt-24.10.3-orange.svg" alt="OpenWrt 版本">
+</p>
+
+<p align="center">
+  <a href="https://github.com/features/actions">
+    <img src="https://img.shields.io/badge/Powered%20by-GitHub%20Actions-blue?logo=github-actions" alt="Powered by GitHub Actions">
+  </a>
+  <a href="https://github.com/Tokisaki-Galaxy/luci-app-tailscale-community/issues">
+    <img src="https://img.shields.io/github/issues/Tokisaki-Galaxy/luci-app-tailscale-community" alt="GitHub issues">
+  </a>
+   <a href="https://github.com/Tokisaki-Galaxy/luci-app-tailscale-community/stargazers">
+    <img src="https://img.shields.io/github/stars/Tokisaki-Galaxy/luci-app-tailscale-community" alt="GitHub stars">
+  </a>
+</p>
 
 <p align="center">
   <a href="README.CN.md"><img src="https://img.shields.io/badge/简体中文-brightgreen.svg" alt="简体中文"></a>
@@ -44,8 +58,6 @@ A community-maintained LuCI application for managing Tailscale on OpenWrt. This 
 
 ## Screenshots
 
-*(Here you can add screenshots of the application)*
-
 **Status Page**
 ![Status Page Screenshot](image/status.png)
 
@@ -56,11 +68,11 @@ A community-maintained LuCI application for managing Tailscale on OpenWrt. This 
 
 ### Prerequisites
 
-You must have the `tailscale` and `coreutils-base64` packages installed on your OpenWrt device.
+You must have the `tailscale` and `ip` packages installed on your OpenWrt device.
 
 ```bash
 opkg update
-opkg install tailscale coreutils-base64
+opkg install tailscale ip
 ```
 
 ### Install the LuCI App

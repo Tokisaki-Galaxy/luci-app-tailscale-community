@@ -423,8 +423,6 @@ return view.extend({
                     } catch (error) {
                         ui.addNotification(null, E('p', _('Error saving settings: %s').format(error || 'Unknown error')), 'error');
                     }
-                    // Reload the page to display the latest status
-                    setTimeout(function () { window.location.reload(); }, 2000);
                 } else {
                     ui.hideModal();
                     ui.addNotification(null, E('p', _('Error applying settings: %s').format(response.error || 'Unknown error')), 'error');
