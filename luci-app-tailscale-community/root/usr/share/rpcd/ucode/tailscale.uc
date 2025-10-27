@@ -80,9 +80,6 @@ methods.get_status = {
 			} catch (e) { /* ignore */ }
 		}
 
-		for (let key in peer_map) {
-			push(data.peers,peer_map[key]);
-		}
 		data.peers = peer_map;
 		return data;
 	}
@@ -141,6 +138,8 @@ methods.set_settings = {
 		push(args,'--exit-node-allow-lan-access=' + (form_data.exit_node_allow_lan_access == '1'));
 		push(args,'--ssh=' + (form_data.ssh == '1'));
 		push(args,'--shields-up=' + (form_data.shields_up == '1'));
+		push(args,'--webclient=' + (form_data.runwebclient == '1'));
+		push(args,'--snat-subnet-routes=' + (form_data.nosnat != '1'));
 		push(args,'--advertise-routes ' + (join(',',form_data.advertise_routes) || '\"\"'));
 		push(args,'--exit-node ' + (form_data.exit_node || '\"\"'));
 		push(args,'--hostname ' + (form_data.hostname || '\"\"'));
