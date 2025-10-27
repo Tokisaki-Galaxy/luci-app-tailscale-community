@@ -6,16 +6,7 @@ import { access, popen, readfile, writefile, unlink } from 'fs';
 import { cursor } from 'uci';
 
 const uci = cursor();
-// Keep in doubt about its usefulness
 const env_script_path = "/etc/profile.d/tailscale-env.sh";
-const ori_env_script_content = `#!/bin/sh
-# This script is managed by luci-app-tailscale-community.
-uci_get_state() { uci get tailscale.settings."$1" 2>/dev/null; }
-if [ "$(uci_get_state daemon_reduce_memory)" = "1" ]; then export GOGC=10; fi
-TS_MTU=$(uci_get_state daemon_mtu)
-if [ -n "$TS_MTU" ]; then export TS_DEBUG_MTU="$TS_MTU"; fi
-`;
-const env_script_content = replace(ori_env_script_content, /\r/g, '');
 
 function exec(command) {
 	let stdout_content = '';
@@ -169,15 +160,9 @@ methods.set_settings = {
 
 		// process reduce memory https://github.com/GuNanOvO/openwrt-tailscale
 		// some new versions of Tailscale may not work well with this method
-		if (access(env_script_path)==false) {
-			if (form_data.daemon_mtu != "" || form_data.daemon_reduce_memory != "") {
-				try{ mkdir('/etc/profile.d'); } catch (e) { }
-				writefile(env_script_path, env_script_content);
-				exec('chmod 755 '+env_script_path);
-				popen('/bin/sh -c /etc/init.d/tailscale restart &');
-			}
-		}else{
-			if (form_data.daemon_mtu == "" && form_data.daemon_reduce_memory == "") { unlink(env_script_path); }
+		if (form_data.daemon_mtu != "" || form_data.daemon_reduce_memory != "") {
+			exec('/bin/sh -c '+env_script_path+' &');
+			popen('/bin/sh -c /etc/init.d/tailscale restart &');
 		}
 		return { success: true };
 	}
