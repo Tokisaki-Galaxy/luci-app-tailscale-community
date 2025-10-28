@@ -113,7 +113,7 @@ async function initializeRegionMap() {
 			}
 		}
 	} catch (e) {
-		ui.addNotification(null, E('p', _('Error reading cached DERP region map: %s').format(e.message || 'Unknown error')), 'error');
+		ui.addTimeLimitedNotification(null, [ E('p', _('Error reading cached DERP region map: %s').format(e.message || _('Unknown error'))) ], 7000, 'error');
 	}
 
 	// If no valid cache, fetch from the network
@@ -140,10 +140,10 @@ async function initializeRegionMap() {
 			};
 			localStorage.setItem(cacheKey, JSON.stringify(itemToCache));
 		} catch (e) {
-			ui.addNotification(null, E('p', _('Error caching DERP region map: %s').format(e.message || 'Unknown error')), 'error');
+			ui.addTimeLimitedNotification(null, [ E('p', _('Error caching DERP region map: %s').format(e.message || _('Unknown error'))) ], 7000, 'error');
 		}
 	} catch (error) {
-		ui.addNotification(null, E('p', _('Error fetching DERP region map: %s').format(error.message || 'Unknown error')), 'error');
+		ui.addTimeLimitedNotification(null, [ E('p', _('Error fetching DERP region map: %s').format(error.message || _('Unknown error'))) ], 7000, 'error');
 	}
 }
 
@@ -173,7 +173,11 @@ function renderStatus(status) {
 			let newNotificationContent = E('p', { 'id': notificationId }, message);
 			ui.addNotification(null, newNotificationContent, 'info');
 		}
-	}else{try{ notificationElement.parentNode.parentNode.remove(); }catch(e){}}
+	}else{
+		try{
+			notificationElement.parentNode.parentNode.remove();
+		}catch(e){}
+	}
 
 	if (Object.keys(regionCodeMap).length === 0) {
 		initializeRegionMap();
@@ -377,7 +381,8 @@ return view.extend({
 		o.rmempty = true;
 
 		const loginBtn = s.taboption('general', form.Button, '_login', _('Login'),
-		_('Click to get a login URL for this device.<br>If the timeout is displayed, you can refresh the page and click Login again.'));
+		_('Click to get a login URL for this device.')
+		+'<br>'+_('If the timeout is displayed, you can refresh the page and click Login again.'));
 		loginBtn.inputstyle = 'apply';
 		loginBtn.id = 'tailscale_login_btn';
 		// Set initial state based on loaded data
@@ -385,14 +390,16 @@ return view.extend({
 
 		const customLoginUrl = s.taboption('general', form.Value, 'custom_login_url',
 			_('Custom Login Server'),
-			_('Optional: Specify a custom control server URL (e.g., a Headscale instance, http(s)://ex.com).<br>Leave blank for default Tailscale control plane.')
+			_('Optional: Specify a custom control server URL (e.g., a Headscale instance, http(s)://ex.com).')
+			+'<br>'+_('Leave blank for default Tailscale control plane.')
 		);
 		customLoginUrl.placeholder = '';
 		customLoginUrl.rmempty = true;
 
 		const customLoginAuthKey = s.taboption('general', form.Value, 'custom_login_AuthKey',
 			_('Custom Login Server Auth Key'),
-			_('Optional: Specify an authentication key for the custom control server. Leave blank if not required.<br>If you are using custom login server but not providing an Auth Key, will redirect to the login page without pre-filling the key.')
+			_('Optional: Specify an authentication key for the custom control server. Leave blank if not required.')
+			+'<br>'+_('If you are using custom login server but not providing an Auth Key, will redirect to the login page without pre-filling the key.')
 		);
 		customLoginAuthKey.placeholder = '';
 		customLoginAuthKey.rmempty = true;
@@ -404,11 +411,12 @@ return view.extend({
 			const customServerAuth = customserverAuthInput ? customserverAuthInput.value : '';
 			const loginWindow = window.open('', '_blank');
 			if (!loginWindow) {
-				ui.addNotification(null, E('p', _('Could not open a new tab. Please disable your pop-up blocker for this site and try again.')), 'error');
+				ui.addTimeLimitedNotification(null, [ E('p', _('Could not open a new tab. Please disable your pop-up blocker for this site and try again.')) ], 10000, 'error');
 				return;
 			}
 			// Display a prompt message in the new window
-			loginWindow.document.write(_('Requesting Tailscale login URL... Please wait...<br>The looggest time to get the URL is about 30 seconds.'));
+			loginWindow.document.write(_('Requesting Tailscale login URL... Please wait...')
+			+ '<br>'+ _('The longest time to get the URL is about 30 seconds.'));
 			ui.showModal(_('Requesting Login URL...'), E('em', {}, _('Please wait.')));
 			const payload = {
 				loginserver: customServer || '',
@@ -423,12 +431,12 @@ return view.extend({
 					loginWindow.location.href = res.url;
 				} else {
 					// If it fails, inform the user and they can close the new tab
-					loginWindow.document.write(_('<br>Failed to get login URL. You may close this tab.'));
-					ui.addNotification(null, E('p', _('>Failed to get login URL: Invalid response from server.')), 'error');
+					loginWindow.document.write('<br>'+_('Failed to get login URL. You may close this tab.'));
+					ui.addTimeLimitedNotification(null, [ E('p', _('Failed to get login URL: Invalid response from server.')) ], 7000, 'error');
 				}
 			}).catch(function(err) {
 				ui.hideModal();
-				ui.addNotification(null, E('p', _('Failed to get login URL: %s').format(err.message || 'Unknown error')), 'error');
+				ui.addTimeLimitedNotification(null, [ E('p', _('Failed to get login URL: %s').format(err.message || _('Unknown error'))) ], 7000, 'error');
 			});
 		};
 
@@ -449,22 +457,22 @@ return view.extend({
 				if (response.success) {
 					ui.hideModal();
 					setTimeout(function() {
-							ui.addNotification(null, E('p', _('Tailscale settings applied successfully.')), 'info');
+							ui.addTimeLimitedNotification(null, [ E('p', _('Tailscale settings applied successfully.')) ], 5000, 'info');
 					}, 1000);
 					try {
 						L.ui.changes.revert();
 					} catch (error) {
-						ui.addNotification(null, E('p', _('Error saving settings: %s').format(error || 'Unknown error')), 'error');
+						ui.addTimeLimitedNotification(null, [ E('p', _('Error saving settings: %s').format(error || _('Unknown error'))) ], 7000, 'error');
 					}
 				} else {
 					ui.hideModal();
-					ui.addNotification(null, E('p', _('Error applying settings: %s').format(response.error || 'Unknown error')), 'error');
+					ui.addTimeLimitedNotification(null, [ E('p', _('Error applying settings: %s').format(response.error || _('Unknown error'))) ], 7000, 'error');
 				}
 			});
 		}).catch(function(err) {
 			ui.hideModal();
 			//console.error('Save failed:', err);
-			ui.addNotification(null, E('p', _('Failed to save settings: %s').format(err.message)), 'error');
+			ui.addTimeLimitedNotification(null, [ E('p', _('Failed to save settings: %s').format(err.message)) ], 7000, 'error');
 		});
 	},
 
