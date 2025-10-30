@@ -10,6 +10,7 @@ const callGetStatus = rpc.declare({ object: 'tailscale', method: 'get_status' })
 const callGetSettings = rpc.declare({ object: 'tailscale', method: 'get_settings' });
 const callSetSettings = rpc.declare({ object: 'tailscale', method: 'set_settings', params: ['form_data'] });
 const callDoLogin = rpc.declare({ object: 'tailscale', method: 'do_login', params: ['form_data'] });
+const callDoLogout = rpc.declare({ object: 'tailscale', method: 'do_logout' });
 const callGetSubroutes = rpc.declare({ object: 'tailscale', method: 'get_subroutes' });
 let map;
 
@@ -24,6 +25,8 @@ const tailscaleSettingsConf = [
 	[form.Flag, 'shields_up', _('Shields Up'), _('When enabled, blocks all inbound connections from the Tailscale network.'), { rmempty: false }],
 	[form.Flag, 'ssh', _('Enable Tailscale SSH'), _('Allow connecting to this device through the SSH function of Tailscale.'), { rmempty: false }]
 ];
+
+const accountConf = [];	// dynamic created in render function
 
 const daemonConf = [
 	//[form.Value, 'daemon_mtu', _('Daemon MTU'), _('Set a custom MTU for the Tailscale daemon. Leave blank to use the default value.'), { datatype: 'uinteger', placeholder: '1280' }, { rmempty: false }],
@@ -380,15 +383,17 @@ return view.extend({
 		}
 		o.rmempty = true;
 
-		const loginBtn = s.taboption('general', form.Button, '_login', _('Login'),
+		// Create the account settings
+		s.tab('account', _('Account Settings'));
+		defTabOpts(s, 'account', accountConf, { optional: false });
+
+		const loginBtn = s.taboption('account', form.Button, '_login', _('Login'),
 		_('Click to get a login URL for this device.')
 		+'<br>'+_('If the timeout is displayed, you can refresh the page and click Login again.'));
 		loginBtn.inputstyle = 'apply';
 		loginBtn.id = 'tailscale_login_btn';
-		// Set initial state based on loaded data
-		loginBtn.disabled = (status.status != 'logout');
 
-		const customLoginUrl = s.taboption('general', form.Value, 'custom_login_url',
+		const customLoginUrl = s.taboption('account', form.Value, 'custom_login_url',
 			_('Custom Login Server'),
 			_('Optional: Specify a custom control server URL (e.g., a Headscale instance, http(s)://ex.com).')
 			+'<br>'+_('Leave blank for default Tailscale control plane.')
@@ -396,13 +401,19 @@ return view.extend({
 		customLoginUrl.placeholder = '';
 		customLoginUrl.rmempty = true;
 
-		const customLoginAuthKey = s.taboption('general', form.Value, 'custom_login_AuthKey',
+		const customLoginAuthKey = s.taboption('account', form.Value, 'custom_login_AuthKey',
 			_('Custom Login Server Auth Key'),
 			_('Optional: Specify an authentication key for the custom control server. Leave blank if not required.')
 			+'<br>'+_('If you are using custom login server but not providing an Auth Key, will redirect to the login page without pre-filling the key.')
 		);
 		customLoginAuthKey.placeholder = '';
 		customLoginAuthKey.rmempty = true;
+
+		const logoutBtn = s.taboption('account', form.Button, '_logout', _('Logout'),
+		_('Click to Log out account on this device.')
+		+'<br>'+_('Disconnect from Tailscale and expire current node key.'));
+		logoutBtn.inputstyle = 'apply';
+		logoutBtn.id = 'tailscale_logout_btn';
 
 		loginBtn.onclick = function() {
 			const customServerInput = document.getElementById('widget.cbid.tailscale.settings.custom_login_url');
@@ -438,6 +449,37 @@ return view.extend({
 				ui.hideModal();
 				ui.addTimeLimitedNotification(null, [ E('p', _('Failed to get login URL: %s').format(err.message || _('Unknown error'))) ], 7000, 'error');
 			});
+		};
+
+		logoutBtn.onclick = function() {
+			const confirmationContent = E([
+				E('p', {}, _('Are you sure you want to log out?')
+					+'<br>'+_('This will disconnect the device from your Tailnet and require you to re-authenticate later.')),
+				
+				E('div', { 'style': 'text-align: right; margin-top: 1em;' }, [
+					E('button', {
+						'class': 'cbi-button',
+						'click': ui.hideModal
+					}, _('Cancel')),
+					' ', 
+					E('button', {
+						'class': 'cbi-button cbi-button-negative',
+						'click': function() {
+							ui.hideModal();
+							ui.showModal(_('Logging out...'), E('em', {}, _('Please wait.')));
+
+							return callDoLogout().then(function(res) {
+								ui.hideModal();
+								ui.addTimeLimitedNotification(null, [ E('p', _('Successfully logged out.')) ], 5000, 'info');
+							}).catch(function(err) {
+								ui.hideModal();
+								ui.addTimeLimitedNotification(null, [ E('p', _('Logout failed: %s').format(err.message || _('Unknown error'))) ], 7000, 'error');
+							});
+						}
+					}, _('Logout'))
+				])
+			]);
+			ui.showModal(_('Confirm Logout'), confirmationContent);
 		};
 
 		// Create the "Daemon Settings" tab and apply daemonConf

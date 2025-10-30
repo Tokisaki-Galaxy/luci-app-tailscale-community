@@ -22,6 +22,7 @@
 		"write": {
 			"ubus": {
 				"tailscale": [
+					"do_logout",
 					"set_settings"
 				]
 			}

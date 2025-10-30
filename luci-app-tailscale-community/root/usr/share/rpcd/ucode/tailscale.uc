@@ -219,6 +219,21 @@ methods.do_login = {
 	}
 };
 
+methods.do_logout = {
+	call: function() {
+		let status=methods.get_status.call();
+		if (status.status != 'running') {
+			return { error: 'Tailscale is not running. Cannot perform logout.' };
+		}
+
+		let logout_result = exec('tailscale logout');
+		if (logout_result.code != 0) {
+			return { error: 'Failed to logout: ' + logout_result.stderr };
+		}
+		return { success: true };
+	}
+};
+
 methods.get_subroutes = {
 	call: function() {
 		try {
