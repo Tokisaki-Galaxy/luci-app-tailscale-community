@@ -17,7 +17,8 @@
 					"get_settings",
 					"get_subroutes"
 				]
-			}
+			},
+			"uci": [ "tailscale" ]
 		},
 		"write": {
 			"ubus": {
@@ -25,7 +26,8 @@
 					"do_logout",
 					"set_settings"
 				]
-			}
+			},
+			"uci": [ "tailscale" ]
 		}
 	}
 }
