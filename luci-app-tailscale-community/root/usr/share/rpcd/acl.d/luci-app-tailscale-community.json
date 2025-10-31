@@ -1,18 +1,9 @@
 {
-	"unauthenticated": {
-		"description": "unauthenticated user group",
-		"read": {
-			"ubus": {
-				"tailscale": []
-			}
-		}
-	},
-	"user": {
+	"luci-app-tailscale-community": {
 		"description": "Allow user access to tailscale",
 		"read": {
 			"ubus": {
 				"tailscale": [
-					"do_login",
 					"get_status",
 					"get_settings",
 					"get_subroutes"
@@ -23,6 +14,7 @@
 		"write": {
 			"ubus": {
 				"tailscale": [
+					"do_login",
 					"do_logout",
 					"set_settings"
 				]

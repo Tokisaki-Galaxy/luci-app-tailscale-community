@@ -129,8 +129,8 @@ async function initializeRegionMap() {
 		const newRegionMap = {};
 		for (const regionId in data.Regions) {
 			const region = data.Regions[regionId];
-			const code = region.RegionCode.toLowerCase();
-			const name = region.RegionName;
+			const code = (region.RegionCode || '').toLowerCase();
+			const name = region.RegionName || region.RegionCode || `Region ${regionId}`;
 			newRegionMap[code] = name;
 		}
 		regionCodeMap = newRegionMap;
@@ -345,10 +345,6 @@ return view.extend({
 			L.Poll.add(
 				function () {
 					return getRunningStatus().then(function (res) {
-						if (res.status != 'logout') {
-							document.getElementsByClassName('cbi-button cbi-button-apply')[0].disabled = true;
-						}
-
 						const view = document.getElementById("service_status_display");
 						if (view) {
 							const content = renderStatus(res);
@@ -357,6 +353,7 @@ return view.extend({
 
 						const btn = document.getElementById('tailscale_login_btn');
 						if (btn) {
+							// only available when logged out
 							btn.disabled = (res.status != 'logout');
 						}
 					});

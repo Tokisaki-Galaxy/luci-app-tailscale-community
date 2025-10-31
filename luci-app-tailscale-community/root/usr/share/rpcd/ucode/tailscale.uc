@@ -29,6 +29,11 @@ function exec(command) {
 	return { code: exit_code, stdout: stdout_content, stderr: stderr_content };
 }
 
+function shell_quote(s) {
+	if (s == null || s == '') return "''";
+	return "'" + replace(s, "'", "'\\''") + "'";
+}
+
 const methods = {};
 
 methods.get_status = {
@@ -53,26 +58,26 @@ methods.get_status = {
 		if (status_json_output.code == 0 && length(status_json_output.stdout) > 0) {
 			try {
 				let status_data = json(join('',status_json_output.stdout));
-				data.version = status_data.Version || 'Unknown';
-				data.health = status_data.Health || '';
-				data.TUNMode = status_data.TUN || 'true';
-				if (status_data.BackendState == 'Running') { data.status =  'running'; }
-				if (status_data.BackendState == 'NeedsLogin') { data.status =  'logout'; }
+				data.version = status_data?.Version || 'Unknown';
+				data.health = status_data?.Health || '';
+				data.TUNMode = status_data?.TUN || 'true';
+				if (status_data?.BackendState == 'Running') { data.status =  'running'; }
+				if (status_data?.BackendState == 'NeedsLogin') { data.status =  'logout'; }
 
-				data.ipv4 = status_data.Self.TailscaleIPs[0] || 'No IP assigned';
-				data.ipv6 = status_data.Self.TailscaleIPs[1] || null;
-				data.domain_name = status_data.CurrentTailnet.Name || '';
+				data.ipv4 = status_data?.Self?.TailscaleIPs?.[0] || 'No IP assigned';
+				data.ipv6 = status_data?.Self?.TailscaleIPs?.[1] || null;
+				data.domain_name = status_data?.CurrentTailnet?.Name || '';
 
 				// peers list
-				for (let p in status_data.Peer) {
+				for (let p in status_data?.Peer) {
 					p = status_data.Peer[p];
 					peer_map[p.ID] = {
-						ip: join('<br>', p.TailscaleIPs) || '',
-						hostname: split(p.DNSName,'.')[0] || '',
-						ostype: p.OS,
-						online: p.Online,
-						linkadress: (!p.CurAddr) ? p.Relay : p.CurAddr,
-						lastseen: p.LastSeen,
+						ip: join('<br>', p?.TailscaleIPs) || '',
+						hostname: split(p?.DNSName || '','.')[0] || '',
+						ostype: p?.OS,
+						online: p?.Online,
+						linkadress: (!p?.CurAddr) ? p?.Relay : p?.CurAddr,
+						lastseen: p?.LastSeen,
 						tx: '',
 						rx: ''
 					};
@@ -95,7 +100,9 @@ methods.get_settings = {
 				let state_content = readfile(state_file_path);
 				if (state_content != null) {
 					let state_data = json(state_content);
-					let profiles_b64 = state_data._profiles;
+					let profiles_b64 = state_data?._profiles;
+					if (!profiles_b64) return settings;
+
 					let profiles_data = json(b64dec(profiles_b64));
 					let profiles_key = null;
 					for (let key in profiles_data) {
@@ -104,17 +111,17 @@ methods.get_settings = {
 					}
 				profiles_key = 'profile-'+profiles_key;
 
-				let status_data = json(b64dec(state_data[profiles_key]));
+				let status_data = json(b64dec(state_data?.[profiles_key]));
 				if (status_data != null) {
-					settings.accept_routes = status_data.RouteAll || false;
-					settings.advertise_exit_node = status_data.AdvertiseExitNode || false;
-					settings.advertise_routes = status_data.AdvertiseRoutes || [];
-					settings.exit_node = status_data.ExitNodeID || "";
-					settings.exit_node_allow_lan_access = status_data.ExitNodeAllowLANAccess || false;
-					settings.shields_up = status_data.ShieldsUp || false;
-					settings.ssh = status_data.RunSSH || false;
-					settings.runwebclient = status_data.RunWebClient || false;
-					settings.nosnat = status_data.NoSNAT || false;
+					settings.accept_routes = status_data?.RouteAll || false;
+					settings.advertise_exit_node = status_data?.AdvertiseExitNode || false;
+					settings.advertise_routes = status_data?.AdvertiseRoutes || [];
+					settings.exit_node = status_data?.ExitNodeID || "";
+					settings.exit_node_allow_lan_access = status_data?.ExitNodeAllowLANAccess || false;
+					settings.shields_up = status_data?.ShieldsUp || false;
+					settings.ssh = status_data?.RunSSH || false;
+					settings.runwebclient = status_data?.RunWebClient || false;
+					settings.nosnat = status_data?.NoSNAT || false;
 					settings.fw_mode = split(uci.get('tailscale', 'settings', 'fw_mode'),' ')[0] || 'nftables';
 				}
 				}
@@ -140,9 +147,9 @@ methods.set_settings = {
 		push(args,'--shields-up=' + (form_data.shields_up == '1'));
 		push(args,'--webclient=' + (form_data.runwebclient == '1'));
 		push(args,'--snat-subnet-routes=' + (form_data.nosnat != '1'));
-		push(args,'--advertise-routes ' + (join(',',form_data.advertise_routes) || '\"\"'));
-		push(args,'--exit-node ' + (form_data.exit_node || '\"\"'));
-		push(args,'--hostname ' + (form_data.hostname || '\"\"'));
+		push(args,'--advertise-routes ' + (shell_quote(join(',',form_data.advertise_routes)) || '\"\"'));
+		push(args,'--exit-node ' + (shell_quote(form_data.exit_node) || '\"\"'));
+		push(args,'--hostname ' + (shell_quote(form_data.hostname) || '\"\"'));
 
 		let cmd_array = 'tailscale '+join(' ', args);
 		let set_result = exec(cmd_array);
@@ -186,9 +193,9 @@ methods.do_login = {
 		const loginserver_authkey = trim(form_data.loginserver_authkey) || '';
 
 		if (loginserver!='') {
-			push(loginargs,'--login-server '+loginserver);
+			push(loginargs,'--login-server '+shell_quote(loginserver));
 			if (loginserver_authkey!='') {
-				push(loginargs,'--auth-key '+loginserver_authkey);
+				push(loginargs,'--auth-key '+shell_quote(loginserver_authkey));
 			}
 		}
 
@@ -249,7 +256,7 @@ methods.get_subroutes = {
 					// 1. 'dst' (target address) is not' default' (default gateway)
 					// 2. 'scope' is' link' (indicating directly connected network)
 					// 3. It is an IPv4 address (simple judgment: including'.')
-					if (route.dst && route.dst != 'default' && route.scope == 'link' && index(route.dst,'.') != -1) {
+					if (route?.dst && route.dst != 'default' && route?.scope == 'link' && index(route.dst,'.') != -1) {
 						push(subnets,route.dst);
 					}
 				}
@@ -257,7 +264,7 @@ methods.get_subroutes = {
 			return { routes: subnets };
 		}
 		catch(e) {
-			return { routes: '[]' };
+			return { routes: [] };
 		}
 	}
 };
