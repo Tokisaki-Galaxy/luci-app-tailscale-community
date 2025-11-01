@@ -30,7 +30,7 @@ const accountConf = [];	// dynamic created in render function
 
 const daemonConf = [
 	//[form.Value, 'daemon_mtu', _('Daemon MTU'), _('Set a custom MTU for the Tailscale daemon. Leave blank to use the default value.'), { datatype: 'uinteger', placeholder: '1280' }, { rmempty: false }],
-	[form.Flag, 'daemon_reduce_memory', _('Reduce Memory Usage'), _('Enabling this option can reduce memory usage, but it may sacrifice some performance (set GOGC=10).'), { rmempty: false }]
+	[form.Flag, 'daemon_reduce_memory', _('(Experimental) Reduce Memory Usage'), _('Enabling this option can reduce memory usage, but it may sacrifice some performance (set GOGC=10).'), { rmempty: false }]
 ];
 
 const derpMapUrl = 'https://controlplane.tailscale.com/derpmap/default';
@@ -192,7 +192,7 @@ function renderStatus(status) {
 	if (status.status == 'not_installed') {
 		return E('dl', { 'class': 'cbi-value' }, [
 			E('dt', {}, _('Service Status')),
-			E('dd', {}, E('span', { 'style': 'color:red;' }, E('strong', {}, _('NO FOUND TAILSCALE'))))
+			E('dd', {}, E('span', { 'style': 'color:red;' }, E('strong', {}, _('TAILSCALE NOT FOUND'))))
 		]);
 	}
 
@@ -312,7 +312,7 @@ return view.extend({
 				if (uci.get('tailscale', 'settings') === null) {
 					// No existing settings found; initialize UCI with RPC settings
 					uci.add('tailscale', 'settings', 'settings');
-					uci.set('tailscale', 'settings', 'fw_mode', settings_from_rpc.fw_mode);
+					uci.set('tailscale', 'settings', 'fw_mode', 'nftables');
 					uci.set('tailscale', 'settings', 'accept_routes', (settings_from_rpc.accept_routes ? '1' : '0'));
 					uci.set('tailscale', 'settings', 'advertise_exit_node', ((settings_from_rpc.advertise_exit_node || false) ? '1' : '0'));
 					uci.set('tailscale', 'settings', 'advertise_routes', (settings_from_rpc.advertise_routes || []).join(', '));
@@ -351,10 +351,9 @@ return view.extend({
 							view.replaceChildren(content);
 						}
 
-						const btn = document.getElementById('tailscale_login_btn');
-						if (btn) {
-							// only available when logged out
-							btn.disabled = (res.status != 'logout');
+						// login button only available when logged out
+						if (res.status != 'logout') {
+							document.getElementsByClassName('cbi-button cbi-button-apply')[0].disabled = true;
 						}
 					});
 				}, 10);
@@ -388,11 +387,10 @@ return view.extend({
 		_('Click to get a login URL for this device.')
 		+'<br>'+_('If the timeout is displayed, you can refresh the page and click Login again.'));
 		loginBtn.inputstyle = 'apply';
-		loginBtn.id = 'tailscale_login_btn';
 
 		const customLoginUrl = s.taboption('account', form.Value, 'custom_login_url',
 			_('Custom Login Server'),
-			_('Optional: Specify a custom control server URL (e.g., a Headscale instance, http(s)://ex.com).')
+			_('Optional: Specify a custom control server URL (e.g., a Headscale instance, https://example.com).')
 			+'<br>'+_('Leave blank for default Tailscale control plane.')
 		);
 		customLoginUrl.placeholder = '';
@@ -419,12 +417,16 @@ return view.extend({
 			const customServerAuth = customserverAuthInput ? customserverAuthInput.value : '';
 			const loginWindow = window.open('', '_blank');
 			if (!loginWindow) {
-				ui.addTimeLimitedNotification(null, [ E('p', _('Could not open a new tab. Please disable your pop-up blocker for this site and try again.')) ], 10000, 'error');
+				ui.addTimeLimitedNotification(null, [ E('p', _('Could not open a new tab. Please check if your browser or an extension blocked the pop-up.')) ], 10000, 'error');
 				return;
 			}
 			// Display a prompt message in the new window
-			loginWindow.document.write(_('Requesting Tailscale login URL... Please wait...')
-			+ '<br>'+ _('The longest time to get the URL is about 30 seconds.'));
+			const doc = loginWindow.document;
+			doc.body.innerHTML = 
+				'<h2>' + _('Tailscale Login') + '</h2>' +
+				'<p>' + _('Requesting Tailscale login URL... Please wait.') + '</p>' +
+				'<p>' + _('This can take up to 30 seconds.') + '</p>';
+
 			ui.showModal(_('Requesting Login URL...'), E('em', {}, _('Please wait.')));
 			const payload = {
 				loginserver: customServer || '',
@@ -439,7 +441,9 @@ return view.extend({
 					loginWindow.location.href = res.url;
 				} else {
 					// If it fails, inform the user and they can close the new tab
-					loginWindow.document.write('<br>'+_('Failed to get login URL. You may close this tab.'));
+					doc.body.innerHTML = 
+						'<h2>' + _('Error') + '</h2>' +
+						'<p>' + _('Failed to get login URL. You may close this tab.') + '</p>';
 					ui.addTimeLimitedNotification(null, [ E('p', _('Failed to get login URL: Invalid response from server.')) ], 7000, 'error');
 				}
 			}).catch(function(err) {
@@ -451,7 +455,7 @@ return view.extend({
 		logoutBtn.onclick = function() {
 			const confirmationContent = E([
 				E('p', {}, _('Are you sure you want to log out?')
-					+'<br>'+_('This will disconnect the device from your Tailnet and require you to re-authenticate later.')),
+					+'<br>'+_('This will disconnect this device from your Tailnet and require you to re-authenticate.')),
 				
 				E('div', { 'style': 'text-align: right; margin-top: 1em;' }, [
 					E('button', {
@@ -480,8 +484,8 @@ return view.extend({
 		};
 
 		// Create the "Daemon Settings" tab and apply daemonConf
-		s.tab('daemon', _('Daemon Settings'));
-		defTabOpts(s, 'daemon', daemonConf, { optional: false });
+		//s.tab('daemon', _('Daemon Settings'));
+		//defTabOpts(s, 'daemon', daemonConf, { optional: false });
 
 		return map.render();
 	},

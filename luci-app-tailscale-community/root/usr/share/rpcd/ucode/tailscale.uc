@@ -167,8 +167,7 @@ methods.set_settings = {
 		// process reduce memory https://github.com/GuNanOvO/openwrt-tailscale
 		// some new versions of Tailscale may not work well with this method
 		if (form_data.daemon_mtu != "" || form_data.daemon_reduce_memory != "") {
-			exec('/bin/sh -c '+env_script_path+' &');
-			popen('/bin/sh -c /etc/init.d/tailscale restart &');
+			popen('/bin/sh -c ". ' + env_script_path + ' && /etc/init.d/tailscale restart" &');
 		}
 		return { success: true };
 	}
