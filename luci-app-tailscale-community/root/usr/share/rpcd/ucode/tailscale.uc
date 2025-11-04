@@ -122,6 +122,7 @@ methods.get_settings = {
 					settings.ssh = status_data?.RunSSH || false;
 					settings.runwebclient = status_data?.RunWebClient || false;
 					settings.nosnat = status_data?.NoSNAT || false;
+					settings.disable_magic_dns = !status_data?.CorpDNS || false;
 					settings.fw_mode = split(uci.get('tailscale', 'settings', 'fw_mode'),' ')[0] || 'nftables';
 				}
 				}
@@ -144,6 +145,7 @@ methods.set_settings = {
 		push(args,'--advertise-exit-node=' + (form_data.advertise_exit_node == '1'));
 		push(args,'--exit-node-allow-lan-access=' + (form_data.exit_node_allow_lan_access == '1'));
 		push(args,'--ssh=' + (form_data.ssh == '1'));
+		push(args,'--accept-dns=' + (form_data.disable_magic_dns != '1'));
 		push(args,'--shields-up=' + (form_data.shields_up == '1'));
 		push(args,'--webclient=' + (form_data.runwebclient == '1'));
 		push(args,'--snat-subnet-routes=' + (form_data.nosnat != '1'));

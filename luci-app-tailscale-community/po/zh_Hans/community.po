@@ -99,6 +99,14 @@ msgstr "将此设备声明为出口节点。"
 msgid "Disable SNAT"
 msgstr "禁用 SNAT"
 
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:27
+msgid "Disable MagicDNS"
+msgstr "禁用 MagicDNS"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:27
+msgid "Use system DNS (/etc/resolv.conf) instead of MagicDNS."
+msgstr "使用系统 DNS 而不是 MagicDNS。"
+
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:24
 msgid ""
 "Disable Source NAT (SNAT) for traffic to advertised routes. Most users "
