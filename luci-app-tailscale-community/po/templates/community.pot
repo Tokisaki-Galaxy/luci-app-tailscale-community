@@ -98,6 +98,14 @@ msgstr ""
 msgid "Disable SNAT"
 msgstr ""
 
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:27
+msgid "Disable MagicDNS"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:27
+msgid "Use system DNS instead of MagicDNS."
+msgstr ""
+
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:24
 msgid ""
 "Disable Source NAT (SNAT) for traffic to advertised routes. Most users "
