@@ -354,9 +354,8 @@ return view.extend({
 						}
 
 						// login button only available when logged out
-						if (res.status != 'logout') {
-							document.getElementsByClassName('cbi-button cbi-button-apply')[0].disabled = true;
-						}
+						const login_btn=document.getElementsByClassName('cbi-button cbi-button-apply')[0];
+						if(login_btn) { login_btn.disabled=(res.status != 'logout'); }
 					});
 				}, 10);
 

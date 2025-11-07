@@ -6,7 +6,6 @@ import { access, popen, readfile, writefile, unlink } from 'fs';
 import { cursor } from 'uci';
 
 const uci = cursor();
-const env_script_path = "/etc/profile.d/tailscale-env.sh";
 
 function exec(command) {
 	let stdout_content = '';
@@ -168,9 +167,9 @@ methods.set_settings = {
 
 		// process reduce memory https://github.com/GuNanOvO/openwrt-tailscale
 		// some new versions of Tailscale may not work well with this method
-		if (form_data.daemon_mtu != "" || form_data.daemon_reduce_memory != "") {
-			popen('/bin/sh -c ". ' + env_script_path + ' && /etc/init.d/tailscale restart" &');
-		}
+		//if (form_data.daemon_mtu != "" || form_data.daemon_reduce_memory != "") {
+		//	popen('/bin/sh -c ". ' + env_script_path + ' && /etc/init.d/tailscale restart" &');
+		//}
 		return { success: true };
 	}
 };
