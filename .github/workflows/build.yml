@@ -85,30 +85,40 @@ jobs:
         run: |
           rm -rf package/${{ env.PACKAGE_NAME }}
           cp -r ${{ github.workspace }} ./package/
-          echo "CONFIG_PACKAGE_${{ env.PACKAGE_NAME }}=m" > .config
+          translation_pkg=${PACKAGE_NAME#luci-app-}
+          {
+            echo "CONFIG_PACKAGE_${PACKAGE_NAME}=m"
+            echo "CONFIG_PACKAGE_luci-i18n-${translation_pkg}-zh-cn=m"
+            echo "CONFIG_LUCI_LANG_zh_Hans=y"
+          } > .config
           make defconfig
 
-      # 步骤 6a: 编译软件包
+      # 步骤 6: 编译软件包
       - name: Compile the package
         working-directory: ${{ env.SDK_DIR }}
         run: |
-          make package/${{ env.PACKAGE_NAME }}/compile V=s -j$(($(nproc) + 1))
+          make package/${PACKAGE_NAME}/compile V=s -j$(($(nproc) + 1))
 
       # 步骤 7: 查找并准备 .ipk 文件
       - name: Find and prepare .ipk file
         id: find_ipk
         working-directory: ${{ env.SDK_DIR }}
         run: |
-          ipk_path=$(find ./bin/packages -name "${{ env.PACKAGE_NAME }}*.ipk" | head -n 1 | sed 's|^\./||')
-          if [ -z "$ipk_path" ]; then
-            echo "::error::IPK file not found in ./bin/packages/"
+          translation_pkg=${PACKAGE_NAME#luci-app-}
+          mkdir -p upload
+          find ./bin/packages -type f \( -name "${PACKAGE_NAME}*.ipk" -o -name "luci-i18n-${translation_pkg}-*.ipk" \) | while read -r ipk; do
+            rel_path=${ipk#./}
+            echo "Found IPK: $rel_path"
+            cp "$ipk" upload/
+          done
+          if ! find upload -maxdepth 1 -type f -name '*.ipk' | grep -q '.'; then
+            echo "::error::No IPK files found in ./bin/packages/"
             # 显示编译输出目录树，方便调试
             echo "Directory tree of ./bin/:"
             ls -R ./bin/
             exit 1
           fi
-          echo "Found IPK: $ipk_path"
-          echo "path=$ipk_path" >> $GITHUB_OUTPUT
+          echo "path=upload" >> $GITHUB_OUTPUT
 
       # 步骤 8: 上传 .ipk 文件作为构建产物
       - name: Upload .ipk artifact
