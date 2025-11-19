@@ -77,8 +77,8 @@ methods.get_status = {
 						online: p?.Online,
 						linkadress: (!p?.CurAddr) ? p?.Relay : p?.CurAddr,
 						lastseen: p?.LastSeen,
-						tx: '',
-						rx: ''
+						tx: p?.TxBytes || '',
+						rx: p?.RxBytes || ''
 					};
 				}
 			} catch (e) { /* ignore */ }
