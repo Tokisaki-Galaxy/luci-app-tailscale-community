@@ -90,6 +90,8 @@ jobs:
           rm -rf package/${{ env.PACKAGE_NAME }}
           cp -r ${{ github.workspace }} ./package/
           translation_pkg=${PACKAGE_NAME#luci-app-}
+          find ./bin/packages -type f -name "${PACKAGE_NAME}*.ipk" -delete
+          find ./bin/packages -type f -name "luci-i18n-${translation_pkg}-*.ipk" -delete
           {
             echo "CONFIG_PACKAGE_${PACKAGE_NAME}=m"
             echo "CONFIG_PACKAGE_luci-i18n-${translation_pkg}-zh-cn=m"
