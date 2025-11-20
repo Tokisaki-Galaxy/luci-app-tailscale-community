@@ -4,6 +4,8 @@ on:
   push:
     branches: [ "main", "master" ]
     tags: [ "v*" ]
+  pull_request:
+    branches: [ "main", "master" ]
   workflow_dispatch:
 
 env:
@@ -87,8 +89,19 @@ jobs:
       - name: Prepare build environment
         working-directory: ${{ env.SDK_DIR }}
         run: |
-          rm -rf package/${{ env.PACKAGE_NAME }}
-          cp -r ${{ github.workspace }} ./package/
+          rm -rf package/${PACKAGE_NAME}
+          src_dir="${{ github.workspace }}"
+          if [ -f "$src_dir/Makefile" ]; then
+            pkg_src="$src_dir"
+          else
+            pkg_src=$(find "$src_dir" -maxdepth 1 -type d -name "${PACKAGE_NAME}" -o -name "luci-app-*${PACKAGE_NAME#luci-app-}*" | head -n 1)
+            if [ -z "$pkg_src" ]; then
+              echo "::error::Could not locate package directory for ${PACKAGE_NAME}"
+              exit 1
+            fi
+          fi
+          mkdir -p ./package/${PACKAGE_NAME}
+          rsync -a --delete "$pkg_src"/ ./package/${PACKAGE_NAME}/
           translation_pkg=${PACKAGE_NAME#luci-app-}
           find ./bin/packages -type f -name "${PACKAGE_NAME}*.ipk" -delete
           find ./bin/packages -type f -name "luci-i18n-${translation_pkg}-*.ipk" -delete
@@ -111,6 +124,7 @@ jobs:
         working-directory: ${{ env.SDK_DIR }}
         run: |
           translation_pkg=${PACKAGE_NAME#luci-app-}
+          rm -rf upload
           mkdir -p upload
           find ./bin/packages -type f \( -name "${PACKAGE_NAME}*.ipk" -o -name "luci-i18n-${translation_pkg}-*.ipk" \) | while read -r ipk; do
             rel_path=${ipk#./}
