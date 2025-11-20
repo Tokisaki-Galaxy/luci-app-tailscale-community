@@ -495,6 +495,13 @@ return view.extend({
 	handleSaveApply(ev) {
 		return map.save().then(function () {
 			const data = map.data.get('tailscale', 'settings');
+
+			// fix empty value issue
+			if(!data.advertise_exit_node) data.advertise_exit_node = '';
+			if(!data.advertise_routes) data.advertise_routes = '';
+			if(!data.custom_login_url) data.custom_login_url = '';
+			if(!data.custom_login_AuthKey) data.custom_login_AuthKey = '';
+
 			ui.showModal(_('Applying changes...'), E('em', {}, _('Please wait.')));
 
 			return callSetSettings(data).then(function (response) {
