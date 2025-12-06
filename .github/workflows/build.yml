@@ -85,23 +85,80 @@ jobs:
           ./scripts/feeds install -a
           cd ..
 
-      # 步骤 5: 准备构建配置
+      # 步骤 5: 准备构建环境 (包含智能版本控制)
       - name: Prepare build environment
         working-directory: ${{ env.SDK_DIR }}
         run: |
+          # --- 1. 源码同步 ---
           rm -rf package/${PACKAGE_NAME}
+          mkdir -p package/${PACKAGE_NAME}
+          
           src_dir="${{ github.workspace }}"
-          if [ -f "$src_dir/Makefile" ]; then
-            pkg_src="$src_dir"
-          else
-            pkg_src=$(find "$src_dir" -maxdepth 1 -type d -name "${PACKAGE_NAME}" -o -name "luci-app-*${PACKAGE_NAME#luci-app-}*" | head -n 1)
-            if [ -z "$pkg_src" ]; then
-              echo "::error::Could not locate package directory for ${PACKAGE_NAME}"
-              exit 1
-            fi
+          
+          # --- 2. 定位源码 ---
+          echo "Searching for Makefile in: $src_dir"
+          
+          # 查找 Makefile，最大深度 3，按路径长度排序，优先取最短路径的(通常是根目录的)
+          # 过滤掉路径中包含 /bin/ 或 /obj/ 的干扰项
+          FOUND_MK=$(find "$src_dir" -maxdepth 3 -name Makefile -not -path "*/.*" | awk '{ print length, $0 }' | sort -n | cut -d" " -f2- | head -n 1)
+          
+          if [ -z "$FOUND_MK" ]; then
+            echo "::error::Could not find any Makefile in the repository!"
+            ls -R "$src_dir"
+            exit 1
           fi
-          mkdir -p ./package/${PACKAGE_NAME}
-          rsync -a --delete "$pkg_src"/ ./package/${PACKAGE_NAME}/
+          
+          echo "Found primary Makefile at: $FOUND_MK"
+          pkg_src_dir=$(dirname "$FOUND_MK")
+          echo "Determined package source root: $pkg_src_dir"
+          
+          # --- 3. 同步代码 ---
+          rsync -a --delete "${pkg_src_dir}/" ./package/${PACKAGE_NAME}/
+          
+          # 验证复制结果
+          TARGET_MK="./package/${PACKAGE_NAME}/Makefile"
+          if [ ! -f "$TARGET_MK" ]; then
+            echo "::error::Failed to migrate code. Makefile missing at $TARGET_MK"
+            ls -R package/${PACKAGE_NAME}
+            exit 1
+          fi
+          echo "Code migration successful. Structure verified."
+
+          # --- 4. 智能版本控制逻辑 ---
+          
+          # 检查 Makefile 中是否已存在 PKG_VERSION 定义
+          if grep -q "^PKG_VERSION:=" "$TARGET_MK"; then
+            echo "::notice::Static PKG_VERSION found in Makefile. Using upstream version definition."
+          else
+            echo "::notice::No static PKG_VERSION found. Applying dynamic versioning."
+            
+            NEW_VER=""
+            NEW_REL=""
+
+            if [ "${{ github.ref_type }}" = "tag" ]; then
+              # === 场景 A: Release Tag ===
+              NEW_VER=$(echo "${{ github.ref_name }}" | sed 's/^v//')
+              NEW_REL="1"
+              echo "Build triggered by Tag: Using Version=$NEW_VER, Release=$NEW_REL"
+            else
+              # === 场景 B: 普通 Commit (调试构建) ===
+              # Version = 日期 (YYYY.MM.DD)
+              NEW_VER=$(date +"%Y.%m.%d")
+              
+              # Release = BuildNumber.git-ShortHash
+              SHORT_SHA=$(git -C "$src_dir" rev-parse --short HEAD)
+              NEW_REL="${{ github.run_number }}.git-$SHORT_SHA"
+              echo "Build triggered by Commit: Using Version=$NEW_VER, Release=$NEW_REL"
+            fi
+
+            # 动态注入版本号
+            sed -i "s|include \$(TOPDIR)/rules.mk|include \$(TOPDIR)/rules.mk\nPKG_VERSION:=$NEW_VER\nPKG_RELEASE:=$NEW_REL|" "$TARGET_MK"
+            echo "=== Modified Makefile Head ==="
+            head -n 15 "$TARGET_MK"
+            echo "=============================="
+          fi
+
+          # --- 5. 生成构建配置 ---
           translation_pkg=${PACKAGE_NAME#luci-app-}
           mkdir -p ./bin/packages
           find ./bin/packages -type f -name "${PACKAGE_NAME}*.ipk" -delete
@@ -139,13 +196,8 @@ jobs:
           } > .config
           make defconfig
           
-          echo "=== Debug: Check .config for APK settings ==="
-          grep "CONFIG_USE" .config || echo "CONFIG_USE not found"
-          echo "============================================="
-
           if ! grep -q '^CONFIG_USE_APK=y' .config; then
-            echo "::warning::CONFIG_USE_APK not available in this SDK (likely the 24.10.x release SDK ships only with opkg)."
-            echo "::warning::Use a snapshot/others SDK or a toolchain built with APK support to produce .apk packages."
+            echo "::warning::CONFIG_USE_APK not available in this SDK. Skipping APK build."
             exit 0
           fi
 
