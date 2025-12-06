@@ -269,4 +269,122 @@ methods.get_subroutes = {
 	}
 };
 
+methods.setup_firewall = {
+	call: function() {
+		try {
+			uci.load('network');
+			uci.load('firewall');
+
+			let changed_network = false;
+			let changed_firewall = false;
+
+			// 1. config Network Interface
+			let net_ts = uci.get('network', 'tailscale');
+			if (net_ts == null) {
+				uci.set('network', 'tailscale', 'interface');
+				uci.set('network', 'tailscale', 'proto', 'none');
+				uci.set('network', 'tailscale', 'device', 'tailscale0');
+				changed_network = true;
+			} else {
+				let current_dev = uci.get('network', 'tailscale', 'device');
+				if (current_dev != 'tailscale0') {
+					uci.set('network', 'tailscale', 'device', 'tailscale0');
+					changed_network = true;
+				}
+			}
+
+			// 2. config Firewall Zone
+			let fw_all = uci.get_all('firewall');
+			let ts_zone_section = null;
+			let fwd_lan_to_ts = false;
+			let fwd_ts_to_lan = false;
+
+			for (let sec_key in fw_all) {
+				let s = fw_all[sec_key];
+				if (s['.type'] == 'zone' && s['name'] == 'tailscale') {
+					ts_zone_section = sec_key;
+				}
+				if (s['.type'] == 'forwarding') {
+					if (s.src == 'lan' && s.dest == 'tailscale') fwd_lan_to_ts = true;
+					if (s.src == 'tailscale' && s.dest == 'lan') fwd_ts_to_lan = true;
+				}
+			}
+
+			if (ts_zone_section == null) {
+				let zid = uci.add('firewall', 'zone');
+				uci.set('firewall', zid, 'name', 'tailscale');
+				uci.set('firewall', zid, 'input', 'ACCEPT');
+				uci.set('firewall', zid, 'output', 'ACCEPT');
+				uci.set('firewall', zid, 'forward', 'ACCEPT');
+				uci.set('firewall', zid, 'masq', '1');
+				uci.set('firewall', zid, 'mtu_fix', '1');
+				uci.set('firewall', zid, 'network', ['tailscale']);
+				changed_firewall = true;
+			} else {
+				let nets = uci.get('firewall', ts_zone_section, 'network');
+				let net_list = [];
+				let has_ts_net = false;
+
+				if (type(nets) == 'array') {
+					net_list = nets;
+				} else if (type(nets) == 'string') {
+					net_list = [nets];
+				}
+
+				// check if 'tailscale' is already in the list
+				for (let n in net_list) {
+					if (net_list[n] == 'tailscale') {
+						has_ts_net = true;
+						break;
+					}
+				}
+
+				if (!has_ts_net) {
+					push(net_list, 'tailscale');
+					uci.set('firewall', ts_zone_section, 'network', net_list);
+					changed_firewall = true;
+				}
+			}
+
+			// 3. config Forwarding
+			if (!fwd_lan_to_ts) {
+				let fid = uci.add('firewall', 'forwarding');
+				uci.set('firewall', fid, 'src', 'lan');
+				uci.set('firewall', fid, 'dest', 'tailscale');
+				changed_firewall = true;
+			}
+
+			if (!fwd_ts_to_lan) {
+				let fid = uci.add('firewall', 'forwarding');
+				uci.set('firewall', fid, 'src', 'tailscale');
+				uci.set('firewall', fid, 'dest', 'lan');
+				changed_firewall = true;
+			}
+
+			// 4. save
+			if (changed_network) {
+				uci.save('network');
+				uci.commit('network');
+				exec('/etc/init.d/network reload');
+			}
+
+			if (changed_firewall) {
+				uci.save('firewall');
+				uci.commit('firewall');
+				exec('/etc/init.d/firewall reload');
+			}
+
+			return {
+				success: true,
+				changed_network: changed_network,
+				changed_firewall: changed_firewall,
+				message: (changed_network || changed_firewall) ? 'Tailscale firewall/interface configuration applied.' : 'Tailscale firewall/interface already configured.'
+			};
+
+		} catch (e) {
+			return { error: 'Exception in setup_firewall: ' + e + '\nStack: ' + (e.stacktrace || '') };
+		}
+	}
+};
+
 return { 'tailscale': methods };

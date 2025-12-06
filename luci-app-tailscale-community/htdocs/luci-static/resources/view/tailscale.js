@@ -12,6 +12,7 @@ const callSetSettings = rpc.declare({ object: 'tailscale', method: 'set_settings
 const callDoLogin = rpc.declare({ object: 'tailscale', method: 'do_login', params: ['form_data'] });
 const callDoLogout = rpc.declare({ object: 'tailscale', method: 'do_logout' });
 const callGetSubroutes = rpc.declare({ object: 'tailscale', method: 'get_subroutes' });
+const callSetupFirewall = rpc.declare({ object: 'tailscale', method: 'setup_firewall' });
 let map;
 
 const tailscaleSettingsConf = [
@@ -379,6 +380,22 @@ return view.extend({
 			});
 		}
 		o.rmempty = true;
+
+		const fwBtn = s.taboption('general', form.Button, '_setup_firewall', _('Auto Configure Firewall'));
+		fwBtn.description = _('Experimental: applies minimal firewall and interface setup for Tailscale. It will create/patch network.tailscale (proto none, device tailscale0), add a firewall zone "tailscale" with ACCEPT/ACCEPT/ACCEPT, masq, mtu_fix, and ensure forwarding tailscale<->lan. It reloads network/firewall only if changes are made.');
+		fwBtn.inputstyle = 'action';
+		fwBtn.onclick = function() {
+			const btn = this;
+			btn.disabled = true;
+			return callSetupFirewall().then(function(res) {
+				const msg = res?.message || _('Firewall configuration applied.');
+				ui.addNotification(null, E('p', {}, msg), 'info');
+			}).catch(function(err) {
+				ui.addNotification(null, E('p', {}, _('Failed to configure firewall: %s').format(err?.message || err || 'Unknown error')), 'error');
+			}).finally(function() {
+				btn.disabled = false;
+			});
+		};
 
 		// Create the account settings
 		s.tab('account', _('Account Settings'));

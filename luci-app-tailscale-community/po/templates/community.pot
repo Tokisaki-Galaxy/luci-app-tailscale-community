@@ -1,41 +1,41 @@
 msgid ""
 msgstr "Content-Type: text/plain; charset=UTF-8"
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:34
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:35
 msgid "(Experimental) Reduce Memory Usage"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:19
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:20
 msgid "Accept Routes"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:384
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:401
 msgid "Account Settings"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:20
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:21
 msgid "Advertise Exit Node"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:375
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:376
 msgid "Advertise Routes"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:375
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:376
 msgid ""
 "Advertise subnet routes behind this device. Select from the detected subnets "
 "below or enter custom routes (comma-separated)."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:22
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:23
 msgid "Allow LAN Access"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:19
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:20
 msgid "Allow accepting routes announced by other nodes."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:26
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:27
 msgid "Allow connecting to this device through the SSH function of Tailscale."
 msgstr ""
 
@@ -43,400 +43,421 @@ msgstr ""
 msgid "Allow user access to tailscale"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:505
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:522
 msgid "Applying changes..."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:458
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:475
 msgid "Are you sure you want to log out?"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:465
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:384
+msgid "Auto Configure Firewall"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:482
 msgid "Cancel"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:409
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:426
 msgid "Click to Log out account on this device."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:388
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:405
 msgid "Click to get a login URL for this device."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:166
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:363
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:167
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:364
 msgid "Collecting data ..."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:484
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:501
 msgid "Confirm Logout"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:253
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:254
 msgid "Connection Info"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:421
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:438
 msgid ""
 "Could not open a new tab. Please check if your browser or an extension "
 "blocked the pop-up."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:393
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:410
 msgid "Custom Login Server"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:401
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:418
 msgid "Custom Login Server Auth Key"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:20
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:21
 msgid "Declare this device as an Exit Node."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:27
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:28
 msgid "Disable MagicDNS"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:24
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:25
 msgid "Disable SNAT"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:24
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:25
 msgid ""
 "Disable Source NAT (SNAT) for traffic to advertised routes. Most users "
 "should leave this unchecked."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:226
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:227
 msgid "Disabled"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:410
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:427
 msgid "Disconnect from Tailscale and expire current node key."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:26
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:27
 msgid "Enable Tailscale SSH"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:23
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:24
 msgid "Enable Web Interface"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:226
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:227
 msgid "Enabled"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:34
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:35
 msgid ""
 "Enabling this option can reduce memory usage, but it may sacrifice some "
 "performance (set GOGC=10)."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:446
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:463
 msgid "Error"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:520
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:537
 msgid "Error applying settings: %s"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:147
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:148
 msgid "Error caching DERP region map: %s"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:150
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:151
 msgid "Error fetching DERP region map: %s"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:120
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:121
 msgid "Error reading cached DERP region map: %s"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:516
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:533
 msgid "Error saving settings: %s"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:21
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:22
 msgid "Exit Node"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:23
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:385
+msgid ""
+"Experimental: applies minimal firewall and interface setup for Tailscale. It "
+"will create/patch network.tailscale (proto none, device tailscale0), add a "
+"firewall zone \"tailscale\" with ACCEPT/ACCEPT/ACCEPT, masq, mtu_fix, and "
+"ensure forwarding tailscale<->lan. It reloads network/firewall only if "
+"changes are made."
+msgstr ""
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:24
 msgid ""
 "Expose a web interface on port 5252 for managing this node over Tailscale."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:447
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:394
+msgid "Failed to configure firewall: %s"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:464
 msgid "Failed to get login URL. You may close this tab."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:452
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:469
 msgid "Failed to get login URL: %s"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:448
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:465
 msgid "Failed to get login URL: Invalid response from server."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:526
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:543
 msgid "Failed to save settings: %s"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:18
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:19
 msgid "Firewall Mode"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:372
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:391
+msgid "Firewall configuration applied."
+msgstr ""
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:373
 msgid "General Settings"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:250
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:251
 msgid "Hostname"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:389
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:406
 msgid ""
 "If the timeout is displayed, you can refresh the page and click Login again."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:403
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:420
 msgid ""
 "If you are using custom login server but not providing an Auth Key, will "
 "redirect to the login page without pre-filling the key."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:90
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:91
 msgid "Invalid Date"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:93
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:94
 msgid "Just now"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:205
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:206
 msgid "LOGGED OUT"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:256
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:257
 msgid "Last Seen"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:395
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:412
 msgid "Leave blank for default Tailscale control plane."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:471
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:488
 msgid "Logging out..."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:387
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:404
 msgid "Login"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:408
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:481
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:425
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:498
 msgid "Logout"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:478
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:495
 msgid "Logout failed: %s"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:87
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:88
 msgid "N/A"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:216
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:217
 msgid "NOT RUNNING"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:298
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:299
 msgid "Network Devices"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:245
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:246
 msgid "No peer devices found."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:88
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:89
 msgid "Now"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:252
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:253
 msgid "OS"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:278
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:279
 msgid "Offline"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:278
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:279
 msgid "Online"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:394
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:411
 msgid ""
 "Optional: Specify a custom control server URL (e.g., a Headscale instance, "
 "https://example.com)."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:402
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:419
 msgid ""
 "Optional: Specify an authentication key for the custom control server. Leave "
 "blank if not required."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:207
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:208
 msgid "Please use the login button in the settings below to authenticate."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:431
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:437
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:471
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:505
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:448
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:454
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:488
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:522
 msgid "Please wait."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:224
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:225
 msgid "RUNNING"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:254
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:255
 msgid "RX"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:431
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:437
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:448
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:454
 msgid "Requesting Login URL..."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:428
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:445
 msgid "Requesting Tailscale login URL... Please wait."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:18
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:19
 msgid ""
 "Select the firewall backend for Tailscale to use. Requires service restart "
 "to take effect."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:195
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:203
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:215
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:224
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:196
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:204
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:216
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:225
 msgid "Service Status"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:368
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:369
 msgid "Settings"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:25
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:26
 msgid "Shields Up"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:21
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:22
 msgid "Specify an exit node. Leave it blank and it will not be used."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:249
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:250
 msgid "Status"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:475
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:492
 msgid "Successfully logged out."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:196
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:197
 msgid "TAILSCALE NOT FOUND"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:226
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:227
 msgid "TUN Mode"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:255
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:256
 msgid "TX"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:229
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:230
 msgid "Tailnet Name"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:342
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:343
 #: applications/luci-app-tailscale-community/root/usr/share/luci/menu.d/luci-app-tailscale-community.json:3
 msgid "Tailscale"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:172
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:173
 msgid "Tailscale Health Check: %s"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:251
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:252
 msgid "Tailscale IP"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:227
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:228
 msgid "Tailscale IPv4"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:228
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:229
 msgid "Tailscale IPv6"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:427
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:444
 msgid "Tailscale Login"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:342
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:343
 msgid ""
 "Tailscale is a mesh VPN solution that makes it easy to connect your devices "
 "securely. This configuration page allows you to manage Tailscale settings on "
 "your OpenWrt device."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:511
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:528
 msgid "Tailscale settings applied successfully."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:429
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:446
 msgid "This can take up to 30 seconds."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:459
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:476
 msgid ""
 "This will disconnect this device from your Tailnet and require you to re-"
 "authenticate."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:120
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:147
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:150
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:452
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:478
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:516
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:520
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:121
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:148
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:151
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:469
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:495
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:533
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:537
 msgid "Unknown error"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:27
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:28
 msgid "Use system DNS instead of MagicDNS."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:225
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:226
 msgid "Version"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:25
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:26
 msgid ""
 "When enabled, blocks all inbound connections from the Tailscale network."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:22
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:23
 msgid "When using the exit node, access to the local LAN is allowed."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:96
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:97
 msgid "ago"
 msgstr ""
