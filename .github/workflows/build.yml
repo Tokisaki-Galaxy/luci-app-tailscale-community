@@ -113,40 +113,81 @@ jobs:
           } > .config
           make defconfig
 
-      # 步骤 6: 编译软件包
-      - name: Compile the package
+      # 步骤 6: 编译软件包 (IPK)
+      - name: Compile the package (IPK)
         working-directory: ${{ env.SDK_DIR }}
         run: |
           make package/${PACKAGE_NAME}/compile V=s -j$(($(nproc) + 1))
+          
+          mkdir -p output_ipk
+          translation_pkg=${PACKAGE_NAME#luci-app-}
+          find ./bin/packages -type f \( -name "${PACKAGE_NAME}*.ipk" -o -name "luci-i18n-${translation_pkg}-*.ipk" \) -exec cp {} output_ipk/ \;
 
-      # 步骤 7: 查找并准备 .ipk 文件
-      - name: Find and prepare .ipk file
-        id: find_ipk
+      # 步骤 7: 编译软件包 (APK)
+      - name: Compile the package (APK)
         working-directory: ${{ env.SDK_DIR }}
         run: |
+          make package/${PACKAGE_NAME}/clean
+          
           translation_pkg=${PACKAGE_NAME#luci-app-}
+          {
+            echo "CONFIG_PACKAGE_${PACKAGE_NAME}=m"
+            echo "CONFIG_PACKAGE_luci-i18n-${translation_pkg}-zh-cn=m"
+            echo "CONFIG_LUCI_LANG_zh_Hans=y"
+            echo "CONFIG_USE_APK=y"
+            echo "CONFIG_USE_OPKG=n"
+          } > .config
+          make defconfig
+          
+          echo "=== Debug: Check .config for APK settings ==="
+          grep "CONFIG_USE" .config || echo "CONFIG_USE not found"
+          echo "============================================="
+
+          if ! grep -q '^CONFIG_USE_APK=y' .config; then
+            echo "::warning::CONFIG_USE_APK not available in this SDK (likely the 24.10.x release SDK ships only with opkg)."
+            echo "::warning::Use a snapshot/others SDK or a toolchain built with APK support to produce .apk packages."
+            exit 0
+          fi
+
+          make package/${PACKAGE_NAME}/compile V=s -j$(($(nproc) + 1))
+          
+          mkdir -p output_apk
+          find ./bin/packages -type f \( -name "${PACKAGE_NAME}*.apk" -o -name "luci-i18n-${translation_pkg}-*.apk" \) -exec cp {} output_apk/ \;
+
+      # 步骤 8: 收集和准备文件
+      - name: Collect artifacts
+        id: collect_artifacts
+        working-directory: ${{ env.SDK_DIR }}
+        run: |
           rm -rf upload
           mkdir -p upload
-          find ./bin/packages -type f \( -name "${PACKAGE_NAME}*.ipk" -o -name "luci-i18n-${translation_pkg}-*.ipk" \) | while read -r ipk; do
-            rel_path=${ipk#./}
-            echo "Found IPK: $rel_path"
-            cp "$ipk" upload/
-          done
-          if ! find upload -maxdepth 1 -type f -name '*.ipk' | grep -q '.'; then
-            echo "::error::No IPK files found in ./bin/packages/"
-            # 显示编译输出目录树，方便调试
-            echo "Directory tree of ./bin/:"
+          
+          if [ -d "output_ipk" ]; then
+            echo "Copying IPK files..."
+            cp output_ipk/*.ipk upload/ 2>/dev/null || true
+          fi
+          if [ -d "output_apk" ]; then
+            echo "Copying APK files..."
+            cp output_apk/*.apk upload/ 2>/dev/null || true
+          fi
+          
+          if [ -z "$(ls -A upload)" ]; then
+            echo "::error::No packages found!"
             ls -R ./bin/
             exit 1
           fi
+          
+          echo "Found packages:"
+          ls -l upload/
+          
           echo "path=upload" >> $GITHUB_OUTPUT
 
-      # 步骤 8: 上传 .ipk 文件作为构建产物
-      - name: Upload .ipk artifact
+      # 步骤 9: 上传构建产物
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.PACKAGE_NAME }}-${{ matrix.target.name }}
-          path: ${{ env.SDK_DIR }}/${{ steps.find_ipk.outputs.path }}
+          path: ${{ env.SDK_DIR }}/${{ steps.collect_artifacts.outputs.path }}
           if-no-files-found: error
 
   release:
@@ -166,4 +207,6 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: ${{ github.ref_name }}
           generate_release_notes: true
-          files: release-assets/**/*.ipk
+          files: |
+            release-assets/**/*.ipk
+            release-assets/**/*.apk
