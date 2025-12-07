@@ -89,16 +89,12 @@ jobs:
       - name: Prepare build environment
         working-directory: ${{ env.SDK_DIR }}
         run: |
-          # --- 1. 源码同步 ---
           rm -rf package/${PACKAGE_NAME}
           mkdir -p package/${PACKAGE_NAME}
-          
           src_dir="${{ github.workspace }}"
-          
-          # --- 2. 定位源码 ---
+
           echo "Searching for Makefile in: $src_dir"
-          
-          # 查找 Makefile，最大深度 3，按路径长度排序，优先取最短路径的(通常是根目录的)
+          # 查找 Makefile，最大深度3，按路径长度排序，优先取最短路径的(通常是根目录的)
           # 过滤掉路径中包含 /bin/ 或 /obj/ 的干扰项
           FOUND_MK=$(find "$src_dir" -maxdepth 3 -name Makefile -not -path "*/.*" | awk '{ print length, $0 }' | sort -n | cut -d" " -f2- | head -n 1)
           
@@ -111,8 +107,7 @@ jobs:
           echo "Found primary Makefile at: $FOUND_MK"
           pkg_src_dir=$(dirname "$FOUND_MK")
           echo "Determined package source root: $pkg_src_dir"
-          
-          # --- 3. 同步代码 ---
+
           rsync -a --delete "${pkg_src_dir}/" ./package/${PACKAGE_NAME}/
           
           # 验证复制结果
@@ -123,14 +118,13 @@ jobs:
             exit 1
           fi
           echo "Code migration successful. Structure verified."
-
-          # --- 4. 智能版本控制逻辑 ---
           
           # 检查 Makefile 中是否已存在 PKG_VERSION 定义
           if grep -q "^PKG_VERSION:=" "$TARGET_MK"; then
-            echo "::notice::Static PKG_VERSION found in Makefile. Using upstream version definition."
+            echo "Static PKG_VERSION found in Makefile. Using upstream version definition."
+            echo "::notice::You should not manually define PKG_VERSION or PKG_RELEASE in the Makefile. You should try using dynamic versioning."
           else
-            echo "::notice::No static PKG_VERSION found. Applying dynamic versioning."
+            echo "No static PKG_VERSION found. Applying dynamic versioning."
             
             NEW_VER=""
             NEW_REL=""
@@ -153,12 +147,8 @@ jobs:
 
             # 动态注入版本号
             sed -i "s|include \$(TOPDIR)/rules.mk|include \$(TOPDIR)/rules.mk\nPKG_VERSION:=$NEW_VER\nPKG_RELEASE:=$NEW_REL|" "$TARGET_MK"
-            echo "=== Modified Makefile Head ==="
-            head -n 15 "$TARGET_MK"
-            echo "=============================="
           fi
 
-          # --- 5. 生成构建配置 ---
           translation_pkg=${PACKAGE_NAME#luci-app-}
           mkdir -p ./bin/packages
           find ./bin/packages -type f -name "${PACKAGE_NAME}*.ipk" -delete
