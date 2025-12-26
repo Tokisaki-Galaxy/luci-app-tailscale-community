@@ -524,14 +524,7 @@ return view.extend({
 			return callSetSettings(data).then(function (response) {
 				if (response.success) {
 					ui.hideModal();
-					setTimeout(function() {
-							ui.addTimeLimitedNotification(null, [ E('p', _('Tailscale settings applied successfully.')) ], 5000, 'info');
-					}, 1000);
-					try {
-						L.ui.changes.revert();
-					} catch (error) {
-						ui.addTimeLimitedNotification(null, [ E('p', _('Error saving settings: %s').format(error || _('Unknown error'))) ], 7000, 'error');
-					}
+					ui.addTimeLimitedNotification(null, [ E('p', _('Tailscale settings applied successfully.')) ], 5000, 'info');
 				} else {
 					ui.hideModal();
 					ui.addTimeLimitedNotification(null, [ E('p', _('Error applying settings: %s').format(response.error || _('Unknown error'))) ], 7000, 'error');
