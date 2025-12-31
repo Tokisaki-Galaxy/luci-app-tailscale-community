@@ -17,6 +17,9 @@
    <a href="https://github.com/Tokisaki-Galaxy/luci-app-tailscale-community/stargazers">
     <img src="https://img.shields.io/github/stars/Tokisaki-Galaxy/luci-app-tailscale-community" alt="GitHub stars">
   </a>
+  <a href="https://github.com/Tokisaki-Galaxy/luci-app-tailscale-community/releases">
+    <img src="https://img.shields.io/github/downloads/Tokisaki-Galaxy/luci-app-tailscale-community/total" alt="GitHub downloads">
+  </a>
 </p>
 
 <p align="center">
