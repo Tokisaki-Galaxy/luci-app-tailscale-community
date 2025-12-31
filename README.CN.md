@@ -29,6 +29,11 @@
 
 一个社区维护的 LuCI 应用，用于在 OpenWrt 上管理 Tailscale。此应用提供了一个友好的 Web 界面，让您可以直接从 LuCI 查看 Tailscale 状态和配置其设置。
 
+> [!IMPORTANT]
+> 推荐版本: OpenWrt 23.05 及以上。
+
+说明: 本应用使用 `ucode` 作为后端服务器。低版本 OpenWrt 仅支持 Lua 后端，无法运行基于 `ucode` 的后端逻辑。
+
 ## 功能特性
 
 - **状态仪表盘**:

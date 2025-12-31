@@ -28,6 +28,11 @@
 
 A community-maintained LuCI application for managing Tailscale on OpenWrt. This app provides a user-friendly web interface to view Tailscale status and configure its settings directly from LuCI.
 
+> [!IMPORTANT]
+> Recommended Version: OpenWrt 23.05 or later.
+
+Note: This application uses `ucode` as the backend server. Older versions of OpenWrt primarily support Lua-based backends and cannot run the `ucode` backend logic used by this app.
+
 ## Features
 
 - **Status Dashboard**:
