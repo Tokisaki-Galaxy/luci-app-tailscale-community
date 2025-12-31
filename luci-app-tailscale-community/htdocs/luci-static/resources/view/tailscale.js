@@ -373,7 +373,7 @@ return view.extend({
 
 		defTabOpts(s, 'general', tailscaleSettingsConf, { optional: false });
 
-		const en = s.taboption('general', form.ListValue, 'exit_node', _('Exit Node'), _('Select an exit node from the list. Leave it blank to disable.'));
+		const en = s.taboption('general', form.ListValue, 'exit_node', _('Exit Node'), _('Select an exit node from the list. If enabled, Allow LAN Access is enabled implicitly.'));
 		en.value('', _('None'));
 		if (status.peers) {
 			Object.values(status.peers).forEach(function(peer) {
@@ -385,6 +385,17 @@ return view.extend({
 			});
 		}
 		en.rmempty = true;
+		en.cfgvalue = function(section_id) {
+			if (status && status.status === 'running' && status.peers) {
+				for (const id in status.peers) {
+					if (status.peers[id].exit_node) {
+						return status.peers[id].ip.split('<br>')[0];
+					}
+				}
+				return '';
+			}
+			return uci.get('tailscale', 'settings', 'exit_node') || '';
+		};
 
 		const o = s.taboption('general', form.DynamicList, 'advertise_routes', _('Advertise Routes'),_('Advertise subnet routes behind this device. Select from the detected subnets below or enter custom routes (comma-separated).'));
 		if (subroutes.length > 0) {
@@ -529,6 +540,7 @@ return view.extend({
 			// fix empty value issue
 			if(!data.advertise_exit_node) data.advertise_exit_node = '';
 			if(!data.advertise_routes) data.advertise_routes = '';
+			if(!data.exit_node) data.exit_node = '';
 			if(!data.custom_login_url) data.custom_login_url = '';
 			if(!data.custom_login_AuthKey) data.custom_login_AuthKey = '';
 
