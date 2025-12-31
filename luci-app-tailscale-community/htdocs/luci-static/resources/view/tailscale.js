@@ -19,7 +19,6 @@ const tailscaleSettingsConf = [
 	[form.ListValue, 'fw_mode', _('Firewall Mode'), _('Select the firewall backend for Tailscale to use. Requires service restart to take effect.'), {values: ['nftables','iptables'],rmempty: false}],
 	[form.Flag, 'accept_routes', _('Accept Routes'), _('Allow accepting routes announced by other nodes.'), { rmempty: false }],
 	[form.Flag, 'advertise_exit_node', _('Advertise Exit Node'), _('Declare this device as an Exit Node.'), { rmempty: false }],
-	[form.Value, 'exit_node', _('Exit Node'), _('Specify an exit node. Leave it blank and it will not be used.'), { rmempty: true }],
 	[form.Flag, 'exit_node_allow_lan_access', _('Allow LAN Access'), _('When using the exit node, access to the local LAN is allowed.'), { rmempty: false }],
 	[form.Flag, 'runwebclient', _('Enable Web Interface'), _('Expose a web interface on port 5252 for managing this node over Tailscale.'), { rmempty: false }],
 	[form.Flag, 'nosnat', _('Disable SNAT'), _('Disable Source NAT (SNAT) for traffic to advertised routes. Most users should leave this unchecked.'), { rmempty: false }],
@@ -275,11 +274,11 @@ function renderStatus(status) {
 				return E('tr', { 'class': 'cbi-rowstyle-1' }, [
 					E('td', { 'class': 'cbi-value-field', 'style': td_style },
 						E('span', {
-							'style': `color:${peer.online ? 'green' : 'gray'};`,
-							'title': peer.online ? _('Online') : _('Offline')
+							'style': `color:${peer.exit_node ? 'blue' : (peer.online ? 'green' : 'gray')};`,
+							'title': (peer.exit_node ? _('Exit Node') + ' ' : '') + (peer.online ? _('Online') : _('Offline'))
 						}, peer.online ? '●' : '○')
 					),
-					E('td', { 'class': 'cbi-value-field', 'style': td_style }, E('strong', {}, peer.hostname)),
+					E('td', { 'class': 'cbi-value-field', 'style': td_style }, E('strong', {}, peer.hostname + (peer.exit_node_option ? ' (ExNode)' : ''))),
 					E('td', { 'class': 'cbi-value-field', 'style': td_style }, peer.ip || 'N/A'),
 					E('td', { 'class': 'cbi-value-field', 'style': td_style }, peer.ostype || 'N/A'),
 					E('td', { 'class': 'cbi-value-field', 'style': td_style }, formatConnectionInfo(peer.linkadress || '-')),
@@ -373,6 +372,20 @@ return view.extend({
 		s.tab('general', _('General Settings'));
 
 		defTabOpts(s, 'general', tailscaleSettingsConf, { optional: false });
+
+		const en = s.taboption('general', form.ListValue, 'exit_node', _('Exit Node'), _('Select an exit node from the list. Leave it blank to disable.'));
+		en.value('', _('None'));
+		if (status.peers) {
+			Object.values(status.peers).forEach(function(peer) {
+				if (peer.exit_node_option) {
+					const primaryIp = peer.ip.split('<br>')[0];
+					const label = peer.hostname ? `${peer.hostname} (${primaryIp})` : primaryIp;
+					en.value(primaryIp, label);
+				}
+			});
+		}
+		en.rmempty = true;
+
 		const o = s.taboption('general', form.DynamicList, 'advertise_routes', _('Advertise Routes'),_('Advertise subnet routes behind this device. Select from the detected subnets below or enter custom routes (comma-separated).'));
 		if (subroutes.length > 0) {
 			subroutes.forEach(function(subnet) {

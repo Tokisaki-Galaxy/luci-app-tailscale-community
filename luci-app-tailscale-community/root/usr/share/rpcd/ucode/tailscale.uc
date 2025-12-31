@@ -77,6 +77,8 @@ methods.get_status = {
 						online: p?.Online,
 						linkadress: (!p?.CurAddr) ? p?.Relay : p?.CurAddr,
 						lastseen: p?.LastSeen,
+						exit_node: !!p?.ExitNode,
+						exit_node_option: !!p?.ExitNodeOption,
 						tx: p?.TxBytes || '',
 						rx: p?.RxBytes || ''
 					};
@@ -149,7 +151,8 @@ methods.set_settings = {
 		push(args,'--webclient=' + (form_data.runwebclient == '1'));
 		push(args,'--snat-subnet-routes=' + (form_data.nosnat != '1'));
 		push(args,'--advertise-routes ' + (shell_quote(join(',',form_data.advertise_routes)) || '\"\"'));
-		push(args,'--exit-node ' + (shell_quote(form_data.exit_node) || '\"\"'));
+		push(args,'--exit-node=' + (shell_quote(form_data.exit_node) || '\"\"'));
+		if (form_data.exit_node != "") push(args,' --exit-node-allow-lan-access');
 		push(args,'--hostname ' + (shell_quote(form_data.hostname) || '\"\"'));
 
 		let cmd_array = 'tailscale '+join(' ', args);
