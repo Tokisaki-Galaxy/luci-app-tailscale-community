@@ -81,8 +81,11 @@ By adding a custom software source, you can easily install and automatically upd
 1.  **Add the software source**:
     Run the following commands in the router terminal:
     ```bash
+    # Download and add the public key
+    wget https://Tokisaki-Galaxy.github.io/luci-app-tailscale-community/key-build.pub -O /tmp/key-build.pub
+    opkg-key add /tmp/key-build.pub
     # Add the software source
-    echo "src/gz tailscale_community https://Tokisaki-Galaxy.github.io/luci-app-tailscale-community" >> /etc/opkg/customfeeds.conf
+    echo "src/gz tailscale_community https://Tokisaki-Galaxy.github.io/luci-app-tailscale-community/all" >> /etc/opkg/customfeeds.conf
     # Update the list
     opkg update
     ```

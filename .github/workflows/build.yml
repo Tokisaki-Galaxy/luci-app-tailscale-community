@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   build:
-    name: Build for ${{ matrix.target.name }}
+    name: Build Packages for ${{ matrix.target.name }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -28,29 +28,31 @@ jobs:
             path: x86/64
 
     steps:
-      # 步骤 1: 检出代码
       - name: Checkout package repository
         uses: actions/checkout@v4
 
-      # 步骤 2: 安装依赖
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential rsync unzip zstd
+          sudo apt-get install -y build-essential rsync unzip zstd coreutils cmake
+          sudo ln -sf /usr/bin/sha256sum /usr/bin/sha256
 
-      # 步骤 3: 缓存 OpenWrt SDK
-      # 缓存已下载和初步设置好的 SDK 目录。
+      - name: Setup usign
+        run: |
+          git clone --depth 1 https://git.openwrt.org/project/usign.git
+          cd usign && mkdir build && cd build
+          cmake .. && make -j$(nproc)
+          sudo make install
+          cd ../.. && rm -rf usign
+
       - name: Cache OpenWrt SDK
         id: cache-sdk
         uses: actions/cache@v4
         with:
-          # 需要缓存的目录路径
           path: ${{ env.SDK_DIR }}
           # 缓存键：结合操作系统、目标架构和 OpenWrt 版本，确保环境变化时缓存失效
           key: ${{ runner.os }}-sdk-${{ matrix.target.name }}-${{ env.OPENWRT_VERSION }}
 
-      # 步骤 4: 准备 SDK (仅在缓存未命中时运行)
-      # 这个组合步骤包含了下载、解压 SDK 和更新 feeds，因为这些都是 SDK 准备过程的一部分，应该一起被缓存。
       - name: Download, extract OpenWrt SDK and update feeds
         if: steps.cache-sdk.outputs.cache-hit != 'true'
         run: |
@@ -85,7 +87,6 @@ jobs:
           ./scripts/feeds install -a
           cd ..
 
-      # 步骤 5: 准备构建环境 (包含智能版本控制)
       - name: Prepare build environment
         working-directory: ${{ env.SDK_DIR }}
         run: |
@@ -97,6 +98,7 @@ jobs:
           # 查找 Makefile，最大深度3，按路径长度排序，优先取最短路径的(通常是根目录的)
           # 过滤掉路径中包含 /bin/ 或 /obj/ 的干扰项
           FOUND_MK=$(find "$src_dir" -maxdepth 3 -name Makefile -not -path "*/.*" | awk '{ print length, $0 }' | sort -n | cut -d" " -f2- | head -n 1)
+          rsync -a --delete "$(dirname "$FOUND_MK")/" ./package/${PACKAGE_NAME}/
 
           if [ -z "$FOUND_MK" ]; then
             echo "::error::Could not find any Makefile in the repository!"
@@ -149,99 +151,122 @@ jobs:
             sed -i "s|include \$(TOPDIR)/rules.mk|include \$(TOPDIR)/rules.mk\nPKG_VERSION:=$NEW_VER\nPKG_RELEASE:=$NEW_REL|" "$TARGET_MK"
           fi
 
-          translation_pkg=${PACKAGE_NAME#luci-app-}
           mkdir -p ./bin/packages
           find ./bin/packages -type f -name "${PACKAGE_NAME}*.ipk" -delete
-          find ./bin/packages -type f -name "luci-i18n-${translation_pkg}-*.ipk" -delete
-          {
-            echo "CONFIG_PACKAGE_${PACKAGE_NAME}=m"
-            echo "CONFIG_PACKAGE_luci-i18n-${translation_pkg}-zh-cn=m"
-            echo "CONFIG_LUCI_LANG_zh_Hans=y"
-          } > .config
-          make defconfig
+          find ./bin/packages -type f -name "${PACKAGE_NAME}*.apk" -delete
 
-      # 步骤 6: 编译软件包 (IPK)
-      - name: Compile the package (IPK)
+      - name: Compile the package
         working-directory: ${{ env.SDK_DIR }}
         run: |
-          make package/${PACKAGE_NAME}/compile V=s -j$(($(nproc) + 1))
-
-          mkdir -p output_ipk
           translation_pkg=${PACKAGE_NAME#luci-app-}
-          find ./bin/packages -type f \( -name "${PACKAGE_NAME}*.ipk" -o -name "luci-i18n-${translation_pkg}-*.ipk" \) -exec cp {} output_ipk/ \;
 
-      # 步骤 7: 编译软件包 (APK)
-      - name: Compile the package (APK)
-        working-directory: ${{ env.SDK_DIR }}
-        run: |
-          make package/${PACKAGE_NAME}/clean
+          # 为了实现 IPK 和 APK 的完全并行编译且互不干扰
+          # 在父目录为 APK 编译创建一个 SDK 目录的硬链接副本
+          cd ..
+          SDK_DIR_NAME=$(basename ${{ env.SDK_DIR }})
+          cp -al "$SDK_DIR_NAME" "${SDK_DIR_NAME}-apk"
+          
+          # --- 1. 编译 IPK (后台运行) ---
+          (
+            cd "$SDK_DIR_NAME"
+            echo "Building IPK format..."
+            {
+              echo "CONFIG_PACKAGE_${PACKAGE_NAME}=m"
+              echo "CONFIG_PACKAGE_luci-i18n-${translation_pkg}-zh-cn=m"
+              echo "CONFIG_LUCI_LANG_zh_Hans=y"
+            } > .config
+            make defconfig
+            make package/${PACKAGE_NAME}/compile V=sw -j$(nproc)
+            mkdir -p output_ipk
+            find ./bin/packages -type f \( -name "${PACKAGE_NAME}*.ipk" -o -name "luci-i18n-${translation_pkg}-*.ipk" \) -exec cp {} output_ipk/ \;
+          ) &
+          pid_ipk=$!
 
-          translation_pkg=${PACKAGE_NAME#luci-app-}
-          {
-            echo "CONFIG_PACKAGE_${PACKAGE_NAME}=m"
-            echo "CONFIG_PACKAGE_luci-i18n-${translation_pkg}-zh-cn=m"
-            echo "CONFIG_LUCI_LANG_zh_Hans=y"
-            echo "CONFIG_USE_APK=y"
-            echo "CONFIG_USE_OPKG=n"
-          } > .config
-          make defconfig
+          # --- 2. 编译 APK (后台运行，在副本目录执行) ---
+          (
+            cd "${SDK_DIR_NAME}-apk"
+            echo "Building APK format..."
+            {
+              echo "CONFIG_PACKAGE_${PACKAGE_NAME}=m"
+              echo "CONFIG_PACKAGE_luci-i18n-${translation_pkg}-zh-cn=m"
+              echo "CONFIG_LUCI_LANG_zh_Hans=y"
+              echo "CONFIG_USE_APK=y"
+            } > .config
+            make defconfig
+            if grep -q '^CONFIG_USE_APK=y' .config; then
+              make package/${PACKAGE_NAME}/compile V=sw -j$(nproc)
+              mkdir -p output_apk
+              find ./bin/packages -type f \( -name "${PACKAGE_NAME}*.apk" -o -name "luci-i18n-${translation_pkg}-*.apk" \) -exec cp {} output_apk/ \;
+            else
+              echo "::warning::CONFIG_USE_APK not supported by this SDK. Skipping."
+            fi
+          ) &
+          pid_apk=$!
 
-          if ! grep -q '^CONFIG_USE_APK=y' .config; then
-            echo "::warning::CONFIG_USE_APK not available in this SDK. Skipping APK build."
-            exit 0
+          # 等待所有并行编译任务完成
+          wait $pid_ipk $pid_apk
+
+          # 将 APK 编译结果移动回主 SDK 目录以供后续步骤统一处理
+          cd "$SDK_DIR_NAME"
+          if [ -d "../${SDK_DIR_NAME}-apk/output_apk" ]; then
+            mv "../${SDK_DIR_NAME}-apk/output_apk" ./
           fi
 
-          make package/${PACKAGE_NAME}/compile V=s -j$(($(nproc) + 1))
-
-          mkdir -p output_apk
-          find ./bin/packages -type f \( -name "${PACKAGE_NAME}*.apk" -o -name "luci-i18n-${translation_pkg}-*.apk" \) -exec cp {} output_apk/ \;
-
-      # 步骤 8: 收集和准备文件
       - name: Collect artifacts
         id: collect_artifacts
         working-directory: ${{ env.SDK_DIR }}
         run: |
-          rm -rf upload
-          mkdir -p upload
+          REL_PATH="all"
+          mkdir -p "upload/${REL_PATH}"
+          [ -d "output_ipk" ] && cp output_ipk/*.ipk "upload/${REL_PATH}/" || true
+          [ -d "output_apk" ] && cp output_apk/*.apk "upload/${REL_PATH}/" || true
 
-          if [ -d "output_ipk" ]; then
-            echo "Copying IPK files..."
-            cp output_ipk/*.ipk upload/ 2>/dev/null || true
+          if [ -z "$(ls -A upload/${REL_PATH})" ]; then echo "No packages found!"; exit 1; fi
+
+          # 签名处理
+          if [ -z "${{ secrets.USIGN_KEY }}" ]; then
+            echo "::warning title=Missing USIGN_KEY::GitHub Secret 'USIGN_KEY' is not set. A temporary key has been generated for this build."
+            usign -G -s upload/key-build.sig -p upload/key-build.pub -c "Local build key"
+            echo "Please save the following Private Key to your repository secrets as 'USIGN_KEY' to maintain consistent signatures:"
+            echo "------------------- BEGIN KEY -------------------"
+            cat upload/key-build.sig
+            echo "-------------------- END KEY --------------------"
+          else
+            echo "${{ secrets.USIGN_KEY }}" > upload/key-build.sig
+            usign -F -s upload/key-build.sig -p upload/key-build.pub
           fi
-          if [ -d "output_apk" ]; then
-            echo "Copying APK files..."
-            cp output_apk/*.apk upload/ 2>/dev/null || true
+
+          # 生成索引 (IPK)
+          TARGET_DIR="upload/${REL_PATH}"
+          if ls "${TARGET_DIR}"/*.ipk >/dev/null 2>&1; then
+            touch "${TARGET_DIR}/Packages"
+            for ipk in "${TARGET_DIR}"/*.ipk; do
+              pkg_info=$(tar -xOzf "$ipk" ./control.tar.gz | tar -xOzf - ./control 2>/dev/null || tar -xOzf "$ipk" control.tar.gz | tar -xOzf - control)
+              { echo "$pkg_info"; echo "Filename: $(basename $ipk)"; echo "Size: $(stat -c%s $ipk)"; echo "SHA256sum: $(sha256sum $ipk | awk '{print $1}')"; echo ""; } >> "${TARGET_DIR}/Packages"
+            done
+            gzip -9nc "${TARGET_DIR}/Packages" > "${TARGET_DIR}/Packages.gz"
+            usign -S -m "${TARGET_DIR}/Packages" -s upload/key-build.sig -x "${TARGET_DIR}/Packages.sig"
           fi
 
-          if [ -z "$(ls -A upload)" ]; then
-            echo "::error::No packages found!"
-            ls -R ./bin/
-            exit 1
+          # 生成索引 (APK)
+          if ls "${TARGET_DIR}"/*.apk >/dev/null 2>&1; then
+            docker run --rm -v $(pwd)/${TARGET_DIR}:/work -w /work alpine sh -c "apk add apk-tools && apk index -o APKINDEX.tar.gz *.apk"
+            usign -S -m "${TARGET_DIR}/APKINDEX.tar.gz" -s upload/key-build.sig -x "${TARGET_DIR}/APKINDEX.tar.gz.sig"
           fi
-
-          echo "Found packages:"
-          ls -l upload/
-
-          # 生成 opkg 索引
-          echo "Generating opkg index..."
-          (cd upload && ${{ env.SDK_DIR }}/scripts/ipkg-make-index.sh . > Packages)
-          gzip -9nc upload/Packages > upload/Packages.gz
 
           echo "path=upload" >> $GITHUB_OUTPUT
 
-      # 步骤 9: 上传构建产物
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: packages
+          name: packages-${{ matrix.target.name }}
           path: ${{ env.SDK_DIR }}/${{ steps.collect_artifacts.outputs.path }}
-          if-no-files-found: error
 
   deploy:
     name: Deploy to GitHub Pages
     runs-on: ubuntu-latest
     needs: build
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    if: startsWith(github.ref, 'refs/tags/')
     steps:
       - name: Checkout gh-pages
         uses: actions/checkout@v4
@@ -257,16 +282,61 @@ jobs:
 
       - name: Organize and Deploy
         run: |
-          mkdir -p deploy
-          # 将所有下载的包和索引文件移至 deploy 根目录
-          find downloaded-artifacts -type f \( -name "*.ipk" -o -name "*.apk" -o -name "Packages*" \) -exec cp {} deploy/ \;
+          mkdir -p deploy/all
+          cp -r downloaded-artifacts/packages-*/* deploy/
+          touch deploy/.nojekyll
+
+          cat <<EOF > deploy/index.html
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <meta charset="utf-8">
+              <title>Tailscale Community LuCI App Repository</title>
+              <style>
+                  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 0 20px; color: #333; }
+                  pre { background: #f6f8fa; padding: 16px; border-radius: 6px; overflow: auto; }
+                  code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; }
+                  .footer { margin-top: 40px; font-size: 0.8em; color: #666; border-top: 1px solid #eee; padding-top: 20px; }
+                  .arch-list { list-style: none; padding: 0; }
+                  .arch-list li { margin-bottom: 10px; padding: 10px; background: #fff; border: 1px solid #e1e4e8; border-radius: 6px; }
+              </style>
+          </head>
+          <body>
+              <h1>Tailscale Community OPKG Feed</h1>
+              <p>这是 <strong>luci-app-tailscale-community</strong> 的官方软件源托管地址。</p>
+
+              <h3>如何使用 (How to use)</h3>
+              <p>在你的 OpenWrt 终端运行以下命令：</p>
+              <pre><code># 1. 添加公钥
+          wget https://$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]').github.io/${{ env.PACKAGE_NAME }}/key-build.pub -O /tmp/key-build.pub
+          opkg-key add /tmp/key-build.pub
+
+          # 2. 添加软件源
+          echo "src/gz tailscale_community https://$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]').github.io/${{ env.PACKAGE_NAME }}/all" >> /etc/opkg/customfeeds.conf
+
+          # 3. 更新并安装
+          opkg update
+          opkg install luci-app-tailscale-community</code></pre>
+
+              <h3>可用架构 (Available Architectures)</h3>
+              <ul class="arch-list">
+                  <li><strong>all</strong>: <code>https://$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]').github.io/${{ env.PACKAGE_NAME }}/all</code></li>
+              </ul>
+
+              <div class="footer">
+                  <p>Generated by GitHub Actions at $(date -u)</p>
+                  <p><a href="https://github.com/${{ github.repository }}">View on GitHub</a></p>
+              </div>
+          </body>
+          </html>
+          EOF
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./deploy
-          force_orphan: false # 保留历史
+          force_orphan: true
 
   release:
     name: Publish Release

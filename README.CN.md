@@ -82,8 +82,11 @@
 1.  **添加软件源**:
     在路由器终端执行以下命令：
     ```bash
+    # 下载并添加公钥
+    wget https://Tokisaki-Galaxy.github.io/luci-app-tailscale-community/key-build.pub -O /tmp/key-build.pub
+    opkg-key add /tmp/key-build.pub
     # 添加软件源
-    echo "src/gz tailscale_community https://Tokisaki-Galaxy.github.io/luci-app-tailscale-community" >> /etc/opkg/customfeeds.conf
+    echo "src/gz tailscale_community https://Tokisaki-Galaxy.github.io/luci-app-tailscale-community/all" >> /etc/opkg/customfeeds.conf
     # 更新列表
     opkg update
     ```
