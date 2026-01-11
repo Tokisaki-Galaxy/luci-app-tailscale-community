@@ -39,7 +39,7 @@ jobs:
 
       - name: Setup usign
         run: |
-          git clone --depth 1 https://git.openwrt.org/project/usign.git
+          git clone --depth 1 https://github.com/openwrt/usign.git
           cd usign && mkdir build && cd build
           cmake .. && make -j$(nproc)
           sudo make install
