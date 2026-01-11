@@ -233,7 +233,7 @@ jobs:
             echo "-------------------- END KEY --------------------"
           else
             echo "${{ secrets.USIGN_KEY }}" > upload/key-build.sig
-            usign -F -s upload/key-build.sig -p upload/key-build.pub
+            usign -F -s upload/key-build.sig > upload/key-build.pub
           fi
 
           # 生成索引 (IPK)
