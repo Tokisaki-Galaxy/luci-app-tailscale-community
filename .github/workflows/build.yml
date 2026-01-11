@@ -227,10 +227,7 @@ jobs:
           if [ -z "${{ secrets.USIGN_KEY }}" ]; then
             echo "::warning title=Missing USIGN_KEY::GitHub Secret 'USIGN_KEY' is not set. A temporary key has been generated for this build."
             usign -G -s upload/key-build.sig -p upload/key-build.pub -c "Local build key"
-            echo "Please save the following Private Key to your repository secrets as 'USIGN_KEY' to maintain consistent signatures:"
-            echo "------------------- BEGIN KEY -------------------"
-            cat upload/key-build.sig
-            echo "-------------------- END KEY --------------------"
+            echo "::warning::Temporary signing key generated. Please configure USIGN_KEY secret for production use."
           else
             echo "${{ secrets.USIGN_KEY }}" > upload/key-build.sig
             usign -F -s upload/key-build.sig > upload/key-build.pub
@@ -282,8 +279,13 @@ jobs:
 
       - name: Organize and Deploy
         run: |
+          # 清除旧文件，确保只包含新生成的文件
+          rm -rf deploy
           mkdir -p deploy/all
-          cp -r downloaded-artifacts/packages-*/* deploy/
+          
+          # 只复制新生成的 ipk 和 apk 文件
+          find downloaded-artifacts/packages-* -type f \( -name "*.ipk" -o -name "*.apk" -o -name "Packages*" -o -name "APKINDEX*" -o -name "key-build.pub" \) -exec cp {} deploy/all/ \;
+          
           touch deploy/.nojekyll
 
           cat <<EOF > deploy/index.html
@@ -356,5 +358,5 @@ jobs:
           name: ${{ github.ref_name }}
           generate_release_notes: true
           files: |
-            release-assets/**/*.ipk
-            release-assets/**/*.apk
+            release-assets/packages-*/**/*.ipk
+            release-assets/packages-*/**/*.apk
