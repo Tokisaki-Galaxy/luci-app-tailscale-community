@@ -75,16 +75,28 @@
 
 ## 安装
 
-### 前提条件
+### 推荐安装方式：OPKG 软件源 (支持自动更新)
 
-您的 OpenWrt 设备上必须已安装 `tailscale` 和 `ip` 软件包。
+通过添加自定义软件源，你可以方便地使用 `opkg` 进行安装和自动更新，而无需手动上传文件。
 
-```bash
-opkg update
-opkg install tailscale ip
-```
+1.  **添加软件源**:
+    在路由器终端执行以下命令：
+    ```bash
+    # 添加软件源
+    echo "src/gz tailscale_community https://Tokisaki-Galaxy.github.io/luci-app-tailscale-community" >> /etc/opkg/customfeeds.conf
+    # 更新列表
+    opkg update
+    ```
 
-### 安装 LuCI 应用
+2.  **安装插件**:
+    ```bash
+    opkg install luci-app-tailscale-community
+    ```
+
+> [!TIP]
+> 这种方式安装后，以后可以直接通过 `opkg upgrade luci-app-tailscale-community` 来更新插件。
+
+### 手动安装方式
 
 1.  从 [Github Release](https://github.com/Tokisaki-Galaxy/luci-app-tailscale-community/releases) 下载最新稳定的 `.ipk` 软件包。
  - 如果有特殊需求，也可以从[GitHub Actions artifacts](https://github.com/actions) 下载最新的基于调试用途的 `.ipk` 软件包。

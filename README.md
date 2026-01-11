@@ -74,16 +74,28 @@ Note: This application uses `ucode` as the backend server. Older versions of Ope
 
 ## Installation
 
-### Prerequisites
+### Recommended: OPKG Software Source (Supports Auto-updates)
 
-You must have the `tailscale` and `ip` packages installed on your OpenWrt device.
+By adding a custom software source, you can easily install and automatically update the plugin using `opkg` without manually uploading files.
 
-```bash
-opkg update
-opkg install tailscale ip
-```
+1.  **Add the software source**:
+    Run the following commands in the router terminal:
+    ```bash
+    # Add the software source
+    echo "src/gz tailscale_community https://Tokisaki-Galaxy.github.io/luci-app-tailscale-community" >> /etc/opkg/customfeeds.conf
+    # Update the list
+    opkg update
+    ```
 
-### Install the LuCI App
+2.  **Install the plugin**:
+    ```bash
+    opkg install luci-app-tailscale-community
+    ```
+
+> [!TIP]
+> After installing this way, you can update the plugin later using `opkg upgrade luci-app-tailscale-community`.
+
+### Manual Installation
 
 1. download the latest and stable `. ipk` software package from [Github Release](https://github.com/tokisaki-galaxy/Luci-app-tailscale-community/releases).
  - If you have special requirements, you can also download the latest `. ipk` software package for debugging purposes from [Github Actions Artifacts](https://github.com/actions).

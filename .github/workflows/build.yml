@@ -57,7 +57,7 @@ jobs:
           # 从环境变量中移除 'v' 前缀以匹配版本号
           release_version="${OPENWRT_VERSION#v}"
           sdk_url_prefix="https://downloads.openwrt.org/releases/${release_version}/targets/${{ matrix.target.path }}"
-          
+
           # 查找 SDK 文件名
           sdk_filename=$(curl -s "$sdk_url_prefix/" | \
                         grep -o '<a href="openwrt-sdk-.*-x86_64\.tar\.\(xz\|zst\)">' | \
@@ -70,10 +70,10 @@ jobs:
             curl -s "$sdk_url_prefix/" | grep -o '<a href="[^"]*">[^<]*</a>' | sed -e 's/<a href="\(.*\)".*>\(.*\)/\1\t\2/'
             exit 1
           fi
-          
+
           echo "Downloading SDK: ${sdk_url_prefix}/${sdk_filename}"
           wget -q "${sdk_url_prefix}/${sdk_filename}"
-          
+
           echo "Extracting SDK..."
           # 解压 SDK 并重命名为固定的目录名，以匹配缓存路径
           tar -xf "$sdk_filename"
@@ -97,19 +97,19 @@ jobs:
           # 查找 Makefile，最大深度3，按路径长度排序，优先取最短路径的(通常是根目录的)
           # 过滤掉路径中包含 /bin/ 或 /obj/ 的干扰项
           FOUND_MK=$(find "$src_dir" -maxdepth 3 -name Makefile -not -path "*/.*" | awk '{ print length, $0 }' | sort -n | cut -d" " -f2- | head -n 1)
-          
+
           if [ -z "$FOUND_MK" ]; then
             echo "::error::Could not find any Makefile in the repository!"
             ls -R "$src_dir"
             exit 1
           fi
-          
+
           echo "Found primary Makefile at: $FOUND_MK"
           pkg_src_dir=$(dirname "$FOUND_MK")
           echo "Determined package source root: $pkg_src_dir"
 
           rsync -a --delete "${pkg_src_dir}/" ./package/${PACKAGE_NAME}/
-          
+
           # 验证复制结果
           TARGET_MK="./package/${PACKAGE_NAME}/Makefile"
           if [ ! -f "$TARGET_MK" ]; then
@@ -118,14 +118,14 @@ jobs:
             exit 1
           fi
           echo "Code migration successful. Structure verified."
-          
+
           # 检查 Makefile 中是否已存在 PKG_VERSION 定义
           if grep -q "^PKG_VERSION:=" "$TARGET_MK"; then
             echo "Static PKG_VERSION found in Makefile. Using upstream version definition."
             echo "::notice::You should not manually define PKG_VERSION or PKG_RELEASE in the Makefile. You should try using dynamic versioning."
           else
             echo "No static PKG_VERSION found. Applying dynamic versioning."
-            
+
             NEW_VER=""
             NEW_REL=""
 
@@ -138,7 +138,7 @@ jobs:
               # === 场景 B: 普通 Commit (调试构建) ===
               # Version = 日期 (YYYY.MM.DD)
               NEW_VER=$(date +"%Y.%m.%d")
-              
+
               # Release = BuildNumber.git-ShortHash
               SHORT_SHA=$(git -C "$src_dir" rev-parse --short HEAD)
               NEW_REL="${{ github.run_number }}.git-$SHORT_SHA"
@@ -165,7 +165,7 @@ jobs:
         working-directory: ${{ env.SDK_DIR }}
         run: |
           make package/${PACKAGE_NAME}/compile V=s -j$(($(nproc) + 1))
-          
+
           mkdir -p output_ipk
           translation_pkg=${PACKAGE_NAME#luci-app-}
           find ./bin/packages -type f \( -name "${PACKAGE_NAME}*.ipk" -o -name "luci-i18n-${translation_pkg}-*.ipk" \) -exec cp {} output_ipk/ \;
@@ -175,7 +175,7 @@ jobs:
         working-directory: ${{ env.SDK_DIR }}
         run: |
           make package/${PACKAGE_NAME}/clean
-          
+
           translation_pkg=${PACKAGE_NAME#luci-app-}
           {
             echo "CONFIG_PACKAGE_${PACKAGE_NAME}=m"
@@ -185,14 +185,14 @@ jobs:
             echo "CONFIG_USE_OPKG=n"
           } > .config
           make defconfig
-          
+
           if ! grep -q '^CONFIG_USE_APK=y' .config; then
             echo "::warning::CONFIG_USE_APK not available in this SDK. Skipping APK build."
             exit 0
           fi
 
           make package/${PACKAGE_NAME}/compile V=s -j$(($(nproc) + 1))
-          
+
           mkdir -p output_apk
           find ./bin/packages -type f \( -name "${PACKAGE_NAME}*.apk" -o -name "luci-i18n-${translation_pkg}-*.apk" \) -exec cp {} output_apk/ \;
 
@@ -203,7 +203,7 @@ jobs:
         run: |
           rm -rf upload
           mkdir -p upload
-          
+
           if [ -d "output_ipk" ]; then
             echo "Copying IPK files..."
             cp output_ipk/*.ipk upload/ 2>/dev/null || true
@@ -212,25 +212,61 @@ jobs:
             echo "Copying APK files..."
             cp output_apk/*.apk upload/ 2>/dev/null || true
           fi
-          
+
           if [ -z "$(ls -A upload)" ]; then
             echo "::error::No packages found!"
             ls -R ./bin/
             exit 1
           fi
-          
+
           echo "Found packages:"
           ls -l upload/
-          
+
+          # 生成 opkg 索引
+          echo "Generating opkg index..."
+          (cd upload && ${{ env.SDK_DIR }}/scripts/ipkg-make-index.sh . > Packages)
+          gzip -9nc upload/Packages > upload/Packages.gz
+
           echo "path=upload" >> $GITHUB_OUTPUT
 
       # 步骤 9: 上传构建产物
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.PACKAGE_NAME }}-${{ matrix.target.name }}
+          name: packages
           path: ${{ env.SDK_DIR }}/${{ steps.collect_artifacts.outputs.path }}
           if-no-files-found: error
+
+  deploy:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    steps:
+      - name: Checkout gh-pages
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages
+        continue-on-error: true
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: downloaded-artifacts
+
+      - name: Organize and Deploy
+        run: |
+          mkdir -p deploy
+          # 将所有下载的包和索引文件移至 deploy 根目录
+          find downloaded-artifacts -type f \( -name "*.ipk" -o -name "*.apk" -o -name "Packages*" \) -exec cp {} deploy/ \;
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./deploy
+          force_orphan: false # 保留历史
 
   release:
     name: Publish Release
