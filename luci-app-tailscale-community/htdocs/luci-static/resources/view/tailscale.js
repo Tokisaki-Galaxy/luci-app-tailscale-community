@@ -251,6 +251,7 @@ function renderStatus(status) {
 			{ text: _('Tailscale IP') },
 			{ text: _('OS') },
 			{ text: _('Connection Info') },
+			{ text: _('Advertised Routes') },
 			{ text: _('RX') },
 			{ text: _('TX') },
 			{ text: _('Last Seen') }
@@ -270,6 +271,9 @@ function renderStatus(status) {
 			// Table Body Rows (one for each peer)
 			...Object.entries(peers).map(([peerid, peer]) => {
 				const td_style = 'padding-right: 20px;';
+				const routes_display = (peer.advertised_routes && peer.advertised_routes.length > 0) 
+					? peer.advertised_routes.filter(r => r.indexOf('.') !== -1).join(', ') 
+					: '-';
 
 				return E('tr', { 'class': 'cbi-rowstyle-1' }, [
 					E('td', { 'class': 'cbi-value-field', 'style': td_style },
@@ -282,6 +286,7 @@ function renderStatus(status) {
 					E('td', { 'class': 'cbi-value-field', 'style': td_style }, peer.ip || 'N/A'),
 					E('td', { 'class': 'cbi-value-field', 'style': td_style }, peer.ostype || 'N/A'),
 					E('td', { 'class': 'cbi-value-field', 'style': td_style }, formatConnectionInfo(peer.linkadress || '-')),
+					E('td', { 'class': 'cbi-value-field', 'style': td_style }, routes_display),
 					E('td', { 'class': 'cbi-value-field', 'style': td_style }, formatBytes(peer.rx)),
 					E('td', { 'class': 'cbi-value-field', 'style': td_style }, formatBytes(peer.tx)),
 					E('td', { 'class': 'cbi-value-field', 'style': td_style }, formatLastSeen(peer.lastseen))
@@ -406,7 +411,12 @@ return view.extend({
 		o.rmempty = true;
 
 		const fwBtn = s.taboption('general', form.Button, '_setup_firewall', _('Auto Configure Firewall'));
-		fwBtn.description = _('Experimental: applies minimal firewall and interface setup for Tailscale. It will create/patch network.tailscale (proto none, device tailscale0), add a firewall zone "tailscale" with ACCEPT/ACCEPT/ACCEPT, masq, mtu_fix, and ensure forwarding tailscale<->lan. It reloads network/firewall only if changes are made.');
+		fwBtn.description = _('Automatically configures firewall, network interface, and routing for Tailscale subnet routing. This will:') + '<ul style="margin-left: 20px;">' +
+			'<li>' + _('Create/update network.tailscale interface with static IP from Tailscale') + '</li>' +
+			'<li>' + _('Create a firewall zone "tailscale" with ACCEPT policies and masquerading') + '</li>' +
+			'<li>' + _('Add bidirectional forwarding between tailscale and lan zones') + '</li>' +
+			'<li>' + _('Configure routes for subnets advertised by peer Tailscale nodes') + '</li>' +
+			'</ul>' + _('This enables devices on your LAN to access subnets behind other Tailscale routers.');
 		fwBtn.inputstyle = 'action';
 		fwBtn.onclick = function() {
 			const btn = this;

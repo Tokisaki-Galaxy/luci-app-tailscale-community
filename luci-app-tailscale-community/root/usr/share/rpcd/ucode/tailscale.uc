@@ -80,7 +80,8 @@ methods.get_status = {
 						exit_node: !!p?.ExitNode,
 						exit_node_option: !!p?.ExitNodeOption,
 						tx: p?.TxBytes || '',
-						rx: p?.RxBytes || ''
+						rx: p?.RxBytes || '',
+						advertised_routes: p?.PrimaryRoutes || []
 					};
 				}
 			} catch (e) { /* ignore */ }
@@ -280,6 +281,36 @@ methods.setup_firewall = {
 
 			let changed_network = false;
 			let changed_firewall = false;
+			let changed_routes = false;
+
+			// Get Tailscale status to extract IP information
+			let status_json_output = exec('tailscale status --json');
+			let tailscale_ip = null;
+			let peer_routes = [];
+
+			if (status_json_output.code == 0 && length(status_json_output.stdout) > 0) {
+				try {
+					let status_data = json(join('', status_json_output.stdout));
+					// Get the device's own Tailscale IP (IPv4)
+					tailscale_ip = status_data?.Self?.TailscaleIPs?.[0] || null;
+					
+					// Extract advertised routes from peers
+					for (let p in status_data?.Peer) {
+						let peer = status_data.Peer[p];
+						if (peer?.PrimaryRoutes && length(peer.PrimaryRoutes) > 0) {
+							for (let route in peer.PrimaryRoutes) {
+								let route_str = peer.PrimaryRoutes[route];
+								// Only add IPv4 routes (contains '.')
+								if (index(route_str, '.') != -1) {
+									push(peer_routes, route_str);
+								}
+							}
+						}
+					}
+				} catch (e) {
+					// If we can't parse the status, continue with basic setup
+				}
+			}
 
 			// 1. config Network Interface
 			let net_ts = uci.get('network', 'tailscale');
@@ -292,6 +323,20 @@ methods.setup_firewall = {
 				let current_dev = uci.get('network', 'tailscale', 'device');
 				if (current_dev != 'tailscale0') {
 					uci.set('network', 'tailscale', 'device', 'tailscale0');
+					changed_network = true;
+				}
+			}
+
+			// 1a. Configure static IP if we have one from Tailscale
+			if (tailscale_ip != null) {
+				let current_proto = uci.get('network', 'tailscale', 'proto');
+				let current_ipaddr = uci.get('network', 'tailscale', 'ipaddr');
+				
+				// Only set static if not already configured
+				if (current_proto == 'none' || current_ipaddr != tailscale_ip) {
+					uci.set('network', 'tailscale', 'proto', 'static');
+					uci.set('network', 'tailscale', 'ipaddr', tailscale_ip);
+					uci.set('network', 'tailscale', 'netmask', '255.255.255.255');
 					changed_network = true;
 				}
 			}
@@ -368,20 +413,62 @@ methods.setup_firewall = {
 			if (changed_network) {
 				uci.save('network');
 				uci.commit('network');
-				exec('/etc/init.d/network reload');
 			}
 
 			if (changed_firewall) {
 				uci.save('firewall');
 				uci.commit('firewall');
+			}
+
+			// 5. Add routes for advertised subnets from peers
+			// These routes tell the router how to reach subnets advertised by other Tailscale nodes
+			if (length(peer_routes) > 0) {
+				for (let route_cidr in peer_routes) {
+					// Check if route already exists
+					let route_check = exec('ip route show ' + shell_quote(route_cidr));
+					let route_exists = false;
+					
+					if (route_check.code == 0 && length(route_check.stdout) > 0) {
+						for (let line in route_check.stdout) {
+							if (index(line, 'tailscale0') != -1) {
+								route_exists = true;
+								break;
+							}
+						}
+					}
+					
+					// Add route if it doesn't exist
+					if (!route_exists) {
+						exec('ip route add ' + shell_quote(route_cidr) + ' dev tailscale0');
+						changed_routes = true;
+					}
+				}
+			}
+
+			// Reload services only if changes were made
+			if (changed_network) {
+				exec('/etc/init.d/network reload');
+			}
+
+			if (changed_firewall) {
 				exec('/etc/init.d/firewall reload');
 			}
+
+			let message_parts = [];
+			if (changed_network) push(message_parts, 'network interface');
+			if (changed_firewall) push(message_parts, 'firewall rules');
+			if (changed_routes) push(message_parts, 'routing table');
+			
+			let final_message = (length(message_parts) > 0) 
+				? 'Tailscale configuration updated: ' + join(', ', message_parts) + '.'
+				: 'Tailscale firewall/interface already configured.';
 
 			return {
 				success: true,
 				changed_network: changed_network,
 				changed_firewall: changed_firewall,
-				message: (changed_network || changed_firewall) ? 'Tailscale firewall/interface configuration applied.' : 'Tailscale firewall/interface already configured.'
+				changed_routes: changed_routes,
+				message: final_message
 			};
 
 		} catch (e) {
