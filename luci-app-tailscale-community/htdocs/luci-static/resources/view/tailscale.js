@@ -412,7 +412,7 @@ return view.extend({
 
 		const fwBtn = s.taboption('general', form.Button, '_setup_firewall', _('Auto Configure Firewall'));
 		fwBtn.description = _('Automatically configures firewall, network interface, and routing for Tailscale subnet routing. This will:') + '<ul style="margin-left: 20px;">' +
-			'<li>' + _('Create/update network.tailscale interface with static IP from Tailscale') + '</li>' +
+			'<li>' + _('Create/update network.tailscale interface (proto: none, device: tailscale0)') + '</li>' +
 			'<li>' + _('Create a firewall zone "tailscale" with ACCEPT policies and masquerading') + '</li>' +
 			'<li>' + _('Add bidirectional forwarding between tailscale and lan zones') + '</li>' +
 			'<li>' + _('Configure routes for subnets advertised by peer Tailscale nodes') + '</li>' +

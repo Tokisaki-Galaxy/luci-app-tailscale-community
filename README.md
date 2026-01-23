@@ -48,6 +48,7 @@ Note: This application uses `ucode` as the backend server. Older versions of Ope
     - Tailscale IPs.
     - Operating System.
     - Connection type (e.g., Direct, Relay).
+    - Advertised routes (subnets) from each peer.
     - Last seen time for offline devices.
 
 - **Node Settings**:
@@ -61,6 +62,7 @@ Note: This application uses `ucode` as the backend server. Older versions of Ope
   - Enable/disable the built-in SSH server.
   - Toggle `Shields Up` mode.
   - Set a custom hostname.
+  - **Auto-configure Firewall & Routing**: One-click automatic configuration of network interface, firewall zones, forwarding rules, and routing table to enable subnet-to-subnet routing. Allows LAN devices to directly access subnets behind other Tailscale routers.
 
 - **Daemon Environment Settings**:
   - Configure environment variables for the Tailscale daemon (requires a service restart).

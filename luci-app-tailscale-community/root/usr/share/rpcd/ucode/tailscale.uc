@@ -321,22 +321,19 @@ methods.setup_firewall = {
 				changed_network = true;
 			} else {
 				let current_dev = uci.get('network', 'tailscale', 'device');
+				let current_proto = uci.get('network', 'tailscale', 'proto');
+				
 				if (current_dev != 'tailscale0') {
 					uci.set('network', 'tailscale', 'device', 'tailscale0');
 					changed_network = true;
 				}
-			}
-
-			// 1a. Configure static IP if we have one from Tailscale
-			if (tailscale_ip != null) {
-				let current_proto = uci.get('network', 'tailscale', 'proto');
-				let current_ipaddr = uci.get('network', 'tailscale', 'ipaddr');
 				
-				// Only set static if not already configured
-				if (current_proto == 'none' || current_ipaddr != tailscale_ip) {
-					uci.set('network', 'tailscale', 'proto', 'static');
-					uci.set('network', 'tailscale', 'ipaddr', tailscale_ip);
-					uci.set('network', 'tailscale', 'netmask', '255.255.255.255');
+				// Ensure proto is 'none' as Tailscale daemon manages the IP
+				if (current_proto != 'none') {
+					uci.set('network', 'tailscale', 'proto', 'none');
+					// Remove any static IP configuration that might conflict
+					uci.delete('network', 'tailscale', 'ipaddr');
+					uci.delete('network', 'tailscale', 'netmask');
 					changed_network = true;
 				}
 			}
