@@ -421,6 +421,20 @@ return view.extend({
 			});
 		};
 
+		const helpTitle = s.taboption('general', form.DummyValue, '_help_title');
+		helpTitle.title = _('How to enable Site-to-Site (Subnet Routes)?');
+		helpTitle.render = function() {
+			return E('div', { 'class': 'cbi-value', 'style': 'margin-top: 1em; border-top: 1px font-weight: bold;' }, [
+				E('label', { 'class': 'cbi-value-title' }, this.title),
+				E('div', { 'class': 'cbi-value-field', 'style': 'line-height: 1.6em; font-size: 95%; color: #555;' }, [
+					_('1. Select "Accept Routes" (to access remote devices).'), E('br'),
+					_('2. In "Advertise Routes", select your local subnet (to allow remote devices to access this LAN).'), E('br'),
+					_('3. Click "Auto Configure Firewall" (to allow traffic forwarding).'), E('br'),
+					E('strong', { 'style': 'color: #d9534f;' }, _('[Important] Log in to the Tailscale admin console and manually enable "Subnet Routes" for this device.'))
+				])
+			]);
+		};
+
 		// Create the account settings
 		s.tab('account', _('Account Settings'));
 		defTabOpts(s, 'account', accountConf, { optional: false });
