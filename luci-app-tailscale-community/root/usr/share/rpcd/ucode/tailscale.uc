@@ -285,14 +285,11 @@ methods.setup_firewall = {
 
 			// Get Tailscale status to extract IP information
 			let status_json_output = exec('tailscale status --json');
-			let tailscale_ip = null;
 			let peer_routes = [];
 
 			if (status_json_output.code == 0 && length(status_json_output.stdout) > 0) {
 				try {
 					let status_data = json(join('', status_json_output.stdout));
-					// Get the device's own Tailscale IP (IPv4)
-					tailscale_ip = status_data?.Self?.TailscaleIPs?.[0] || null;
 					
 					// Extract advertised routes from peers
 					for (let p in status_data?.Peer) {
@@ -419,15 +416,18 @@ methods.setup_firewall = {
 
 			// 5. Add routes for advertised subnets from peers
 			// These routes tell the router how to reach subnets advertised by other Tailscale nodes
+			let route_errors = [];
 			if (length(peer_routes) > 0) {
 				for (let route_cidr in peer_routes) {
-					// Check if route already exists
+					// Check if route already exists with exact match
 					let route_check = exec('ip route show ' + shell_quote(route_cidr));
 					let route_exists = false;
 					
 					if (route_check.code == 0 && length(route_check.stdout) > 0) {
+						// Check for exact match: route via tailscale0
 						for (let line in route_check.stdout) {
-							if (index(line, 'tailscale0') != -1) {
+							// Match pattern: "<route_cidr> dev tailscale0"
+							if (index(line, route_cidr) != -1 && index(line, 'dev tailscale0') != -1) {
 								route_exists = true;
 								break;
 							}
@@ -436,8 +436,13 @@ methods.setup_firewall = {
 					
 					// Add route if it doesn't exist
 					if (!route_exists) {
-						exec('ip route add ' + shell_quote(route_cidr) + ' dev tailscale0');
-						changed_routes = true;
+						let add_result = exec('ip route add ' + shell_quote(route_cidr) + ' dev tailscale0');
+						if (add_result.code == 0) {
+							changed_routes = true;
+						} else {
+							// Collect errors but don't fail the entire operation
+							push(route_errors, route_cidr);
+						}
 					}
 				}
 			}
@@ -459,12 +464,17 @@ methods.setup_firewall = {
 			let final_message = (length(message_parts) > 0) 
 				? 'Tailscale configuration updated: ' + join(', ', message_parts) + '.'
 				: 'Tailscale firewall/interface already configured.';
+			
+			if (length(route_errors) > 0) {
+				final_message += ' Warning: Failed to add routes for: ' + join(', ', route_errors) + '.';
+			}
 
 			return {
 				success: true,
 				changed_network: changed_network,
 				changed_firewall: changed_firewall,
 				changed_routes: changed_routes,
+				route_errors: route_errors,
 				message: final_message
 			};
 
