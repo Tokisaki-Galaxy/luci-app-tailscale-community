@@ -29,6 +29,9 @@
 
 一个社区维护的 LuCI 应用，用于在 OpenWrt 上管理 Tailscale。此应用提供了一个友好的 Web 界面，让您可以直接从 LuCI 查看 Tailscale 状态和配置其设置。
 
+> [!TIP]
+> 本应用已被 OpenWrt 官方 LuCI 仓库收录，推荐直接使用官方 `opkg` 源进行安装。详情参见 [openwrt/luci#8018](https://github.com/openwrt/luci/pull/8018)。
+
 > [!IMPORTANT]
 > 推荐版本: OpenWrt 23.05 及以上。
 
@@ -75,9 +78,18 @@
 
 ## 安装
 
-### 推荐安装方式：OPKG 软件源 (支持自动更新)
+### 方式 1：官方 OpenWrt 软件源 (推荐)
 
-通过添加自定义软件源，你可以方便地使用 `opkg` 进行安装和自动更新，而无需手动上传文件。
+如果您使用的是 OpenWrt Snapshot、Master 或未来的稳定版本（要求版本 > 24.10.4），可以直接从官方仓库安装：
+
+```bash
+opkg update
+opkg install luci-app-tailscale-community
+```
+
+### 方式 2：社区软件源 (GitHub Pages)
+
+如果您使用的是旧版本 OpenWrt 或希望能通过添加自定义软件源方便地使用 `opkg` 进行安装和自动更新，可以执行以下步骤：
 
 1.  **添加软件源**:
     在路由器终端执行以下命令：
@@ -99,7 +111,7 @@
 > [!TIP]
 > 这种方式安装后，以后可以直接通过 `opkg upgrade luci-app-tailscale-community` 来更新插件。
 
-### 手动安装方式
+### 方式 3：手动安装 (.ipk)
 
 1.  从 [Github Release](https://github.com/Tokisaki-Galaxy/luci-app-tailscale-community/releases) 下载最新稳定的 `.ipk` 软件包。
  - 如果有特殊需求，也可以从[GitHub Actions artifacts](https://github.com/actions) 下载最新的基于调试用途的 `.ipk` 软件包。

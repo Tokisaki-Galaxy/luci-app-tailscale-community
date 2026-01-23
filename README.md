@@ -28,6 +28,9 @@
 
 A community-maintained LuCI application for managing Tailscale on OpenWrt. This app provides a user-friendly web interface to view Tailscale status and configure its settings directly from LuCI.
 
+> [!TIP]
+> This application has been merged into the official OpenWrt LuCI repository. You can now install it directly via the official `opkg` source. See [openwrt/luci#8018](https://github.com/openwrt/luci/pull/8018) for details.
+
 > [!IMPORTANT]
 > Recommended Version: OpenWrt 23.05 or later.
 
@@ -74,9 +77,18 @@ Note: This application uses `ucode` as the backend server. Older versions of Ope
 
 ## Installation
 
-### Recommended: OPKG Software Source (Supports Auto-updates)
+### Method 1: Official OpenWrt Software Source (Recommended)
 
-By adding a custom software source, you can easily install and automatically update the plugin using `opkg` without manually uploading files.
+If you are using OpenWrt Snapshot, Master, or a future stable release (strictly version > 24.10.4), you can install it directly from the official repository:
+
+```bash
+opkg update
+opkg install luci-app-tailscale-community
+```
+
+### Method 2: Community Software Source (GitHub Pages)
+
+If you are using an older version of OpenWrt or want to use the latest community-specific builds, you can add a custom repository. This method also supports automatic updates.
 
 1.  **Add the software source**:
     Run the following commands in the router terminal:
@@ -98,7 +110,7 @@ By adding a custom software source, you can easily install and automatically upd
 > [!TIP]
 > After installing this way, you can update the plugin later using `opkg upgrade luci-app-tailscale-community`.
 
-### Manual Installation
+### Method 3: Manual Installation (.ipk)
 
 1. download the latest and stable `. ipk` software package from [Github Release](https://github.com/tokisaki-galaxy/Luci-app-tailscale-community/releases).
  - If you have special requirements, you can also download the latest `. ipk` software package for debugging purposes from [Github Actions Artifacts](https://github.com/actions).
