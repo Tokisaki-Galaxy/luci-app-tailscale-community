@@ -79,7 +79,7 @@ Note: This application uses `ucode` as the backend server. Older versions of Ope
 
 ### Method 1: Official OpenWrt Software Source (Recommended)
 
-If you are using OpenWrt Snapshot, Master, or a future stable release (strictly version > 24.10.4), you can install it directly from the official repository:
+If you are using OpenWrt Snapshot, Master, or a future stable release (strictly version > `OpenWrt 25.12.0-rc3`), you can install it directly from the official repository:
 
 ```bash
 opkg update
@@ -94,7 +94,7 @@ If you are using an older version of OpenWrt or want to use the latest community
     Run the following commands in the router terminal:
     ```bash
     # Download and add the public key
-    wget https://Tokisaki-Galaxy.github.io/luci-app-tailscale-community/key-build.pub -O /tmp/key-build.pub
+    wget https://Tokisaki-Galaxy.github.io/luci-app-tailscale-community/all/key-build.pub -O /tmp/key-build.pub
     opkg-key add /tmp/key-build.pub
     # Add the software source
     echo "src/gz tailscale_community https://Tokisaki-Galaxy.github.io/luci-app-tailscale-community/all" >> /etc/opkg/customfeeds.conf
