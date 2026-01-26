@@ -226,14 +226,14 @@ jobs:
           # 签名处理
           if [ -z "${{ secrets.USIGN_KEY }}" ]; then
             echo "::warning title=Missing USIGN_KEY::GitHub Secret 'USIGN_KEY' is not set. A temporary key has been generated for this build."
-            usign -G -s upload/key-build.sig -p upload/key-build.pub -c "Local build key"
+            usign -G -s /tmp/key-build.sig -p "upload/${REL_PATH}/key-build.pub" -c "Local build key"
             echo "::warning::Temporary signing key generated. Please save the following Private Key to your repository secrets as 'USIGN_KEY' to maintain consistent signatures:"
             echo "------------------- BEGIN KEY -------------------"
-            cat upload/key-build.sig
+            cat /tmp/key-build.sig
             echo "-------------------- END KEY --------------------"
           else
-            echo "${{ secrets.USIGN_KEY }}" > upload/key-build.sig
-            usign -F -s upload/key-build.sig > upload/key-build.pub
+            echo "${{ secrets.USIGN_KEY }}" > /tmp/key-build.sig
+            usign -F -s /tmp/key-build.sig > "upload/${REL_PATH}/key-build.pub"
           fi
 
           # 生成索引 (IPK)
@@ -245,14 +245,17 @@ jobs:
               { echo "$pkg_info"; echo "Filename: $(basename $ipk)"; echo "Size: $(stat -c%s $ipk)"; echo "SHA256sum: $(sha256sum $ipk | awk '{print $1}')"; echo ""; } >> "${TARGET_DIR}/Packages"
             done
             gzip -9nc "${TARGET_DIR}/Packages" > "${TARGET_DIR}/Packages.gz"
-            usign -S -m "${TARGET_DIR}/Packages" -s upload/key-build.sig -x "${TARGET_DIR}/Packages.sig"
+            usign -S -m "${TARGET_DIR}/Packages" -s /tmp/key-build.sig -x "${TARGET_DIR}/Packages.sig"
           fi
 
           # 生成索引 (APK)
           if ls "${TARGET_DIR}"/*.apk >/dev/null 2>&1; then
             docker run --rm -v $(pwd)/${TARGET_DIR}:/work -w /work alpine sh -c "apk add apk-tools && apk index -o APKINDEX.tar.gz *.apk"
-            usign -S -m "${TARGET_DIR}/APKINDEX.tar.gz" -s upload/key-build.sig -x "${TARGET_DIR}/APKINDEX.tar.gz.sig"
+            usign -S -m "${TARGET_DIR}/APKINDEX.tar.gz" -s /tmp/key-build.sig -x "${TARGET_DIR}/APKINDEX.tar.gz.sig"
           fi
+
+          # 清理私钥
+          rm -f /tmp/key-build.sig
 
           echo "path=upload" >> $GITHUB_OUTPUT
 
@@ -268,13 +271,6 @@ jobs:
     needs: build
     if: startsWith(github.ref, 'refs/tags/')
     steps:
-      - name: Checkout gh-pages
-        uses: actions/checkout@v4
-        with:
-          ref: gh-pages
-          path: gh-pages
-        continue-on-error: true
-
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
@@ -282,12 +278,17 @@ jobs:
 
       - name: Organize and Deploy
         run: |
-          # 清除旧文件，确保只包含新生成的文件
-          rm -rf deploy
+          # 从头创建 deploy 目录，确保不包含任何旧文件
           mkdir -p deploy/all
 
           # 只复制新生成的 ipk 和 apk 文件
           find downloaded-artifacts/packages-* -type f \( -name "*.ipk" -o -name "*.apk" -o -name "Packages*" -o -name "APKINDEX*" -o -name "key-build.pub" \) -exec cp {} deploy/all/ \;
+
+          # 验证没有私钥文件泄露
+          if find deploy -name "key-build.sig" -type f | grep -q .; then
+            echo "::error::Private key file (key-build.sig) found in deploy directory!"
+            exit 1
+          fi
 
           touch deploy/.nojekyll
 
@@ -313,7 +314,7 @@ jobs:
               <h3>如何使用 (How to use)</h3>
               <p>在你的 OpenWrt 终端运行以下命令：</p>
               <pre><code># 1. 添加公钥
-          wget https://$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]').github.io/${{ env.PACKAGE_NAME }}/key-build.pub -O /tmp/key-build.pub
+          wget https://$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]').github.io/${{ env.PACKAGE_NAME }}/all/key-build.pub -O /tmp/key-build.pub
           opkg-key add /tmp/key-build.pub
 
           # 2. 添加软件源
