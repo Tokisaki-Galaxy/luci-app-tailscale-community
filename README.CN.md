@@ -80,7 +80,7 @@
 
 ### 方式 1：官方 OpenWrt 软件源 (推荐)
 
-如果您使用的是 OpenWrt Snapshot、Master 或未来的稳定版本（要求版本 > 24.10.4），可以直接从官方仓库安装：
+如果您使用的是 OpenWrt Snapshot、Master 或未来的稳定版本（要求版本 > `OpenWrt 25.12.0-rc3`），可以直接从官方仓库安装：
 
 ```bash
 opkg update
@@ -95,7 +95,7 @@ opkg install luci-app-tailscale-community
     在路由器终端执行以下命令：
     ```bash
     # 下载并添加公钥
-    wget https://Tokisaki-Galaxy.github.io/luci-app-tailscale-community/key-build.pub -O /tmp/key-build.pub
+    wget https://Tokisaki-Galaxy.github.io/luci-app-tailscale-community/all/key-build.pub -O /tmp/key-build.pub
     opkg-key add /tmp/key-build.pub
     # 添加软件源
     echo "src/gz tailscale_community https://Tokisaki-Galaxy.github.io/luci-app-tailscale-community/all" >> /etc/opkg/customfeeds.conf
