@@ -233,7 +233,30 @@ jobs:
             echo "-------------------- END KEY --------------------"
           else
             echo "${{ secrets.USIGN_KEY }}" > /tmp/key-build.sig
-            usign -F -s /tmp/key-build.sig > "upload/${REL_PATH}/key-build.pub"
+            # Extract public key from secret key
+            # Secret key binary structure (104 bytes total):
+            #   pkalg[2] + kdfalg[2] + kdfrounds[4] + salt[16] + checksum[8] + fingerprint[8] + seckey[64]
+            #   Offsets: fingerprint at byte 32, seckey at byte 40
+            # Public key binary structure (42 bytes total):
+            #   pkalg[2] + fingerprint[8] + pubkey[32]
+            # The public key (32 bytes) is stored in the second half of seckey field, at absolute offset 72
+            SECKEY_B64=$(tail -n 1 /tmp/key-build.sig)
+            SECKEY_HEX=$(echo "$SECKEY_B64" | base64 -d | xxd -p | tr -d '\n')
+            # Validate secret key length (104 bytes = 208 hex chars)
+            if [ ${#SECKEY_HEX} -ne 208 ]; then
+              echo "::error::Invalid USIGN_KEY format. Expected 104 bytes, got $((${#SECKEY_HEX}/2)) bytes."
+              exit 1
+            fi
+            # Extract components (offsets in hex chars = byte offset * 2)
+            PKALG_HEX=${SECKEY_HEX:0:4}           # offset 0, 2 bytes
+            FINGERPRINT_HEX=${SECKEY_HEX:64:16}   # offset 32, 8 bytes
+            PUBKEY_HEX=${SECKEY_HEX:144:64}       # offset 72, 32 bytes
+            # Build public key structure (42 bytes) and encode as base64
+            PUBKEY_STRUCT_HEX="${PKALG_HEX}${FINGERPRINT_HEX}${PUBKEY_HEX}"
+            PUBKEY_B64=$(echo "$PUBKEY_STRUCT_HEX" | xxd -r -p | base64 -w 0)
+            # Write public key file with fingerprint in comment
+            echo "untrusted comment: public key ${FINGERPRINT_HEX}" > "upload/${REL_PATH}/key-build.pub"
+            echo "$PUBKEY_B64" >> "upload/${REL_PATH}/key-build.pub"
           fi
 
           # 生成索引 (IPK)
