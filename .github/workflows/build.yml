@@ -233,7 +233,12 @@ jobs:
             echo "-------------------- END KEY --------------------"
           else
             echo "${{ secrets.USIGN_KEY }}" > /tmp/key-build.sig
-            usign -F -s /tmp/key-build.sig > "upload/${REL_PATH}/key-build.pub"
+            # Extract public key from secret key (usign has no built-in command for this)
+            # Hex offsets: pkalg=0:4, fingerprint=64:80, pubkey=144:208 (byte*2)
+            KEY_HEX=$(tail -n 1 /tmp/key-build.sig | base64 -d | xxd -p | tr -d '\n')
+            [ ${#KEY_HEX} -eq 208 ] || { echo "::error::Invalid USIGN_KEY (expected 104 bytes)"; exit 1; }
+            echo "untrusted comment: public key ${KEY_HEX:64:16}" > "upload/${REL_PATH}/key-build.pub"
+            echo "${KEY_HEX:0:4}${KEY_HEX:64:16}${KEY_HEX:144:64}" | xxd -r -p | base64 -w 0 >> "upload/${REL_PATH}/key-build.pub"
           fi
 
           # 生成索引 (IPK)
