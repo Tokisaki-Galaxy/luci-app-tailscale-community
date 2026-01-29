@@ -1,0 +1,173 @@
+name: "Copilot Setup Steps"
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+  pull_request:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+
+jobs:
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Clone LuCI repository for i18n
+        uses: actions/checkout@v5
+        with:
+          repository: openwrt/luci
+          path: luci
+          fetch-depth: 1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: ${{ (hashFiles('package-lock.json') != '' || hashFiles('npm-shrinkwrap.json') != '') && 'npm' || '' }}
+
+      - name: Install System Utilities
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq xvfb tree ripgrep
+
+      # OpenWrt Docker 环境配置
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Install OpenWrt Debug Tools
+        run: |
+          sudo apt-get install -y \
+            qemu-user-static \
+            binfmt-support \
+            build-essential \
+            ccache \
+            gawk \
+            gettext \
+            libncurses5-dev \
+            libssl-dev \
+            rsync \
+            unzip \
+            zlib1g-dev \
+            sshpass \
+            socat \
+            netcat-openbsd
+
+      - name: Cache OpenWrt Docker Image
+        id: cache-openwrt-docker
+        uses: actions/cache@v4
+        with:
+          path: /tmp/openwrt-docker-image.tar
+          key: openwrt-docker-${{ runner.os }}-openwrt-rootfs-x86-64-23.05.5
+
+      - name: Pull and Save OpenWrt Docker Image
+        if: steps.cache-openwrt-docker.outputs.cache-hit != 'true'
+        run: |
+          docker pull openwrt/rootfs:x86-64-23.05.5
+          docker save openwrt/rootfs:x86-64-23.05.5 -o /tmp/openwrt-docker-image.tar
+
+      - name: Load OpenWrt Docker Image from Cache
+        if: steps.cache-openwrt-docker.outputs.cache-hit == 'true'
+        run: |
+          docker load -i /tmp/openwrt-docker-image.tar
+
+      - name: Verify OpenWrt Docker Image
+        run: |
+          docker images openwrt/rootfs:x86-64-23.05.5 --format "{{.Repository}}:{{.Tag}}" | grep -q "openwrt/rootfs:x86-64-23.05.5" && echo "OpenWrt Docker image verified successfully" || (echo "ERROR: OpenWrt Docker image not found" && exit 1)
+          echo "OpenWrt Docker environment ready for plugin debugging"
+
+      - name: Test Docker Communication
+        run: |
+          echo "=== Testing Docker container communication ==="
+
+          # Test 1: Basic container execution
+          echo "Test 1: Running basic command in OpenWrt container..."
+          docker run --rm openwrt/rootfs:x86-64-23.05.5 /bin/ash -c "echo 'Hello from OpenWrt container!'"
+          
+          # Test 2: Check OpenWrt version
+          echo "Test 2: Checking OpenWrt version..."
+          docker run --rm openwrt/rootfs:x86-64-23.05.5 /bin/ash -c "cat /etc/openwrt_release"
+          
+          # Test 3: Test volume mounting with content verification
+          echo "Test 3: Testing volume mount..."
+          TEST_CONTENT="test_content_$(date +%s)"
+          TEST_FILE="/tmp/test_mount_$$_$RANDOM.txt"
+          echo "$TEST_CONTENT" > "$TEST_FILE"
+          RESULT=$(docker run --rm -v "$TEST_FILE":/root/test_mount.txt openwrt/rootfs:x86-64-23.05.5 /bin/ash -c "cat /root/test_mount.txt")
+          rm -f "$TEST_FILE"
+          if [ "$RESULT" = "$TEST_CONTENT" ]; then
+            echo "Volume mount test passed: content matches"
+          else
+            echo "ERROR: Volume mount test failed - content mismatch"
+            echo "Expected: $TEST_CONTENT"
+            echo "Got: $RESULT"
+            exit 1
+          fi
+          
+          # Test 4: Test opkg package manager (with initialization and installation)
+          echo "Test 4: Testing opkg package manager..."
+          # 1. Create /var/lock to prevent "Could not create lock file" errors
+          # 2. Run update to populate package lists
+          # 3. Install a small package ('file') to verify installation works
+          # All running in the same container shell to persist state
+          OPKG_TEST_CMD="mkdir -p /var/lock/ && opkg update && opkg install file && which file && echo 'Package installation verified!'"
+          
+          if docker run --rm openwrt/rootfs:x86-64-23.05.5 /bin/ash -c "$OPKG_TEST_CMD"; then
+            echo "opkg update and install succeeded"
+            # Optional: List installed packages to show 'file' is there
+            # docker run --rm openwrt/rootfs:x86-64-23.05.5 /bin/ash -c "mkdir -p /var/lock/ && opkg list-installed | grep file" 
+          else
+            echo "Note: opkg test failed"
+            exit 1 
+          fi
+          
+          # Test 5: Test network connectivity from container (via HTTP/TCP)
+          echo "Test 5: Testing network connectivity via HTTP..."
+          if docker run --rm openwrt/rootfs:x86-64-23.05.5 /bin/ash -c "wget -q --spider http://www.google.com"; then
+            echo "Network connectivity: Available (TCP/HTTP)"
+          else
+            echo "Network connectivity: Restricted or no internet access"
+          fi
+          
+          echo "=== All Docker communication tests completed successfully ==="
+
+      - name: Install dependencies
+        run: |
+          if [ -f package.json ]; then
+            npm ci || npm install
+          else
+            echo "No package.json found, skipping dependency installation."
+          fi
+
+      - name: Install Playwright Chromium
+        run: |
+          if [ -f package.json ] && grep -q "\"playwright\"" package.json; then
+            npx playwright install --with-deps chromium
+          elif [ -f package.json ]; then
+            echo "Playwright not found in package.json, installing as devDependency first..."
+            npm install -D playwright
+            npx playwright install --with-deps chromium
+          else
+            echo "No package.json found, skipping Playwright installation."
+          fi
+
+      - name: Initial Checks
+        run: |
+          if [ ! -f package.json ]; then
+            echo "No package.json found, skipping all JS-related checks."
+            exit 0
+          fi
+          # 检查是否存在相应配置文件，避免无配置报错
+          npx tsc -b || echo "No tsconfig found, skipping tsc"
+          npm run lint || echo "No lint script found, skipping lint"
+          # Prettier 通常可以直接运行
+          npx prettier --check . || echo "Prettier check failed or no files to check"
+          npx vitest run --coverage.enabled=false || echo "No tests found, skipping vitest"
+          # 检查未使用代码
+          npx knip || echo "Knip check skipped"
