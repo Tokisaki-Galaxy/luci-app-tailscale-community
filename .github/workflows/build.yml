@@ -98,7 +98,6 @@ jobs:
           # 查找 Makefile，最大深度3，按路径长度排序，优先取最短路径的(通常是根目录的)
           # 过滤掉路径中包含 /bin/ 或 /obj/ 的干扰项
           FOUND_MK=$(find "$src_dir" -maxdepth 3 -name Makefile -not -path "*/.*" | awk '{ print length, $0 }' | sort -n | cut -d" " -f2- | head -n 1)
-          rsync -a --delete "$(dirname "$FOUND_MK")/" ./package/${PACKAGE_NAME}/
 
           if [ -z "$FOUND_MK" ]; then
             echo "::error::Could not find any Makefile in the repository!"
