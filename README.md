@@ -86,6 +86,9 @@ opkg update
 opkg install luci-app-tailscale-community
 ```
 
+> [!TIP]
+> The `tailscale` package in official OpenWrt repositories is tied to specific OpenWrt releases and does not receive updates once a version is finalized. Given Tailscale's frequent update cycle, older versions may have security vulnerabilities. For a smaller binary size and timely updates, it is highly recommended to use the [GuNanOvO/openwrt-tailscale](https://github.com/GuNanOvO/openwrt-tailscale/blob/main/.github/README_en.md) repository. You can easily install a high-version, optimized Tailscale package by simply importing the key and adding the custom opkg source.
+
 ### Method 2: Community Software Source (GitHub Pages)
 
 If you are using an older version of OpenWrt or want to use the latest community-specific builds, you can add a custom repository. This method also supports automatic updates.

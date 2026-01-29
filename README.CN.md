@@ -87,6 +87,9 @@ opkg update
 opkg install luci-app-tailscale-community
 ```
 
+> [!TIP]
+> OpenWrt 官方软件源中的 `tailscale` 软件包版本通常随发行版固化，一旦发布便不再提供更新。鉴于 Tailscale 的更新频率极高，旧版本可能存在安全漏洞且占用空间较大。为了获得更小的包体积和及时的安全更新，强烈建议参考 [GuNanOvO/openwrt-tailscale](https://github.com/GuNanOvO/openwrt-tailscale/) 的安装方法。该仓库提供的方式仅需导入密钥并添加自定义 opkg 源，即可安装高版本、小体积的 `tailscale` 软件包。
+
 ### 方式 2：社区软件源 (GitHub Pages)
 
 如果您使用的是旧版本 OpenWrt 或希望能通过添加自定义软件源方便地使用 `opkg` 进行安装和自动更新，可以执行以下步骤：
