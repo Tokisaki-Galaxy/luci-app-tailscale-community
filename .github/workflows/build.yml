@@ -150,9 +150,11 @@ jobs:
             sed -i "s|include \$(TOPDIR)/rules.mk|include \$(TOPDIR)/rules.mk\nPKG_VERSION:=$NEW_VER\nPKG_RELEASE:=$NEW_REL|" "$TARGET_MK"
           fi
 
+          # 清理上次构建的产物（SDK 缓存可能包含旧文件）
+          rm -rf output_ipk output_apk upload
           mkdir -p ./bin/packages
-          find ./bin/packages -type f -name "${PACKAGE_NAME}*.ipk" -delete
-          find ./bin/packages -type f -name "${PACKAGE_NAME}*.apk" -delete
+          find ./bin -type f -name "${PACKAGE_NAME}*.ipk" -delete
+          find ./bin -type f -name "${PACKAGE_NAME}*.apk" -delete
 
       - name: Compile the package
         working-directory: ${{ env.SDK_DIR }}
@@ -301,7 +303,7 @@ jobs:
           <html>
           <head>
               <meta charset="utf-8">
-              <title>Tailscale Community LuCI App Repository</title>
+              <title>${{ env.PACKAGE_NAME }} Repository</title>
               <style>
                   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 0 20px; color: #333; }
                   pre { background: #f6f8fa; padding: 16px; border-radius: 6px; overflow: auto; }
@@ -312,8 +314,8 @@ jobs:
               </style>
           </head>
           <body>
-              <h1>Tailscale Community OPKG Feed</h1>
-              <p>这是 <strong>luci-app-tailscale-community</strong> 的官方软件源托管地址。</p>
+              <h1>${{ env.PACKAGE_NAME }} OPKG Feed</h1>
+              <p>这是 <strong>${{ env.PACKAGE_NAME }}</strong> 的官方软件源托管地址。</p>
 
               <h3>如何使用 (How to use)</h3>
               <p>在你的 OpenWrt 终端运行以下命令：</p>
@@ -322,11 +324,11 @@ jobs:
           opkg-key add /tmp/key-build.pub
 
           # 2. 添加软件源
-          echo "src/gz tailscale_community https://$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]').github.io/${{ env.PACKAGE_NAME }}/all" >> /etc/opkg/customfeeds.conf
+          echo "src/gz ${{ env.PACKAGE_NAME }} https://$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]').github.io/${{ env.PACKAGE_NAME }}/all" >> /etc/opkg/customfeeds.conf
 
           # 3. 更新并安装
           opkg update
-          opkg install luci-app-tailscale-community</code></pre>
+          opkg install ${{ env.PACKAGE_NAME }}</code></pre>
 
               <h3>可用架构 (Available Architectures)</h3>
               <ul class="arch-list">
