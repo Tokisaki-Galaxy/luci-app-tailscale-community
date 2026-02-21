@@ -298,8 +298,8 @@ msgid "NOT RUNNING"
 msgstr "未运行"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:298
-msgid "Network Devices"
-msgstr "网络设备"
+msgid "Devices List"
+msgstr "设备列表"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:245
 msgid "No peer devices found."
@@ -508,3 +508,7 @@ msgid ""
 "and enables Masquerading and MSS Clamping (MTU fix) to ensure stable "
 "connections."
 msgstr "并启用地址伪装和 MSS钳制确保连接稳定。"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:247
+msgid "Tailscale status error"
+msgstr "Tailscale 状态异常"

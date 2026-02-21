@@ -235,69 +235,66 @@ function renderStatus(status) {
 		E('tr', {}, statusData.map(item => E('td', { 'style': 'padding-right: 20px;' }, item.value)))
 	]);
 
-	// --- Part 3: Render the Peers/Network Devices table ---
+	return statusTable;
+}
 
-	const peers = status.peers;
-	let peersContent;
-
-	if (!peers || Object.keys(peers).length === 0) {
-		// Display a message if no peers are found.
-		peersContent = E('p', {}, _('No peer devices found.'));
-	} else {
-		// Define headers for the peers table.
-		const peerTableHeaders = [
-			{ text: _('Status'), style: 'width: 80px;' },
-			{ text: _('Hostname') },
-			{ text: _('Tailscale IP') },
-			{ text: _('OS') },
-			{ text: _('Connection Info') },
-			{ text: _('RX') },
-			{ text: _('TX') },
-			{ text: _('Last Seen') }
-		];
-
-		// Build the peers table.
-		peersContent = E('table', { 'class': 'cbi-table' }, [
-			// Table Header Row
-			E('tr', { 'class': 'cbi-table-header' }, peerTableHeaders.map(header => {
-				let th_style = 'padding-right: 20px; text-align: left;';
-				if (header.style) {
-					th_style += header.style;
-				}
-				return E('th', { 'class': 'cbi-table-cell', 'style': th_style }, header.text);
-			})),
-
-			// Table Body Rows (one for each peer)
-			...Object.entries(peers).map(([peerid, peer]) => {
-				const td_style = 'padding-right: 20px;';
-
-				return E('tr', { 'class': 'cbi-rowstyle-1' }, [
-					E('td', { 'class': 'cbi-value-field', 'style': td_style },
-						E('span', {
-							'style': `color:${peer.exit_node ? 'blue' : (peer.online ? 'green' : 'gray')};`,
-							'title': (peer.exit_node ? _('Exit Node') + ' ' : '') + (peer.online ? _('Online') : _('Offline'))
-						}, peer.online ? '●' : '○')
-					),
-					E('td', { 'class': 'cbi-value-field', 'style': td_style }, E('strong', {}, peer.hostname + (peer.exit_node_option ? ' (ExNode)' : ''))),
-					E('td', { 'class': 'cbi-value-field', 'style': td_style }, peer.ip || 'N/A'),
-					E('td', { 'class': 'cbi-value-field', 'style': td_style }, peer.ostype || 'N/A'),
-					E('td', { 'class': 'cbi-value-field', 'style': td_style }, formatConnectionInfo(peer.linkadress || '-')),
-					E('td', { 'class': 'cbi-value-field', 'style': td_style }, formatBytes(peer.rx)),
-					E('td', { 'class': 'cbi-value-field', 'style': td_style }, formatBytes(peer.tx)),
-					E('td', { 'class': 'cbi-value-field', 'style': td_style }, formatLastSeen(peer.lastseen))
-				]);
-			})
-		]);
+function renderDevices(status) {
+	if (!status || !status.hasOwnProperty('status')) {
+		return E('em', {}, _('Collecting data ...'));
 	}
 
-	// Combine all parts into a single DocumentFragment.
-	// Using E() without a tag name creates a fragment, which is perfect for grouping elements.
-	return E([
-		statusTable,
-		E('div', { 'style': 'margin-top: 25px;' }, [
-			E('h4', {}, _('Network Devices')),
-			peersContent
-		])
+	if (status.status != 'running') {
+		return E('em', {}, _('Tailscale status error'));
+	}
+
+	if (Object.keys(regionCodeMap).length === 0) {
+		initializeRegionMap();
+	}
+
+	const peers = status.peers;
+	if (!peers || Object.keys(peers).length === 0) {
+		return E('p', {}, _('No peer devices found.'));
+	}
+
+	const peerTableHeaders = [
+		{ text: _('Status'), style: 'width: 80px;' },
+		{ text: _('Hostname') },
+		{ text: _('Tailscale IP') },
+		{ text: _('OS') },
+		{ text: _('Connection Info') },
+		{ text: _('RX') },
+		{ text: _('TX') },
+		{ text: _('Last Seen') }
+	];
+
+	return E('table', { 'class': 'cbi-table' }, [
+		E('tr', { 'class': 'cbi-table-header' }, peerTableHeaders.map(header => {
+			let th_style = 'padding-right: 20px; text-align: left;';
+			if (header.style) {
+				th_style += header.style;
+			}
+			return E('th', { 'class': 'cbi-table-cell', 'style': th_style }, header.text);
+		})),
+
+		...Object.entries(peers).map(([peerid, peer]) => {
+			const td_style = 'padding-right: 20px;';
+
+			return E('tr', { 'class': 'cbi-rowstyle-1' }, [
+				E('td', { 'class': 'cbi-value-field', 'style': td_style },
+					E('span', {
+						'style': `color:${peer.exit_node ? 'blue' : (peer.online ? 'green' : 'gray')};`,
+						'title': (peer.exit_node ? _('Exit Node') + ' ' : '') + (peer.online ? _('Online') : _('Offline'))
+					}, peer.online ? '●' : '○')
+				),
+				E('td', { 'class': 'cbi-value-field', 'style': td_style }, E('strong', {}, peer.hostname + (peer.exit_node_option ? ' (ExNode)' : ''))),
+				E('td', { 'class': 'cbi-value-field', 'style': td_style }, peer.ip || 'N/A'),
+				E('td', { 'class': 'cbi-value-field', 'style': td_style }, peer.ostype || 'N/A'),
+				E('td', { 'class': 'cbi-value-field', 'style': td_style }, formatConnectionInfo(peer.linkadress || '-')),
+				E('td', { 'class': 'cbi-value-field', 'style': td_style }, formatBytes(peer.rx)),
+				E('td', { 'class': 'cbi-value-field', 'style': td_style }, formatBytes(peer.tx)),
+				E('td', { 'class': 'cbi-value-field', 'style': td_style }, formatLastSeen(peer.lastseen))
+			]);
+		})
 	]);
 }
 
@@ -353,6 +350,11 @@ return view.extend({
 							view.replaceChildren(content);
 						}
 
+						const devicesView = document.getElementById("tailscale_devices_display");
+						if (devicesView) {
+							devicesView.replaceChildren(renderDevices(res));
+						}
+
 						// login button only available when logged out
 						const login_btn=document.getElementsByClassName('cbi-button cbi-button-apply')[0];
 						if(login_btn) { login_btn.disabled=(res.status != 'logout'); }
@@ -365,7 +367,7 @@ return view.extend({
 		}
 
 		// Bind settings to the 'settings' section of uci
-		s = map.section(form.NamedSection, 'settings', 'settings', _('Settings'));
+		s = map.section(form.NamedSection, 'settings', 'settings', null);
 		s.dynamic = true;
 
 		// Create the "General Settings" tab and apply tailscaleSettingsConf
@@ -539,6 +541,12 @@ return view.extend({
 				])
 			]);
 			ui.showModal(_('Confirm Logout'), confirmationContent);
+		};
+
+		s.tab('devices', _('Devices List'));
+		const devicesSection = s.taboption('devices', form.DummyValue, '_devices');
+		devicesSection.render = function () {
+			return E('div', { 'id': 'tailscale_devices_display', 'class': 'cbi-value' }, renderDevices(status));
 		};
 
 		// Create the "Daemon Settings" tab and apply daemonConf
