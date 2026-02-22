@@ -500,7 +500,7 @@ msgstr "使用出口节点时，允许访问本地局域网。"
 msgid ""
 "[Important] Log in to the Tailscale admin console and manually enable "
 "\"Subnet Routes\" for this device."
-msgstr "【重要】 登录 Tailscale 控制平面，在设备设置中手动授权子网路由。"
+msgstr "【重要】 登录 Tailscale 控制台，在设备设置中手动授权子网路由。"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:96
 msgid "ago"
