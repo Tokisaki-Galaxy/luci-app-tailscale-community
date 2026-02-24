@@ -24,7 +24,8 @@ const tailscaleSettingsConf = [
 	[form.Flag, 'nosnat', _('Disable SNAT'), _('Disable Source NAT (SNAT) for traffic to advertised routes. Most users should leave this unchecked.'), { rmempty: false }],
 	[form.Flag, 'shields_up', _('Shields Up'), _('When enabled, blocks all inbound connections from the Tailscale network.'), { rmempty: false }],
 	[form.Flag, 'ssh', _('Enable Tailscale SSH'), _('Allow connecting to this device through the SSH function of Tailscale.'), { rmempty: false }],
-	[form.Flag, 'disable_magic_dns', _('Disable MagicDNS'), _('Use system DNS instead of MagicDNS.'), { rmempty: false }]
+	[form.Flag, 'disable_magic_dns', _('Disable MagicDNS'), _('Use system DNS instead of MagicDNS.'), { rmempty: false }],
+	[form.Flag, 'enable_relay', _('Enable Peer Relay'), _('Enable this device as a Peer Relay server. Requires a public IP and an UDP port open on the router.'), { rmempty: false }]
 ];
 
 const accountConf = [];	// dynamic created in render function
@@ -375,6 +376,14 @@ return view.extend({
 
 		defTabOpts(s, 'general', tailscaleSettingsConf, { optional: false });
 
+		const relayPort = s.taboption('general', form.Value, 'relay_server_port', _('Peer Relay Port'),
+			_('UDP port for the Peer Relay service. Open this port on your router firewall/NAT.')
+		);
+		relayPort.datatype = 'port';
+		relayPort.placeholder = '40000';
+		relayPort.rmempty = false;
+		relayPort.depends('enable_relay', '1');
+
 		const en = s.taboption('general', form.ListValue, 'exit_node', _('Exit Node'), _('Select an exit node from the list. If enabled, Allow LAN Access is enabled implicitly.'));
 		en.value('', _('None'));
 		if (status.peers) {
@@ -567,6 +576,7 @@ return view.extend({
 			if(!data.exit_node) data.exit_node = '';
 			if(!data.custom_login_url) data.custom_login_url = '';
 			if(!data.custom_login_AuthKey) data.custom_login_AuthKey = '';
+			if(!data.relay_server_port) data.relay_server_port = '';
 
 			ui.showModal(_('Applying changes...'), E('em', {}, _('Please wait.')));
 

@@ -28,6 +28,24 @@ function exec(command) {
 	return { code: exit_code, stdout: stdout_content, stderr: stderr_content };
 }
 
+// Compare version strings: returns true if ver >= min_ver
+function version_gte(ver, min_ver) {
+	let parse = function(v) {
+		v = split(v, '-')[0];
+		let parts = split(v, '.');
+		return [
+			int(parts[0]) || 0,
+			int(parts[1]) || 0,
+			int(parts[2]) || 0
+		];
+	};
+	let a = parse(ver);
+	let b = parse(min_ver);
+	if (a[0] != b[0]) return a[0] > b[0];
+	if (a[1] != b[1]) return a[1] > b[1];
+	return a[2] >= b[2];
+}
+
 function shell_quote(s) {
 	if (s == null || s == '') return "''";
 	return "'" + replace(s, "'", "'\\''") + "'";
@@ -154,6 +172,19 @@ methods.set_settings = {
 		push(args,'--exit-node=' + (shell_quote(form_data.exit_node) || '\"\"'));
 		if (form_data.exit_node != "") push(args,' --exit-node-allow-lan-access=true');
 		push(args,'--hostname ' + (shell_quote(form_data.hostname) || '\"\"'));
+
+		// Peer Relay
+		let ts_ver_result = exec('tailscale version');
+		let ts_ver = (ts_ver_result.code == 0 && length(ts_ver_result.stdout) > 0)
+			? trim(ts_ver_result.stdout[0]) : '0.0.0';
+		if (version_gte(ts_ver, '1.90.5')) {
+			if (form_data.enable_relay == '1') {
+				let relay_port = int(form_data.relay_server_port) || 40000;
+				push(args,'--relay-server-port=' + relay_port);
+			} else {
+				push(args,'--relay-server-port=""');
+			}
+		}
 
 		let cmd_array = 'tailscale '+join(' ', args);
 		let set_result = exec(cmd_array);
