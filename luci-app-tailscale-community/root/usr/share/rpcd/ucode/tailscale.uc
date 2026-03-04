@@ -28,7 +28,6 @@ function exec(command) {
 	return { code: exit_code, stdout: stdout_content, stderr: stderr_content };
 }
 
-
 function shell_quote(s) {
 	if (s == null || s == '') return "''";
 	return "'" + replace(s, "'", "'\\''") + "'";
