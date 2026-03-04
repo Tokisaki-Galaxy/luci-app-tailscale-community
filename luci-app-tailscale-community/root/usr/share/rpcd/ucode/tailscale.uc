@@ -28,23 +28,6 @@ function exec(command) {
 	return { code: exit_code, stdout: stdout_content, stderr: stderr_content };
 }
 
-// Compare version strings: returns true if ver >= min_ver
-function version_gte(ver, min_ver) {
-	let parse = function(v) {
-		v = split(v, '-')[0];
-		let parts = split(v, '.');
-		return [
-			int(parts[0]) || 0,
-			int(parts[1]) || 0,
-			int(parts[2]) || 0
-		];
-	};
-	let a = parse(ver);
-	let b = parse(min_ver);
-	if (a[0] != b[0]) return a[0] > b[0];
-	if (a[1] != b[1]) return a[1] > b[1];
-	return a[2] >= b[2];
-}
 
 function shell_quote(s) {
 	if (s == null || s == '') return "''";
@@ -151,62 +134,6 @@ methods.get_settings = {
 	}
 };
 
-methods.set_settings = {
-	args: { form_data: {} },
-	call: function(request) {
-		const form_data = request.args.form_data;
-		if (form_data == null || length(form_data) == 0) {
-			return { error: 'Missing or invalid form_data parameter. Please provide settings data.' };
-		}
-		let args = ['set'];
-
-		push(args,'--accept-routes=' + (form_data.accept_routes == '1'));
-		push(args,'--advertise-exit-node=' + ((form_data.advertise_exit_node == '1')&&(form_data.exit_node == "")));
-		if (form_data.exit_node == "") push(args,'--exit-node-allow-lan-access=' + (form_data.exit_node_allow_lan_access == '1'));
-		push(args,'--ssh=' + (form_data.ssh == '1'));
-		push(args,'--accept-dns=' + (form_data.disable_magic_dns != '1'));
-		push(args,'--shields-up=' + (form_data.shields_up == '1'));
-		push(args,'--webclient=' + (form_data.runwebclient == '1'));
-		push(args,'--snat-subnet-routes=' + (form_data.nosnat != '1'));
-		push(args,'--advertise-routes ' + (shell_quote(join(',',form_data.advertise_routes)) || '\"\"'));
-		push(args,'--exit-node=' + (shell_quote(form_data.exit_node) || '\"\"'));
-		if (form_data.exit_node != "") push(args,' --exit-node-allow-lan-access=true');
-		push(args,'--hostname ' + (shell_quote(form_data.hostname) || '\"\"'));
-
-		// Peer Relay
-		let ts_ver_result = exec('tailscale version');
-		let ts_ver = (ts_ver_result.code == 0 && length(ts_ver_result.stdout) > 0)
-			? trim(ts_ver_result.stdout[0]) : '0.0.0';
-		if (version_gte(ts_ver, '1.90.5')) {
-			if (form_data.enable_relay == '1') {
-				let relay_port = int(form_data.relay_server_port) || 40000;
-				push(args,'--relay-server-port=' + relay_port);
-			} else {
-				push(args,'--relay-server-port=""');
-			}
-		}
-
-		let cmd_array = 'tailscale '+join(' ', args);
-		let set_result = exec(cmd_array);
-		if (set_result.code != 0) {
-			return { error: 'Failed to apply node settings: ' + set_result.stderr };
-		}
-
-		uci.load('tailscale');
-		for (let key in form_data) {
-			uci.set('tailscale', 'settings', key, form_data[key]);
-		}
-		uci.save('tailscale');
-		uci.commit('tailscale');
-
-		// process reduce memory https://github.com/GuNanOvO/openwrt-tailscale
-		// some new versions of Tailscale may not work well with this method
-		//if (form_data.daemon_mtu != "" || form_data.daemon_reduce_memory != "") {
-		//	popen('/bin/sh -c ". ' + env_script_path + ' && /etc/init.d/tailscale restart" &');
-		//}
-		return { success: true };
-	}
-};
 
 methods.do_login = {
 	args: { form_data: {} },
