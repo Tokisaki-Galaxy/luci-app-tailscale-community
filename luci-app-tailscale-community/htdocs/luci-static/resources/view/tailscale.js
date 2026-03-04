@@ -8,7 +8,6 @@
 
 const callGetStatus = rpc.declare({ object: 'tailscale', method: 'get_status' });
 const callGetSettings = rpc.declare({ object: 'tailscale', method: 'get_settings' });
-const callSetSettings = rpc.declare({ object: 'tailscale', method: 'set_settings', params: ['form_data'] });
 const callDoLogin = rpc.declare({ object: 'tailscale', method: 'do_login', params: ['form_data'] });
 const callDoLogout = rpc.declare({ object: 'tailscale', method: 'do_logout' });
 const callGetSubroutes = rpc.declare({ object: 'tailscale', method: 'get_subroutes' });
@@ -565,41 +564,12 @@ return view.extend({
 		return map.render();
 	},
 
-	// The handleSaveApply function is executed after clicking "Save & Apply"
-	handleSaveApply(ev) {
+	// The handleSaveApply function saves UCI changes then applies them via the
+	// standard OpenWrt apply mechanism, which triggers /etc/init.d/tailscale-settings
+	// and provides automatic rollback protection if the device becomes unreachable.
+	handleSaveApply(ev, mode) {
 		return map.save().then(function () {
-			const data = map.data.get('tailscale', 'settings');
-
-			// fix empty value issue
-			if(!data.advertise_exit_node) data.advertise_exit_node = '';
-			if(!data.advertise_routes) data.advertise_routes = '';
-			if(!data.exit_node) data.exit_node = '';
-			if(!data.custom_login_url) data.custom_login_url = '';
-			if(!data.custom_login_AuthKey) data.custom_login_AuthKey = '';
-			if(!data.relay_server_port) data.relay_server_port = '';
-
-			ui.showModal(_('Applying changes...'), E('em', {}, _('Please wait.')));
-
-			return callSetSettings(data).then(function (response) {
-				if (response.success) {
-					ui.hideModal();
-					setTimeout(function() {
-							ui.addTimeLimitedNotification(null, [ E('p', _('Tailscale settings applied successfully.')) ], 5000, 'info');
-					}, 1000);
-					try {
-						L.ui.changes.revert();
-					} catch (error) {
-						ui.addTimeLimitedNotification(null, [ E('p', _('Error saving settings: %s').format(error || _('Unknown error'))) ], 7000, 'error');
-					}
-				} else {
-					ui.hideModal();
-					ui.addTimeLimitedNotification(null, [ E('p', _('Error applying settings: %s').format(response.error || _('Unknown error'))) ], 7000, 'error');
-				}
-			});
-		}).catch(function(err) {
-			ui.hideModal();
-			//console.error('Save failed:', err);
-			ui.addTimeLimitedNotification(null, [ E('p', _('Failed to save settings: %s').format(err.message)) ], 7000, 'error');
+			return ui.changes.apply(mode == '0');
 		});
 	},
 
