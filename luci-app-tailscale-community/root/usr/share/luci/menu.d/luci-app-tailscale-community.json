@@ -5,9 +5,6 @@
 		"action": {
 			"type": "view",
 			"path": "tailscale"
-		},
-		"depends": {
-			"acl": [ "luci-app-tailscale-community" ]
 		}
 	}
 }
