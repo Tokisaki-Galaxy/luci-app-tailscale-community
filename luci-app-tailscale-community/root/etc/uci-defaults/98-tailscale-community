@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# Create a minimal /etc/config/tailscale if it does not already exist or is
+# empty.  This handles distributions whose tailscale package does not create
+# the UCI configuration file, so the LuCI plugin can always read and write
+# Tailscale settings.
+
+[ -s /etc/config/tailscale ] || {
+	uci -q batch << 'EOF'
+set tailscale.settings=settings
+set tailscale.settings.port=41641
+set tailscale.settings.fw_mode=nftables
+commit tailscale
+EOF
+}
+
+exit 0

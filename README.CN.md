@@ -127,6 +127,28 @@ opkg install luci-app-tailscale-community_*.ipk
 
 安装后，您应该能在 LuCI 的“服务”选项卡下找到“Tailscale”菜单。
 
+> [!NOTE]
+> **安装后在菜单中找不到插件？**
+>
+> 如果安装后在“服务”菜单中仍然找不到 Tailscale，请尝试以下步骤：
+>
+> 1. **手动清除 LuCI 缓存并重载 rpcd**（通过 SSH 执行）：
+>    ```bash
+>    rm -f /tmp/luci-indexcache.*
+>    /etc/init.d/rpcd reload
+>    ```
+>    然后刷新浏览器页面。
+>
+> 2. **重启路由器**，再次访问 LuCI。
+>
+> 3. **直接通过 URL 访问**插件（将 IP 替换为您的路由器地址）：
+>    ```
+>    http://192.168.1.1/cgi-bin/luci/admin/services/tailscale
+>    ```
+>
+> 部分深度定制的固件（如 CatWrt、LEDE 等）可能对 LuCI 进行了修改，导致菜单项无法正常显示。
+> 本插件已在标准 OpenWrt（23.05 及以上）和 ImmortalWrt 固件上验证可用。
+
 ## 从源码构建
 
 您也可以使用 OpenWrt SDK 自行构建此软件包。构建过程在 [`.github/workflows/build.yml`](.github/workflows/build.yml) 文件中定义，可作为参考。

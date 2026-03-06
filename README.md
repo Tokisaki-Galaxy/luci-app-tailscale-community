@@ -126,6 +126,28 @@ opkg install luci-app-tailscale-community_*.ipk
 
 After installation, you should find the "Tailscale" menu under the "Services" tab in LuCI.
 
+> [!NOTE]
+> **Plugin not visible in the menu after installation?**
+>
+> If Tailscale does not appear under "Services" after installing, try the following:
+>
+> 1. **Clear the LuCI cache and reload rpcd** (via SSH):
+>    ```bash
+>    rm -f /tmp/luci-indexcache.*
+>    /etc/init.d/rpcd reload
+>    ```
+>    Then refresh the browser page.
+>
+> 2. **Reboot the router** and access LuCI again.
+>
+> 3. **Access the plugin directly via URL** (replace the IP with your router's address):
+>    ```
+>    http://192.168.1.1/cgi-bin/luci/admin/services/tailscale
+>    ```
+>
+> Heavily customised firmware builds (e.g. CatWrt, LEDE-based forks) may modify LuCI in ways that prevent menu entries from appearing.
+> This plugin is verified to work on stock OpenWrt (23.05+) and ImmortalWrt.
+
 ## Building from Source
 
 You can also build the package yourself using the OpenWrt SDK. The build process is defined in the [`.github/workflows/build.yml`](.github/workflows/build.yml) file, which can be used as a reference.
