@@ -5,6 +5,11 @@ START=99
 STOP=10
 
 NAME=tailscale-settings
+DIAG_FILE=/var/run/tailscale-settings-diagnostics.json
+DIAG_FILE_PREV=/var/run/tailscale-settings-diagnostics.prev.json
+LIB_FILE=/usr/libexec/tailscale-settings-lib.sh
+
+[ -f "$LIB_FILE" ] && . "$LIB_FILE"
 
 # Compare version strings: return 0 (true) if $1 >= $2
 version_gte() {
@@ -21,6 +26,179 @@ version_gte() {
 	return $?
 }
 
+jsonfilter_eval() {
+	local json_input="$1"
+	local expr="$2"
+
+	[ -n "$json_input" ] || return 0
+	command -v jsonfilter >/dev/null 2>&1 || return 0
+
+	jsonfilter -s "$json_input" -e "$expr" 2>/dev/null || true
+}
+
+json_bool_to_uci() {
+	case "${1:-}" in
+		true|1) printf '1' ;;
+		*) printf '0' ;;
+	esac
+}
+
+json_csv() {
+	jsonfilter_eval "$1" "$2" | tr ' ' '\n' | awk 'NF { print }' | paste -sd',' -
+}
+
+append_route() {
+	if [ -z "${desired_advertise_routes:-}" ]; then
+		desired_advertise_routes="$1"
+	else
+		desired_advertise_routes="${desired_advertise_routes},$1"
+	fi
+}
+
+load_desired_settings() {
+	config_load tailscale
+
+	config_get desired_accept_routes settings accept_routes '0'
+	config_get desired_advertise_exit_node settings advertise_exit_node '0'
+	config_get desired_exit_node settings exit_node ''
+	config_get desired_exit_node_allow_lan_access settings exit_node_allow_lan_access '0'
+	config_get desired_ssh settings ssh '0'
+	config_get desired_disable_magic_dns settings disable_magic_dns '0'
+	config_get desired_shields_up settings shields_up '0'
+	config_get desired_runwebclient settings runwebclient '0'
+	config_get desired_nosnat settings nosnat '0'
+	config_get desired_hostname settings hostname ''
+	config_get desired_enable_relay settings enable_relay '0'
+	config_get desired_relay_server_port settings relay_server_port '40000'
+	config_get desired_login_server settings custom_login_url ''
+
+	desired_advertise_routes=''
+	config_list_foreach settings advertise_routes append_route
+
+	if [ -n "${desired_exit_node:-}" ]; then
+		desired_advertise_exit_node='0'
+		desired_exit_node_allow_lan_access='1'
+	fi
+}
+
+load_runtime_settings() {
+	local runtime_json status_json active_status_json runtime_routes
+
+	runtime_json=$("$ts_bin" debug prefs --json 2>/dev/null || true)
+	status_json=$("$ts_bin" status --json 2>/dev/null || true)
+	active_status_json=$("$ts_bin" status --json --active 2>/dev/null || true)
+
+	runtime_accept_routes="$(json_bool_to_uci "$(jsonfilter_eval "$runtime_json" '@.RouteAll')")"
+	runtime_routes="$(json_csv "$runtime_json" '@.AdvertiseRoutes[@]')"
+	runtime_advertise_routes="$runtime_routes"
+	runtime_advertise_exit_node="$(json_bool_to_uci "$(jsonfilter_eval "$status_json" '@.AdvertiseExitNode')")"
+	case ",$runtime_routes," in
+		*,0.0.0.0/0,*|*,::/0,*)
+			runtime_advertise_exit_node='1'
+			;;
+	esac
+	runtime_exit_node="$(jsonfilter_eval "$runtime_json" '@.ExitNodeIP')"
+	runtime_exit_node_allow_lan_access="$(json_bool_to_uci "$(jsonfilter_eval "$runtime_json" '@.ExitNodeAllowLANAccess')")"
+	runtime_nosnat="$(json_bool_to_uci "$(jsonfilter_eval "$runtime_json" '@.NoSNAT')")"
+	if [ "$(json_bool_to_uci "$(jsonfilter_eval "$runtime_json" '@.CorpDNS')")" = '1' ]; then
+		runtime_disable_magic_dns='0'
+	else
+		runtime_disable_magic_dns='1'
+	fi
+	runtime_login_server="$(jsonfilter_eval "$runtime_json" '@.ControlURL')"
+	runtime_ssh="$(json_bool_to_uci "$(jsonfilter_eval "$runtime_json" '@.RunSSH')")"
+	runtime_shields_up="$(json_bool_to_uci "$(jsonfilter_eval "$runtime_json" '@.ShieldsUp')")"
+	runtime_runwebclient="$(json_bool_to_uci "$(jsonfilter_eval "$runtime_json" '@.RunWebClient')")"
+	runtime_hostname="$(jsonfilter_eval "$runtime_json" '@.Hostname')"
+	runtime_enable_relay='0'
+	[ -n "$(jsonfilter_eval "$runtime_json" '@.RelayServerPort')" ] && runtime_enable_relay='1'
+	runtime_relay_server_port="$(jsonfilter_eval "$runtime_json" '@.RelayServerPort')"
+
+	diag_logged_in='0'
+	[ "$(jsonfilter_eval "$status_json" '@.BackendState')" = 'Running' ] && diag_logged_in='1'
+	diag_self_active="$(json_bool_to_uci "$(jsonfilter_eval "$status_json" '@.Self.Active')")"
+	diag_self_in_engine="$(json_bool_to_uci "$(jsonfilter_eval "$status_json" '@.Self.InEngine')")"
+	diag_ts_ip4="$(jsonfilter_eval "$status_json" '@.Self.TailscaleIPs[0]')"
+	diag_peer_candidate="$(jsonfilter_eval "$active_status_json" '@.Peer.*.TailscaleIPs[0]' | head -n1)"
+	if [ -z "$diag_peer_candidate" ]; then
+		diag_peer_candidate="$(jsonfilter_eval "$status_json" '@.Peer.*.TailscaleIPs[0]' | head -n1)"
+	fi
+}
+
+build_argv() {
+	local generated_args="$1"
+	set --
+	while IFS= read -r arg; do
+		[ -n "$arg" ] || continue
+		set -- "$@" "$arg"
+	done <<EOF
+$generated_args
+EOF
+
+	printf '%s\n' "$@"
+}
+
+json_escape() {
+	printf '%s' "${1:-}" | sed 's/\\/\\\\/g; s/"/\\"/g'
+}
+
+write_diagnostics() {
+	local exit_code="$1"
+	local apply_mode="$2"
+	local route_output table52_summary table_route_count health_summary health reason
+
+	route_output=''
+	if [ -n "${diag_peer_candidate:-}" ]; then
+		route_output="$(ip route get "$diag_peer_candidate" 2>/dev/null || true)"
+		case "$route_output" in
+			*' dev tailscale0 '*|*' dev tailscale0')
+				diag_peer_route_status='ok'
+				;;
+			'')
+				diag_peer_route_status='unavailable'
+				;;
+			*)
+				diag_peer_route_status='wan'
+				;;
+		esac
+	else
+		diag_peer_route_status='unavailable'
+	fi
+
+	table52_summary="$(ip route show table 52 2>/dev/null || true)"
+	table_route_count="$(printf '%s\n' "$table52_summary" | awk 'NF { count++ } END { print count + 0 }')"
+	diag_table_route_count="${table_route_count:-0}"
+	diag_table52_has_routes='0'
+	[ "${diag_table_route_count:-0}" -gt 0 ] && diag_table52_has_routes='1'
+
+	health_summary="$(ts_compute_health)"
+	health="${health_summary#health=}"
+	health="${health%% *}"
+	reason="${health_summary##*reason=}"
+
+	[ -f "$DIAG_FILE" ] && cp -f "$DIAG_FILE" "$DIAG_FILE_PREV" 2>/dev/null || true
+
+	cat >"$DIAG_FILE" <<EOF
+{
+  "apply_mode": "$(json_escape "$apply_mode")",
+  "exit_code": $exit_code,
+  "logged_in": $( [ "${diag_logged_in:-0}" = '1' ] && printf 'true' || printf 'false' ),
+  "self_active": $( [ "${diag_self_active:-0}" = '1' ] && printf 'true' || printf 'false' ),
+  "self_in_engine": $( [ "${diag_self_in_engine:-0}" = '1' ] && printf 'true' || printf 'false' ),
+  "ts_ip4": "$(json_escape "${diag_ts_ip4:-}")",
+  "table52_has_routes": $( [ "${diag_table52_has_routes:-0}" = '1' ] && printf 'true' || printf 'false' ),
+  "table_route_count": ${diag_table_route_count:-0},
+  "peer_candidate": "$(json_escape "${diag_peer_candidate:-}")",
+  "peer_route_ok": $( [ "${diag_peer_route_status:-unavailable}" = 'ok' ] && printf 'true' || printf 'false' ),
+  "peer_route_status": "$(json_escape "${diag_peer_route_status:-unavailable}")",
+  "peer_route_summary": "$(json_escape "$route_output")",
+  "table52_summary": "$(json_escape "$table52_summary")",
+  "health": "$(json_escape "$health")",
+  "reason": "$(json_escape "$reason")"
+}
+EOF
+}
+
 apply_settings() {
 	local ts_bin
 	if [ -x /usr/sbin/tailscale ]; then
@@ -29,115 +207,46 @@ apply_settings() {
 		ts_bin=/usr/bin/tailscale
 	else
 		logger -t "$NAME" "tailscale binary not found, skipping settings apply"
+		write_diagnostics 0 skipped
 		return 0
 	fi
 
-	config_load tailscale
+	load_desired_settings
+	load_runtime_settings
 
-	local accept_routes advertise_exit_node exit_node exit_node_allow_lan_access
-	local ssh disable_magic_dns shields_up runwebclient nosnat hostname
-	local enable_relay relay_server_port
-
-	config_get accept_routes              settings accept_routes              '0'
-	config_get advertise_exit_node        settings advertise_exit_node        '0'
-	config_get exit_node                  settings exit_node                  ''
-	config_get exit_node_allow_lan_access settings exit_node_allow_lan_access '0'
-	config_get ssh                        settings ssh                        '0'
-	config_get disable_magic_dns          settings disable_magic_dns          '0'
-	config_get shields_up                 settings shields_up                 '0'
-	config_get runwebclient               settings runwebclient               '0'
-	config_get nosnat                     settings nosnat                     '0'
-	config_get hostname                   settings hostname                   ''
-	config_get enable_relay               settings enable_relay               '0'
-	config_get relay_server_port          settings relay_server_port          '40000'
-
-	# Collect advertise_routes UCI list into comma-separated string
-	local routes=""
-	append_route() {
-		if [ -z "$routes" ]; then
-			routes="$1"
-		else
-			routes="$routes,$1"
-		fi
-	}
-	config_list_foreach settings advertise_routes append_route
-
-	# Build argument list for 'tailscale set'
-	set -- set
-
-	# --accept-routes
-	[ "$accept_routes" = "1" ] \
-		&& set -- "$@" --accept-routes=true \
-		|| set -- "$@" --accept-routes=false
-
-	# --advertise-exit-node (only when no exit node is selected)
-	if [ "$advertise_exit_node" = "1" ] && [ -z "$exit_node" ]; then
-		set -- "$@" --advertise-exit-node=true
-	else
-		set -- "$@" --advertise-exit-node=false
-	fi
-
-	# --exit-node-allow-lan-access (only when no exit node is selected)
-	if [ -z "$exit_node" ]; then
-		[ "$exit_node_allow_lan_access" = "1" ] \
-			&& set -- "$@" --exit-node-allow-lan-access=true \
-			|| set -- "$@" --exit-node-allow-lan-access=false
-	fi
-
-	# --ssh
-	[ "$ssh" = "1" ] \
-		&& set -- "$@" --ssh=true \
-		|| set -- "$@" --ssh=false
-
-	# --accept-dns (inverse of disable_magic_dns)
-	[ "$disable_magic_dns" = "1" ] \
-		&& set -- "$@" --accept-dns=false \
-		|| set -- "$@" --accept-dns=true
-
-	# --shields-up
-	[ "$shields_up" = "1" ] \
-		&& set -- "$@" --shields-up=true \
-		|| set -- "$@" --shields-up=false
-
-	# --webclient
-	[ "$runwebclient" = "1" ] \
-		&& set -- "$@" --webclient=true \
-		|| set -- "$@" --webclient=false
-
-	# --snat-subnet-routes (inverse of nosnat)
-	[ "$nosnat" = "1" ] \
-		&& set -- "$@" --snat-subnet-routes=false \
-		|| set -- "$@" --snat-subnet-routes=true
-
-	# --advertise-routes (comma-separated, empty clears routes)
-	set -- "$@" "--advertise-routes=$routes"
-
-	# --exit-node (empty clears the exit node)
-	set -- "$@" "--exit-node=$exit_node"
-
-	# when an exit node is configured, always allow LAN access
-	[ -n "$exit_node" ] && set -- "$@" --exit-node-allow-lan-access=true
-
-	# --hostname (only set if non-empty)
-	[ -n "$hostname" ] && set -- "$@" "--hostname=$hostname"
-
-	# --relay-server-port (requires tailscale >= 1.90.5)
-	local ts_ver
+	local apply_mode generated_args ts_ver
 	ts_ver=$("$ts_bin" version 2>/dev/null | head -n1)
-	if version_gte "$ts_ver" "1.90.5"; then
-		if [ "$enable_relay" = "1" ]; then
-			set -- "$@" "--relay-server-port=${relay_server_port:-40000}"
-		else
-			set -- "$@" "--relay-server-port="
-		fi
+	ts_supports_relay_server_port='1'
+
+	if ! version_gte "$ts_ver" "1.90.5"; then
+		desired_enable_relay='0'
+		ts_supports_relay_server_port='0'
 	fi
 
-	logger -t "$NAME" "Applying settings"
+	if ts_should_reset; then
+		apply_mode='up-reset'
+		generated_args="$(ts_build_up_reset_args)"
+	else
+		apply_mode='set'
+		generated_args="$(ts_build_set_args)"
+	fi
+
+	logger -t "$NAME" "Applying settings via $apply_mode"
+	set --
+	while IFS= read -r arg; do
+		[ -n "$arg" ] || continue
+		set -- "$@" "$arg"
+	done <<EOF
+$generated_args
+EOF
+
 	"$ts_bin" "$@"
 	local ret=$?
 	[ $ret -eq 0 ] \
 		&& logger -t "$NAME" "Settings applied successfully" \
 		|| logger -t "$NAME" "Failed to apply settings (exit code: $ret)"
+	load_runtime_settings
+	write_diagnostics "$ret" "$apply_mode"
 	return $ret
 }
 

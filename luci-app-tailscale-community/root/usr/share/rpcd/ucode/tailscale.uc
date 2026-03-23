@@ -6,6 +6,7 @@ import { access, popen, readfile, writefile, unlink } from 'fs';
 import { cursor } from 'uci';
 
 const uci = cursor();
+const diagnostics_file = '/var/run/tailscale-settings-diagnostics.json';
 
 function exec(command) {
 	let stdout_content = '';
@@ -31,6 +32,52 @@ function exec(command) {
 function shell_quote(s) {
 	if (s == null || s == '') return "''";
 	return "'" + replace(s, "'", "'\\''") + "'";
+}
+
+function read_json_command(command) {
+	let result = exec(command);
+	if (result.code != 0 || length(result.stdout) == 0) {
+		return null;
+	}
+
+	try {
+		return json(join('', result.stdout));
+	} catch (e) {
+		return null;
+	}
+}
+
+function normalize_runtime(status_data, prefs_data) {
+	let advertise_routes = prefs_data?.AdvertiseRoutes || [];
+	let advertise_exit_node = status_data?.AdvertiseExitNode || false;
+
+	for (let route in advertise_routes) {
+		if (advertise_routes[route] == '0.0.0.0/0' || advertise_routes[route] == '::/0') {
+			advertise_exit_node = true;
+		}
+	}
+
+	return {
+		accept_routes: prefs_data?.RouteAll || false,
+		advertise_exit_node: advertise_exit_node,
+		advertise_routes: advertise_routes,
+		exit_node: prefs_data?.ExitNodeIP || prefs_data?.ExitNodeID || '',
+		exit_node_allow_lan_access: prefs_data?.ExitNodeAllowLANAccess || false,
+		shields_up: prefs_data?.ShieldsUp || false,
+		ssh: prefs_data?.RunSSH || false,
+		runwebclient: prefs_data?.RunWebClient || false,
+		nosnat: prefs_data?.NoSNAT || false,
+		disable_magic_dns: !(prefs_data?.CorpDNS || false),
+		hostname: prefs_data?.Hostname || '',
+		enable_relay: prefs_data?.RelayServerPort ? true : false,
+		relay_server_port: prefs_data?.RelayServerPort || '',
+		login_server: prefs_data?.ControlURL || '',
+		logged_in: status_data?.BackendState == 'Running',
+		self_active: status_data?.Self?.Active || false,
+		self_in_engine: status_data?.Self?.InEngine || false,
+		ipv4: status_data?.Self?.TailscaleIPs?.[0] || '',
+		ipv6: status_data?.Self?.TailscaleIPs?.[1] || ''
+	};
 }
 
 const methods = {};
@@ -91,45 +138,59 @@ methods.get_status = {
 	}
 };
 
+methods.get_runtime = {
+	call: function() {
+		uci.load('tailscale');
+		let runtime = normalize_runtime(
+			read_json_command('tailscale status --json') || {},
+			read_json_command('tailscale debug prefs --json') || {}
+		);
+		runtime.fw_mode = split(uci.get('tailscale', 'settings', 'fw_mode'), ' ')[0] || 'nftables';
+		return runtime;
+	}
+};
+
 methods.get_settings = {
 	call: function() {
-		let settings = {};
-		uci.load('tailscale');
-		let state_file_path = uci.get('tailscale', 'settings', 'state_file') || "/etc/tailscale/tailscaled.state";
-		if (access(state_file_path)) {
-			try {
-				let state_content = readfile(state_file_path);
-				if (state_content != null) {
-					let state_data = json(state_content);
-					let profiles_b64 = state_data?._profiles;
-					if (!profiles_b64) return settings;
+		return methods.get_runtime.call();
+	}
+};
 
-					let profiles_data = json(b64dec(profiles_b64));
-					let profiles_key = null;
-					for (let key in profiles_data) {
-						profiles_key = key;
-						break;
-					}
-				profiles_key = 'profile-'+profiles_key;
+methods.get_diagnostics = {
+	call: function() {
+		let defaults = {
+			apply_mode: 'unknown',
+			exit_code: -1,
+			logged_in: false,
+			self_active: false,
+			self_in_engine: false,
+			ts_ip4: '',
+			table52_has_routes: false,
+			table_route_count: 0,
+			peer_candidate: '',
+			peer_route_ok: false,
+			peer_route_status: 'unavailable',
+			peer_route_summary: '',
+			table52_summary: '',
+			health: 'warn',
+			reason: 'unavailable'
+		};
 
-				let status_data = json(b64dec(state_data?.[profiles_key]));
-				if (status_data != null) {
-					settings.accept_routes = status_data?.RouteAll || false;
-					settings.advertise_exit_node = status_data?.AdvertiseExitNode || false;
-					settings.advertise_routes = status_data?.AdvertiseRoutes || [];
-					settings.exit_node = status_data?.ExitNodeID || "";
-					settings.exit_node_allow_lan_access = status_data?.ExitNodeAllowLANAccess || false;
-					settings.shields_up = status_data?.ShieldsUp || false;
-					settings.ssh = status_data?.RunSSH || false;
-					settings.runwebclient = status_data?.RunWebClient || false;
-					settings.nosnat = status_data?.NoSNAT || false;
-					settings.disable_magic_dns = !status_data?.CorpDNS || false;
-					settings.fw_mode = split(uci.get('tailscale', 'settings', 'fw_mode'),' ')[0] || 'nftables';
-				}
-				}
-			} catch (e) { /* ignore */ }
+		if (!access(diagnostics_file)) {
+			return defaults;
 		}
-		return settings;
+
+		try {
+			let diagnostics = json(readfile(diagnostics_file));
+			for (let key in defaults) {
+				if (diagnostics?.[key] == null) {
+					diagnostics[key] = defaults[key];
+				}
+			}
+			return diagnostics;
+		} catch (e) {
+			return defaults;
+		}
 	}
 };
 

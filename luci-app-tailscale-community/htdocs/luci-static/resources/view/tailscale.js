@@ -7,7 +7,8 @@
 'require tools.widgets as widgets';
 
 const callGetStatus = rpc.declare({ object: 'tailscale', method: 'get_status' });
-const callGetSettings = rpc.declare({ object: 'tailscale', method: 'get_settings' });
+const callGetRuntime = rpc.declare({ object: 'tailscale', method: 'get_runtime' });
+const callGetDiagnostics = rpc.declare({ object: 'tailscale', method: 'get_diagnostics' });
 const callDoLogin = rpc.declare({ object: 'tailscale', method: 'do_login', params: ['form_data'] });
 const callDoLogout = rpc.declare({ object: 'tailscale', method: 'do_logout' });
 const callGetSubroutes = rpc.declare({ object: 'tailscale', method: 'get_subroutes' });
@@ -70,6 +71,18 @@ function defTabOpts(s, t, opts, params) {
 
 function getRunningStatus() {
 	return L.resolveDefault(callGetStatus(), { running: false }).then(function (res) {
+		return res;
+	});
+}
+
+function getRuntimeStatus() {
+	return L.resolveDefault(callGetRuntime(), {}).then(function (res) {
+		return res;
+	});
+}
+
+function getDiagnosticsStatus() {
+	return L.resolveDefault(callGetDiagnostics(), {}).then(function (res) {
 		return res;
 	});
 }
@@ -158,6 +171,78 @@ function formatConnectionInfo(info) {
 		return regionCodeMap[lowerCaseInfo] || info;
 	}
 	return info;
+}
+
+function formatBooleanState(value) {
+	return value ? _('Enabled') : _('Disabled');
+}
+
+function formatRuntimeValue(value, formatter) {
+	if (formatter)
+		return formatter(value);
+	if (Array.isArray(value))
+		return value.length ? value.join(', ') : _('None');
+	if (value === true || value === false)
+		return formatBooleanState(value);
+	return (value == null || value === '') ? _('None') : value;
+}
+
+function readDesiredSettings() {
+	return {
+		accept_routes: uci.get('tailscale', 'settings', 'accept_routes') === '1',
+		advertise_exit_node: uci.get('tailscale', 'settings', 'advertise_exit_node') === '1',
+		advertise_routes: L.toArray(uci.get('tailscale', 'settings', 'advertise_routes')),
+		exit_node: uci.get('tailscale', 'settings', 'exit_node') || '',
+		exit_node_allow_lan_access: uci.get('tailscale', 'settings', 'exit_node_allow_lan_access') === '1',
+		nosnat: uci.get('tailscale', 'settings', 'nosnat') === '1',
+		disable_magic_dns: uci.get('tailscale', 'settings', 'disable_magic_dns') === '1',
+		custom_login_url: uci.get('tailscale', 'settings', 'custom_login_url') || ''
+	};
+}
+
+function renderDesiredRuntimeDiagnostics(runtime, diagnostics) {
+	const desired = readDesiredSettings();
+	const rows = [
+		{ label: _('Accept Routes'), desired: formatRuntimeValue(desired.accept_routes), runtime: formatRuntimeValue(runtime.accept_routes), diagnostics: '-' },
+		{ label: _('Advertise Exit Node'), desired: formatRuntimeValue(desired.advertise_exit_node), runtime: formatRuntimeValue(runtime.advertise_exit_node), diagnostics: '-' },
+		{ label: _('Advertise Routes'), desired: formatRuntimeValue(desired.advertise_routes), runtime: formatRuntimeValue(runtime.advertise_routes), diagnostics: '-' },
+		{ label: _('Exit Node'), desired: formatRuntimeValue(desired.exit_node), runtime: formatRuntimeValue(runtime.exit_node), diagnostics: '-' },
+		{ label: _('Allow LAN Access'), desired: formatRuntimeValue(desired.exit_node_allow_lan_access), runtime: formatRuntimeValue(runtime.exit_node_allow_lan_access), diagnostics: '-' },
+		{ label: _('Disable MagicDNS'), desired: formatRuntimeValue(desired.disable_magic_dns), runtime: formatRuntimeValue(runtime.disable_magic_dns), diagnostics: '-' },
+		{ label: _('Disable SNAT'), desired: formatRuntimeValue(desired.nosnat), runtime: formatRuntimeValue(runtime.nosnat), diagnostics: '-' },
+		{ label: _('Login Server'), desired: formatRuntimeValue(desired.custom_login_url), runtime: formatRuntimeValue(runtime.login_server), diagnostics: '-' },
+		{ label: _('Last Apply Mode'), desired: '-', runtime: '-', diagnostics: formatRuntimeValue(diagnostics.apply_mode) },
+		{ label: _('Health'), desired: '-', runtime: '-', diagnostics: formatRuntimeValue(diagnostics.health) },
+		{ label: _('Reason'), desired: '-', runtime: '-', diagnostics: formatRuntimeValue(diagnostics.reason) },
+		{ label: _('Peer Route Test'), desired: '-', runtime: '-', diagnostics: formatRuntimeValue(diagnostics.peer_route_status) },
+		{ label: _('Route Table Signal'), desired: '-', runtime: '-', diagnostics: diagnostics.table52_has_routes ? _('table 52 has routes') : _('table 52 empty') }
+	];
+	const healthColor = diagnostics.health === 'fail' ? '#d9534f' : (diagnostics.health === 'warn' ? '#f0ad4e' : '#5cb85c');
+
+	// desired/runtime/diagnostics health section
+	return E('div', { 'class': 'cbi-value' }, [
+		E('p', { 'style': `font-weight: bold; color: ${healthColor};` },
+			_('Desired / Runtime / Diagnostics') + ': ' + formatRuntimeValue(diagnostics.health) + ' (' + formatRuntimeValue(diagnostics.reason) + ')'
+		),
+		E('table', { 'class': 'cbi-table' }, [
+			E('tr', { 'class': 'cbi-table-header' }, [
+				E('th', { 'class': 'cbi-table-cell' }, _('Field')),
+				E('th', { 'class': 'cbi-table-cell' }, _('Desired')),
+				E('th', { 'class': 'cbi-table-cell' }, _('Runtime')),
+				E('th', { 'class': 'cbi-table-cell' }, _('Diagnostics'))
+			]),
+			...rows.map(function(row) {
+				return E('tr', { 'class': 'cbi-rowstyle-1' }, [
+					E('td', { 'class': 'cbi-table-cell' }, row.label),
+					E('td', { 'class': 'cbi-table-cell' }, row.desired),
+					E('td', { 'class': 'cbi-table-cell' }, row.runtime),
+					E('td', { 'class': 'cbi-table-cell' }, row.diagnostics)
+				]);
+			})
+		]),
+		E('p', { 'style': 'margin-top: 0.75em; word-break: break-all;' }, _('Peer route summary: %s').format(diagnostics.peer_route_summary || _('Unavailable'))),
+		E('p', { 'style': 'word-break: break-all;' }, _('Table 52 summary: %s').format(diagnostics.table52_summary || _('Unavailable')))
+	]);
 }
 
 function renderStatus(status) {
@@ -302,37 +387,39 @@ return view.extend({
 	load() {
 		return Promise.all([
 			L.resolveDefault(callGetStatus(), { running: '', peers: [] }),
-			L.resolveDefault(callGetSettings(), { accept_routes: false }),
+			L.resolveDefault(callGetRuntime(), { accept_routes: false }),
+			L.resolveDefault(callGetDiagnostics(), { health: 'warn', reason: 'unavailable' }),
 			L.resolveDefault(callGetSubroutes(), { routes: [] })
 		])
-		.then(function([status, settings_from_rpc, subroutes]) {
+		.then(function([status, runtime_from_rpc, diagnostics, subroutes]) {
 			return uci.load('tailscale').then(function() {
 				if (uci.get('tailscale', 'settings') === null) {
 					// No existing settings found; initialize UCI with RPC settings
 					uci.add('tailscale', 'settings', 'settings');
 					uci.set('tailscale', 'settings', 'fw_mode', 'nftables');
-					uci.set('tailscale', 'settings', 'accept_routes', (settings_from_rpc.accept_routes ? '1' : '0'));
-					uci.set('tailscale', 'settings', 'advertise_exit_node', ((settings_from_rpc.advertise_exit_node || false) ? '1' : '0'));
-					uci.set('tailscale', 'settings', 'advertise_routes', (settings_from_rpc.advertise_routes || []).join(', '));
-					uci.set('tailscale', 'settings', 'exit_node', settings_from_rpc.exit_node || '');
-					uci.set('tailscale', 'settings', 'exit_node_allow_lan_access', ((settings_from_rpc.exit_node_allow_lan_access || false) ? '1' : '0'));
-					uci.set('tailscale', 'settings', 'ssh', ((settings_from_rpc.ssh || false) ? '1' : '0'));
-					uci.set('tailscale', 'settings', 'shields_up', ((settings_from_rpc.shields_up || false) ? '1' : '0'));
-					uci.set('tailscale', 'settings', 'runwebclient', ((settings_from_rpc.runwebclient || false) ? '1' : '0'));
-					uci.set('tailscale', 'settings', 'nosnat', ((settings_from_rpc.nosnat || false) ? '1' : '0'));
-					uci.set('tailscale', 'settings', 'disable_magic_dns', ((settings_from_rpc.disable_magic_dns || false) ? '1' : '0'));
+					uci.set('tailscale', 'settings', 'accept_routes', (runtime_from_rpc.accept_routes ? '1' : '0'));
+					uci.set('tailscale', 'settings', 'advertise_exit_node', ((runtime_from_rpc.advertise_exit_node || false) ? '1' : '0'));
+					uci.set('tailscale', 'settings', 'advertise_routes', (runtime_from_rpc.advertise_routes || []).join(', '));
+					uci.set('tailscale', 'settings', 'exit_node', runtime_from_rpc.exit_node || '');
+					uci.set('tailscale', 'settings', 'exit_node_allow_lan_access', ((runtime_from_rpc.exit_node_allow_lan_access || false) ? '1' : '0'));
+					uci.set('tailscale', 'settings', 'ssh', ((runtime_from_rpc.ssh || false) ? '1' : '0'));
+					uci.set('tailscale', 'settings', 'shields_up', ((runtime_from_rpc.shields_up || false) ? '1' : '0'));
+					uci.set('tailscale', 'settings', 'runwebclient', ((runtime_from_rpc.runwebclient || false) ? '1' : '0'));
+					uci.set('tailscale', 'settings', 'nosnat', ((runtime_from_rpc.nosnat || false) ? '1' : '0'));
+					uci.set('tailscale', 'settings', 'disable_magic_dns', ((runtime_from_rpc.disable_magic_dns || false) ? '1' : '0'));
+					uci.set('tailscale', 'settings', 'custom_login_url', runtime_from_rpc.login_server || '');
 
 					uci.set('tailscale', 'settings', 'daemon_reduce_memory', '0');
 					uci.set('tailscale', 'settings', 'daemon_mtu', '');
 					return uci.save();
 				}
 			}).then(function() {
-				return [status, settings_from_rpc, subroutes];
+				return [status, runtime_from_rpc, diagnostics, subroutes];
 			});
 		});
 	},
 
-	render ([status = {}, settings = {}, subroutes_obj]) {
+	render ([status = {}, runtime = {}, diagnostics = {}, subroutes_obj]) {
 		const subroutes = (subroutes_obj && subroutes_obj.routes) ? subroutes_obj.routes : [];
 
 		let s;
@@ -343,7 +430,11 @@ return view.extend({
 		s.render = function (section_id) {
 			L.Poll.add(
 				function () {
-					return getRunningStatus().then(function (res) {
+					return Promise.all([
+						getRunningStatus(),
+						getRuntimeStatus(),
+						getDiagnosticsStatus()
+					]).then(function ([res, runtimeRes, diagnosticsRes]) {
 						const view = document.getElementById("service_status_display");
 						if (view) {
 							const content = renderStatus(res);
@@ -353,6 +444,11 @@ return view.extend({
 						const devicesView = document.getElementById("tailscale_devices_display");
 						if (devicesView) {
 							devicesView.replaceChildren(renderDevices(res));
+						}
+
+						const diagnosticsView = document.getElementById("tailscale_runtime_health_display");
+						if (diagnosticsView) {
+							diagnosticsView.replaceChildren(renderDesiredRuntimeDiagnostics(runtimeRes, diagnosticsRes));
 						}
 
 						// login button only available when logged out
@@ -365,6 +461,14 @@ return view.extend({
 				_('Collecting data ...')
 			);
 		}
+
+		s = map.section(form.NamedSection, '_health');
+		s.anonymous = true;
+		s.render = function() {
+			return E('div', { 'id': 'tailscale_runtime_health_display', 'class': 'cbi-value' },
+				renderDesiredRuntimeDiagnostics(runtime, diagnostics)
+			);
+		};
 
 		// Bind settings to the 'settings' section of uci
 		s = map.section(form.NamedSection, 'settings', 'settings', null);
