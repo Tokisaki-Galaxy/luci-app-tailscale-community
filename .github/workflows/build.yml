@@ -174,7 +174,9 @@ jobs:
             {
               echo "CONFIG_PACKAGE_${PACKAGE_NAME}=m"
               echo "CONFIG_PACKAGE_luci-i18n-${translation_pkg}-zh-cn=m"
+              echo "CONFIG_PACKAGE_luci-i18n-${translation_pkg}-zh-tw=m"
               echo "CONFIG_LUCI_LANG_zh_Hans=y"
+              echo "CONFIG_LUCI_LANG_zh_Hant=y"
             } > .config
             make defconfig
             make package/${PACKAGE_NAME}/compile V=sw -j$(nproc)
@@ -190,7 +192,9 @@ jobs:
             {
               echo "CONFIG_PACKAGE_${PACKAGE_NAME}=m"
               echo "CONFIG_PACKAGE_luci-i18n-${translation_pkg}-zh-cn=m"
+              echo "CONFIG_PACKAGE_luci-i18n-${translation_pkg}-zh-tw=m"
               echo "CONFIG_LUCI_LANG_zh_Hans=y"
+              echo "CONFIG_LUCI_LANG_zh_Hant=y"
               echo "CONFIG_USE_APK=y"
             } > .config
             make defconfig
