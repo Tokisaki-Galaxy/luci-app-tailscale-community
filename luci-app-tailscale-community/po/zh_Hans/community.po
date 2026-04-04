@@ -112,7 +112,7 @@ msgstr "将此设备声明为出口节点。"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:554
 msgid "Devices List"
-msgstr ""
+msgstr "设备列表"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:26
 msgid "Disable MagicDNS"
@@ -138,7 +138,7 @@ msgstr "从 Tailscale 断开连接并使当前节点密钥过期。"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:27
 msgid "Enable Peer Relay"
-msgstr ""
+msgstr "启用节点中继"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:25
 msgid "Enable Tailscale SSH"
@@ -152,7 +152,8 @@ msgstr "启用 Web 界面"
 msgid ""
 "Enable this device as a Peer Relay server. Requires a public IP and an UDP "
 "port open on the router."
-msgstr ""
+msgstr "将此设备设定为节点中继服务器（DERP）。需要此路由器具备公网IP以及开放"
+"一个UDP端口"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:226
 msgid "Enabled"
@@ -230,7 +231,7 @@ msgstr "主机名"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:437
 msgid "How to enable Site-to-Site?"
-msgstr ""
+msgstr "如何做到站点到站点（即多局域网互通）？"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:456
 msgid ""
@@ -292,7 +293,7 @@ msgstr "登出失败: %s"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:87
 msgid "N/A"
-msgstr "N/A"
+msgstr "不可用"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:216
 msgid "NOT RUNNING"
@@ -300,11 +301,11 @@ msgstr "未运行"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:256
 msgid "No peer devices found."
-msgstr "未找到对等设备。"
+msgstr "未找到节点设备。"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:387
 msgid "None"
-msgstr ""
+msgstr "无"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:88
 msgid "Now"
@@ -338,7 +339,7 @@ msgstr "可选：为自定义控制服务器指定一个认证密钥。如果不
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:378
 msgid "Peer Relay Port"
-msgstr ""
+msgstr "DERP端口"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:207
 msgid "Please use the login button in the settings below to authenticate."
@@ -371,7 +372,7 @@ msgstr "正在请求 Tailscale 登录 URL... 请稍候。"
 msgid ""
 "Select an exit node from the list. If enabled, Allow LAN Access is enabled "
 "implicitly."
-msgstr ""
+msgstr "列表中选择出口节点。一旦开启，默认局域网之间可以互访"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:18
 msgid ""
@@ -450,7 +451,7 @@ msgstr ""
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:247
 msgid "Tailscale status error"
-msgstr ""
+msgstr "Tailscale 状态异常"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:496
 msgid "This can take up to 30 seconds."
@@ -466,7 +467,7 @@ msgstr "这将使此设备从您的 Tailnet 断开连接，并需要您重新进
 msgid ""
 "UDP port for the Peer Relay service. Open this port on your router firewall/"
 "NAT."
-msgstr ""
+msgstr "DERP的UDP端口号。需要在防火墙/NAT规则中开放该端口。"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:120
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:147
