@@ -19,7 +19,7 @@ msgstr ""
 msgid "3. Click \"Auto Configure Firewall\" (to allow traffic forwarding)."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:19
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:20
 msgid "Accept Routes"
 msgstr ""
 
@@ -27,7 +27,7 @@ msgstr ""
 msgid "Account Settings"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:20
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:21
 msgid "Advertise Exit Node"
 msgstr ""
 
@@ -41,15 +41,15 @@ msgid ""
 "below or enter custom routes (comma-separated)."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:21
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:22
 msgid "Allow LAN Access"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:19
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:20
 msgid "Allow accepting routes announced by other nodes."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:25
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:26
 msgid "Allow connecting to this device through the SSH function of Tailscale."
 msgstr ""
 
@@ -105,7 +105,7 @@ msgstr ""
 msgid "Custom Login Server Auth Key"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:20
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:21
 msgid "Declare this device as an Exit Node."
 msgstr ""
 
@@ -113,15 +113,15 @@ msgstr ""
 msgid "Devices List"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:26
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:27
 msgid "Disable MagicDNS"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:23
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:24
 msgid "Disable SNAT"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:23
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:24
 msgid ""
 "Disable Source NAT (SNAT) for traffic to advertised routes. Most users "
 "should leave this unchecked."
@@ -135,29 +135,29 @@ msgstr ""
 msgid "Disconnect from Tailscale and expire current node key."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:27
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:28
 msgid "Enable Peer Relay"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:25
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:26
 msgid "Enable Tailscale SSH"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:33
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:18
 msgid "Enable Tailscale Service"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:22
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:23
 msgid "Enable Web Interface"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:33
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:18
 msgid ""
 "Enable or disable the Tailscale service. When disabled, the service will be "
 "stopped and the process will be killed."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:27
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:28
 msgid ""
 "Enable this device as a Peer Relay server. Requires a public IP and an UDP "
 "port open on the router."
@@ -200,7 +200,7 @@ msgstr ""
 msgid "Exit Node"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:22
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:23
 msgid ""
 "Expose a web interface on port 5252 for managing this node over Tailscale."
 msgstr ""
@@ -221,7 +221,7 @@ msgstr ""
 msgid "Failed to get login URL: Invalid response from server."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:18
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:19
 msgid "Firewall Mode"
 msgstr ""
 
@@ -330,7 +330,7 @@ msgstr ""
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:462
 msgid ""
 "Optional: Specify a custom control server URL (e.g., a Headscale instance, "
-"https://example.com)."
+"%s)."
 msgstr ""
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:470
@@ -376,7 +376,7 @@ msgid ""
 "implicitly."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:18
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:19
 msgid ""
 "Select the firewall backend for Tailscale to use. Requires service restart "
 "to take effect."
@@ -389,7 +389,7 @@ msgstr ""
 msgid "Service Status"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:24
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:25
 msgid "Shields Up"
 msgstr ""
 
@@ -477,7 +477,7 @@ msgstr ""
 msgid "Unknown error"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:26
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:27
 msgid "Use system DNS instead of MagicDNS."
 msgstr ""
 
@@ -485,12 +485,12 @@ msgstr ""
 msgid "Version"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:24
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:25
 msgid ""
 "When enabled, blocks all inbound connections from the Tailscale network."
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:21
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:22
 msgid "When using the exit node, access to the local LAN is allowed."
 msgstr ""
 
