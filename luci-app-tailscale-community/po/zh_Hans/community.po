@@ -146,7 +146,7 @@ msgstr "启用 Tailscale SSH"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:18
 msgid "Enable Tailscale Service"
-msgstr ""
+msgstr "Tailscale服务开关"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:23
 msgid "Enable Web Interface"
@@ -156,7 +156,7 @@ msgstr "启用 Web 界面"
 msgid ""
 "Enable or disable the Tailscale service. When disabled, the service will be "
 "stopped and the process will be killed."
-msgstr ""
+msgstr "启用或禁用Tailscale服务。禁用后，服务将被停止，当前进程将被终止。"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:28
 msgid ""
@@ -196,7 +196,7 @@ msgstr "读取缓存的 DERP 区域地图时出错: %s"
 msgid ""
 "Essential configuration for Subnet Routing (Site-to-Site) and Exit Node "
 "features."
-msgstr "子网路由和出口节点的基本配置。"
+msgstr "子网路由（局域网间互通）和出口节点的基本配置。"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:287
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:387
@@ -242,7 +242,7 @@ msgstr "主机名"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:438
 msgid "How to enable Site-to-Site?"
-msgstr "如何做到站点到站点（即多局域网互通）？"
+msgstr "如何实现站点到站点（即多局域网互通）？"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:457
 msgid ""
@@ -266,8 +266,7 @@ msgid ""
 "It automatically creates the tailscale interface, sets up firewall zones for "
 "LAN <-> Tailscale forwarding,"
 msgstr ""
-"子网路由和出口节点的基本配置。会自动tailscale接口，设置防火墙区域LAN <-> "
-"Tailscale转发"
+"将自动创建Tailscale接口并设置防火墙区域用于LAN <-> Tailscale转发"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:94
 msgid "Just now"
@@ -517,7 +516,7 @@ msgstr "前"
 msgid ""
 "and enables Masquerading and MSS Clamping (MTU fix) to ensure stable "
 "connections."
-msgstr "并启用地址伪装和 MSS钳制确保连接稳定。"
+msgstr "并启用伪装和MSS钳制（MTU修复）功能，以确保连接稳定。"
 
 #~ msgid ""
 #~ "Optional: Specify a custom control server URL (e.g., a Headscale "
