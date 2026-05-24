@@ -322,6 +322,7 @@ methods.setup_firewall = {
 			}
 
 			// Exit node requires WAN <- tailscale forwarding
+			fw_all = uci.get_all('firewall');
 			let fwd_ts_to_wan = false;
 
 			for (let sec_key in fw_all) {

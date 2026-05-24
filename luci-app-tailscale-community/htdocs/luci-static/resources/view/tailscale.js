@@ -431,7 +431,7 @@ return view.extend({
 			}).catch(function(err) {
 				ui.addNotification(null, E('p', {}, _('Failed to configure firewall: %s').format(err?.message || err || 'Unknown error')), 'error');
 			}).finally(function() {
-				btn.disabled = false;
+				window.setTimeout(function() { btn.disabled = false; }, 5000);
 			});
 		};
 
