@@ -23,12 +23,7 @@ version_gte() {
 
 # Add/remove DNS forward entry in dnsmasq for MagicDNS via OpenWrt
 setup_tailscale_dns_forward() {
-	local ts_bin
-	if [ -x /usr/sbin/tailscale ]; then
-		ts_bin=/usr/sbin/tailscale
-	elif [ -x /usr/bin/tailscale ]; then
-		ts_bin=/usr/bin/tailscale
-	else
+	if [ ! -x /usr/sbin/tailscale ] && [ ! -x /usr/bin/tailscale ]; then
 		return 0
 	fi
 
