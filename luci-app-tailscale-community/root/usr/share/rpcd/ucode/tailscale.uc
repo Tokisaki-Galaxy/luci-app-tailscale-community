@@ -123,7 +123,7 @@ methods.get_settings = {
 					settings.ssh = status_data?.RunSSH || false;
 					settings.runwebclient = status_data?.RunWebClient || false;
 					settings.nosnat = status_data?.NoSNAT || false;
-					settings.disable_magic_dns = !status_data?.CorpDNS || false;
+					settings.dns_mode = uci.get('tailscale', 'settings', 'dns_mode') || 'disabled';
 					settings.fw_mode = split(uci.get('tailscale', 'settings', 'fw_mode'),' ')[0] || 'nftables';
 				}
 				}

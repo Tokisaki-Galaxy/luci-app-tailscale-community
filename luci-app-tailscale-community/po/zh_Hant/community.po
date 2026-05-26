@@ -114,10 +114,6 @@ msgstr "將此裝置宣告為出口節點。"
 msgid "Devices List"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:27
-msgid "Disable MagicDNS"
-msgstr "停用 MagicDNS"
-
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:24
 msgid "Disable SNAT"
 msgstr "停用 SNAT"
@@ -127,6 +123,18 @@ msgid ""
 "Disable Source NAT (SNAT) for traffic to advertised routes. Most users "
 "should leave this unchecked."
 msgstr "為通告路由的流量停用源地址轉換 (SNAT)。大多數使用者應保持此項不勾選。"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:27
+msgid "DNS Mode"
+msgstr "DNS 模式"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:27
+msgid "Controls how Tailscale DNS is handled. Disabled: system DNS only. MagicDNS: Tailscale overrides resolv.conf. OpenWrt Forward: MagicDNS via dnsmasq forwarding."
+msgstr ""
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:27
+msgid "OpenWrt Forward"
+msgstr "OpenWrt 轉發"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:227
 msgid "Disabled"
@@ -483,10 +491,6 @@ msgstr ""
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:547
 msgid "Unknown error"
 msgstr "未知錯誤"
-
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:27
-msgid "Use system DNS instead of MagicDNS."
-msgstr "使用系統 DNS 而不是 MagicDNS。"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:226
 msgid "Version"

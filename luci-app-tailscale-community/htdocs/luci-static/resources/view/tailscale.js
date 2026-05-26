@@ -24,7 +24,7 @@ const tailscaleSettingsConf = [
 	[form.Flag, 'nosnat', _('Disable SNAT'), _('Disable Source NAT (SNAT) for traffic to advertised routes. Most users should leave this unchecked.'), { rmempty: false }],
 	[form.Flag, 'shields_up', _('Shields Up'), _('When enabled, blocks all inbound connections from the Tailscale network.'), { rmempty: false }],
 	[form.Flag, 'ssh', _('Enable Tailscale SSH'), _('Allow connecting to this device through the SSH function of Tailscale.'), { rmempty: false }],
-	[form.Flag, 'disable_magic_dns', _('Disable MagicDNS'), _('Use system DNS instead of MagicDNS.'), { rmempty: false }],
+	[form.ListValue, 'dns_mode', _('DNS Mode'), _('Controls how Tailscale DNS is handled. Disabled: system DNS only. MagicDNS: Tailscale overrides resolv.conf. OpenWrt Forward: MagicDNS via dnsmasq forwarding.'), { values: [['disabled', _('Disabled')], ['magicdns', 'MagicDNS'], ['openwrt_forward', _('OpenWrt Forward')]], rmempty: false }],
 	[form.Flag, 'enable_relay', _('Enable Peer Relay'), _('Enable this device as a Peer Relay server. Requires a public IP and an UDP port open on the router.'), { rmempty: false }]
 ];
 
@@ -322,10 +322,18 @@ return view.extend({
 					uci.set('tailscale', 'settings', 'shields_up', ((settings_from_rpc.shields_up || false) ? '1' : '0'));
 					uci.set('tailscale', 'settings', 'runwebclient', ((settings_from_rpc.runwebclient || false) ? '1' : '0'));
 					uci.set('tailscale', 'settings', 'nosnat', ((settings_from_rpc.nosnat || false) ? '1' : '0'));
-					uci.set('tailscale', 'settings', 'disable_magic_dns', ((settings_from_rpc.disable_magic_dns || false) ? '1' : '0'));
+					uci.set('tailscale', 'settings', 'dns_mode', 'disabled');
 
 					uci.set('tailscale', 'settings', 'daemon_reduce_memory', '0');
 					uci.set('tailscale', 'settings', 'daemon_mtu', '');
+					return uci.save();
+				}
+			}).then(function() {
+				// Migrate from old disable_magic_dns to dns_mode if needed
+				if (uci.get('tailscale', 'settings', 'dns_mode') === null) {
+					var oldMagicDns = uci.get('tailscale', 'settings', 'disable_magic_dns');
+					uci.set('tailscale', 'settings', 'dns_mode', oldMagicDns === '1' ? 'disabled' : 'magicdns');
+					uci.unset('tailscale', 'settings', 'disable_magic_dns');
 					return uci.save();
 				}
 			}).then(function() {
