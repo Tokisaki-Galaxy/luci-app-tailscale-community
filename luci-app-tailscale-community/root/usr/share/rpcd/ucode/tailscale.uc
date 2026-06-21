@@ -232,6 +232,12 @@ methods.get_subroutes = {
 methods.setup_firewall = {
 	call: function() {
 		try {
+			uci.load('tailscale');
+			let fw_mode = uci.get('tailscale', 'settings', 'fw_mode') || 'nftables';
+			if (fw_mode == 'off') {
+				return { success: true, skipped: true, message: 'Firewall auto-configuration is disabled.' };
+			}
+
 			uci.load('network');
 			uci.load('firewall');
 

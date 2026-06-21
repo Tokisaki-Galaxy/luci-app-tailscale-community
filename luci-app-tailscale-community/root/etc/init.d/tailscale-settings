@@ -81,7 +81,7 @@ apply_settings() {
 
 	local accept_routes advertise_exit_node exit_node exit_node_allow_lan_access
 	local ssh shields_up runwebclient nosnat hostname
-	local enable_relay relay_server_port
+	local enable_relay relay_server_port fw_mode
 
 	config_get accept_routes              settings accept_routes              '0'
 	config_get advertise_exit_node        settings advertise_exit_node        '0'
@@ -95,6 +95,7 @@ apply_settings() {
 	config_get hostname                   settings hostname                   ''
 	config_get enable_relay               settings enable_relay               '0'
 	config_get relay_server_port          settings relay_server_port          '40000'
+	config_get fw_mode                    settings fw_mode                    'nftables'
 
 	# Collect advertise_routes UCI list into comma-separated string
 	local routes=""
@@ -187,6 +188,11 @@ apply_settings() {
 		else
 			set -- "$@" "--relay-server-port="
 		fi
+	fi
+
+	# --netfilter-mode (only when fw_mode is off and tailscale init doesn't already handle it)
+	if [ "$fw_mode" = "off" ] && ! grep -q -- '--netfilter-mode' /etc/init.d/tailscale 2>/dev/null; then
+		set -- "$@" --netfilter-mode=off
 	fi
 
 	logger -t "$NAME" "Applying settings"
