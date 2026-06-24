@@ -131,6 +131,10 @@ msgid ""
 "should leave this unchecked."
 msgstr ""
 
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:25
+msgid "Disable Firewall Configuration"
+msgstr ""
+
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:27
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:227
 msgid "Disabled"
@@ -138,6 +142,10 @@ msgstr ""
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:27
 msgid "Disabled: system DNS only."
+msgstr ""
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:25
+msgid "Completely disable all Tailscale firewall auto-configuration, including zone creation, forwarding rules, and netfilter settings."
 msgstr ""
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:487

@@ -132,10 +132,18 @@ msgid ""
 "should leave this unchecked."
 msgstr "为通告路由的流量禁用源地址转换 (SNAT)。大多数用户应保持此项不勾选。"
 
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:25
+msgid "Disable Firewall Configuration"
+msgstr "禁用防火墙配置"
+
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:27
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:227
 msgid "Disabled"
 msgstr "已禁用"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:25
+msgid "Completely disable all Tailscale firewall auto-configuration, including zone creation, forwarding rules, and netfilter settings."
+msgstr "完全禁用所有 Tailscale 防火墙自动配置，包括区域创建、转发规则和 netfilter 设置。"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:27
 msgid "Disabled: system DNS only."
