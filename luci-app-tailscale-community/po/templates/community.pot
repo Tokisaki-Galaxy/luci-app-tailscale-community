@@ -1,6 +1,22 @@
 msgid ""
 msgstr "Content-Type: text/plain; charset=UTF-8"
 
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:563
+msgid "Logs"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:569
+msgid "Refresh"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:582
+msgid "No tailscale-related logs found."
+msgstr ""
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:585
+msgid "Failed to load logs: %s"
+msgstr ""
+
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:35
 msgid "(Experimental) Reduce Memory Usage"
 msgstr ""

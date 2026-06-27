@@ -12,6 +12,7 @@ const callDoLogin = rpc.declare({ object: 'tailscale', method: 'do_login', param
 const callDoLogout = rpc.declare({ object: 'tailscale', method: 'do_logout' });
 const callGetSubroutes = rpc.declare({ object: 'tailscale', method: 'get_subroutes' });
 const callSetupFirewall = rpc.declare({ object: 'tailscale', method: 'setup_firewall' });
+const callGetLogs = rpc.declare({ object: 'tailscale', method: 'get_logs', params: ['lines'] });
 let map;
 
 const tailscaleSettingsConf = [
@@ -238,6 +239,20 @@ function renderStatus(status) {
 	]);
 
 	return statusTable;
+}
+
+function renderLogs(logs_data) {
+	if (!logs_data || !logs_data.logs || logs_data.logs.length === 0) {
+		return E('em', {}, _('No tailscale-related logs found.'));
+	}
+
+	const lines = logs_data.logs.map(function(line) {
+		return E('div', { 'style': 'white-space: pre; font-family: monospace; font-size: 13px; line-height: 1.5;' }, line);
+	});
+
+	return E('div', {
+		'style': 'max-height: 500px; overflow-y: auto; background: #f5f5f5; border: 1px solid #ccc; padding: 8px; border-radius: 3px;'
+	}, lines);
 }
 
 function renderDevices(status) {
@@ -567,6 +582,33 @@ return view.extend({
 		const devicesSection = s.taboption('devices', form.DummyValue, '_devices');
 		devicesSection.render = function () {
 			return E('div', { 'id': 'tailscale_devices_display', 'class': 'cbi-value' }, renderDevices(status));
+		};
+
+		s.tab('logs', _('Logs'));
+		const logsSection = s.taboption('logs', form.DummyValue, '_logs');
+		logsSection.render = function () {
+			const container = E('div', { 'id': 'tailscale_logs_display', 'class': 'cbi-value' },
+				_('No tailscale-related logs found.')
+			);
+			return container;
+		};
+
+		const refreshLogsBtn = s.taboption('logs', form.Button, '_refresh_logs', _('Refresh'));
+		refreshLogsBtn.inputstyle = 'action';
+		refreshLogsBtn.onclick = function() {
+			const display = document.getElementById('tailscale_logs_display');
+			if (display) {
+				display.replaceChildren(E('em', {}, _('Collecting data ...')));
+			}
+			return callGetLogs({ lines: 200 }).then(function(res) {
+				if (display) {
+					display.replaceChildren(renderLogs(res));
+				}
+			}).catch(function(err) {
+				if (display) {
+					display.replaceChildren(E('em', {}, _('Failed to load logs: %s').format(err.message || _('Unknown error'))));
+				}
+			});
 		};
 
 		// Create the "Daemon Settings" tab and apply daemonConf
