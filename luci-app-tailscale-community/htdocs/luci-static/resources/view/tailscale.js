@@ -12,7 +12,7 @@ const callDoLogin = rpc.declare({ object: 'tailscale', method: 'do_login', param
 const callDoLogout = rpc.declare({ object: 'tailscale', method: 'do_logout' });
 const callGetSubroutes = rpc.declare({ object: 'tailscale', method: 'get_subroutes' });
 const callSetupFirewall = rpc.declare({ object: 'tailscale', method: 'setup_firewall' });
-const callGetLogs = rpc.declare({ object: 'tailscale', method: 'get_logs', params: ['lines'] });
+const callGetLogs = rpc.declare({ object: 'tailscale', method: 'get_logs' });
 let map;
 
 const tailscaleSettingsConf = [
@@ -600,7 +600,7 @@ return view.extend({
 			if (display) {
 				display.replaceChildren(E('em', {}, _('Collecting data ...')));
 			}
-			return callGetLogs({ lines: 200 }).then(function(res) {
+			return callGetLogs().then(function(res) {
 				if (display) {
 					display.replaceChildren(renderLogs(res));
 				}
