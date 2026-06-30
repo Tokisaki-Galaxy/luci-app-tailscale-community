@@ -161,7 +161,7 @@ methods.do_login = {
 
 		// Run the command in the background using /bin/sh -c to handle the '&' correctly
 		let login_cmd = 'tailscale login '+join(' ', loginargs);
-		popen('/bin/sh -c "' + login_cmd + ' &"', 'r');
+		popen('/bin/sh -c ' + shell_quote(login_cmd + ' &'), 'r');
 
 		// --- 2. Loop to Check Status for URL ---
 		let max_attempts = 15;
@@ -233,10 +233,6 @@ methods.setup_firewall = {
 	call: function() {
 		try {
 			uci.load('tailscale');
-			//let disable_fw = uci.get('tailscale', 'settings', 'disable_fw_config') || '0';
-			//if (disable_fw == '1') {
-			//	return { success: true, skipped: true, message: 'Firewall auto-configuration is disabled.' };
-			//}
 
 			uci.load('network');
 			uci.load('firewall');
@@ -366,7 +362,7 @@ methods.setup_firewall = {
 methods.get_logs = {
 	args: { lines: 200 },
 	call: function(request) {
-		let lines = request?.args?.lines || 200;
+		let lines = int(request?.args?.lines) || 200;
 		let cmd = 'logread -l ' + lines + ' 2>/dev/null | grep -i -E "tailscale" || true';
 		let result = exec(cmd);
 		if (result.code == 0) {
