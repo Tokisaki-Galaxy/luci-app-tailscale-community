@@ -561,6 +561,14 @@ msgid ""
 "connections."
 msgstr "並啟用地址偽裝和 MSS鉗制確保連線穩定。"
 
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:32
+msgid "SSR Proxy Integration"
+msgstr "SSR 透明代理整合"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:32
+msgid "Redirect Tailscale Exit Node traffic through SSR transparent proxy (SS_SPEC_WAN_AC). Requires SSR Plus+ installed."
+msgstr "將 Tailscale 出口節點流量重定向至 SSR 透明代理 (SS_SPEC_WAN_AC)。需要已安裝 SSR Plus+。"
+
 #~ msgid ""
 #~ "Completely disable all Tailscale firewall auto-configuration, including "
 #~ "zone creation, forwarding rules, and netfilter settings."

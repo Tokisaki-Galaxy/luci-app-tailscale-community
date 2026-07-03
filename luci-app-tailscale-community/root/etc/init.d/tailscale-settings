@@ -66,6 +66,34 @@ remove_tailscale_dns_forward() {
 	fi
 }
 
+# Sync SSR transparent proxy rules in /etc/firewall.user
+sync_ssr_proxy_rules() {
+	config_load tailscale
+	local ssr_proxy_integration
+	config_get ssr_proxy_integration settings ssr_proxy_integration '0'
+
+	# Clean up leftover legacy firewall.user entries (migration from older version)
+	local FW_USER="/etc/firewall.user"
+	local MARK_BEGIN="# >>> SSR_PROXY_INTEGRATION_BEGIN (auto managed by tailscale-settings)"
+	local MARK_END="# <<< SSR_PROXY_INTEGRATION_END"
+	if [ -f "$FW_USER" ] && grep -q "$MARK_BEGIN" "$FW_USER" 2>/dev/null; then
+		sed -i "/$MARK_BEGIN/,/$MARK_END/d" "$FW_USER"
+	fi
+
+	# Direct iptables rule management — compatible with fw3 and fw4
+	if [ "$ssr_proxy_integration" = "1" ]; then
+		if ! iptables -t nat -C PREROUTING -i tailscale0 -p tcp -j SS_SPEC_WAN_AC 2>/dev/null; then
+			iptables -t nat -A PREROUTING -i tailscale0 -p tcp -j SS_SPEC_WAN_AC
+			logger -t "$NAME" "SSR proxy integration enabled: rule added (tailscale0 -> SS_SPEC_WAN_AC)"
+		fi
+	else
+		while iptables -t nat -C PREROUTING -i tailscale0 -p tcp -j SS_SPEC_WAN_AC 2>/dev/null; do
+			iptables -t nat -D PREROUTING -i tailscale0 -p tcp -j SS_SPEC_WAN_AC
+		done
+		logger -t "$NAME" "SSR proxy integration disabled: rule removed"
+	fi
+}
+
 apply_settings() {
 	local ts_bin
 	if [ -x /usr/sbin/tailscale ]; then
@@ -201,6 +229,10 @@ apply_settings() {
 	[ $ret -eq 0 ] \
 		&& logger -t "$NAME" "Settings applied successfully" \
 		|| logger -t "$NAME" "Failed to apply settings (exit code: $ret)"
+
+	# Sync SSR proxy firewall rules
+	sync_ssr_proxy_rules
+
 	return $ret
 }
 
@@ -224,6 +256,14 @@ handle_service_state() {
 
 start_service() {
 	apply_settings
+}
+
+stop_service() {
+	# Clean up SSR proxy iptables rule on service stop
+	while iptables -t nat -C PREROUTING -i tailscale0 -p tcp -j SS_SPEC_WAN_AC 2>/dev/null; do
+		iptables -t nat -D PREROUTING -i tailscale0 -p tcp -j SS_SPEC_WAN_AC
+	done
+	logger -t "$NAME" "SSR proxy rule cleaned up on service stop"
 }
 
 service_triggers() {
