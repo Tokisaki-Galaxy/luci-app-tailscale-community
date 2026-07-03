@@ -553,3 +553,11 @@ msgid ""
 "and enables Masquerading and MSS Clamping (MTU fix) to ensure stable "
 "connections."
 msgstr ""
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:32
+msgid "SSR Proxy Integration"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:32
+msgid "Redirect Tailscale Exit Node traffic through SSR transparent proxy (SS_SPEC_WAN_AC). Requires SSR Plus+ installed."
+msgstr ""

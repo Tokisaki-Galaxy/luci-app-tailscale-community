@@ -66,6 +66,39 @@ remove_tailscale_dns_forward() {
 	fi
 }
 
+# Sync SSR transparent proxy rules in /etc/firewall.user
+sync_ssr_proxy_rules() {
+	config_load tailscale
+	local ssr_proxy_integration
+	config_get ssr_proxy_integration settings ssr_proxy_integration '0'
+
+	local FW_USER="/etc/firewall.user"
+	local MARK_BEGIN="# >>> SSR_PROXY_INTEGRATION_BEGIN (auto managed by tailscale-settings)"
+	local MARK_END="# <<< SSR_PROXY_INTEGRATION_END"
+
+	# Remove existing managed rules block
+	if [ -f "$FW_USER" ]; then
+		sed -i "/$MARK_BEGIN/,/$MARK_END/d" "$FW_USER"
+	fi
+
+	if [ "$ssr_proxy_integration" = "1" ]; then
+		{
+			echo "$MARK_BEGIN"
+			echo "# Redirect Tailscale Exit Node traffic through SSR transparent proxy"
+			echo "iptables -t nat -A PREROUTING -i tailscale0 -p tcp -j SS_SPEC_WAN_AC"
+			echo "$MARK_END"
+		} >> "$FW_USER"
+		logger -t "$NAME" "SSR proxy integration enabled: rules added to $FW_USER"
+	else
+		logger -t "$NAME" "SSR proxy integration disabled: rules removed from $FW_USER"
+	fi
+
+	# Reload firewall to apply changes
+	if /etc/init.d/firewall enabled 2>/dev/null; then
+		/etc/init.d/firewall reload 2>/dev/null || /etc/init.d/firewall restart 2>/dev/null
+	fi
+}
+
 apply_settings() {
 	local ts_bin
 	if [ -x /usr/sbin/tailscale ]; then
@@ -201,6 +234,10 @@ apply_settings() {
 	[ $ret -eq 0 ] \
 		&& logger -t "$NAME" "Settings applied successfully" \
 		|| logger -t "$NAME" "Failed to apply settings (exit code: $ret)"
+
+	# Sync SSR proxy firewall rules
+	sync_ssr_proxy_rules
+
 	return $ret
 }
 
@@ -224,6 +261,20 @@ handle_service_state() {
 
 start_service() {
 	apply_settings
+}
+
+stop_service() {
+	# Clean up SSR proxy rules on service stop
+	local FW_USER="/etc/firewall.user"
+	local MARK_BEGIN="# >>> SSR_PROXY_INTEGRATION_BEGIN (auto managed by tailscale-settings)"
+	local MARK_END="# <<< SSR_PROXY_INTEGRATION_END"
+	if [ -f "$FW_USER" ]; then
+		sed -i "/$MARK_BEGIN/,/$MARK_END/d" "$FW_USER"
+	fi
+	if /etc/init.d/firewall enabled 2>/dev/null; then
+		/etc/init.d/firewall reload 2>/dev/null || /etc/init.d/firewall restart 2>/dev/null
+	fi
+	logger -t "$NAME" "SSR proxy rules cleaned up on service stop"
 }
 
 service_triggers() {
