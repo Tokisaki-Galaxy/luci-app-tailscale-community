@@ -92,11 +92,6 @@ sync_ssr_proxy_rules() {
 		done
 		logger -t "$NAME" "SSR proxy integration disabled: rule removed"
 	fi
-
-	# Reload firewall to apply changes
-	if /etc/init.d/firewall enabled 2>/dev/null; then
-		/etc/init.d/firewall reload 2>/dev/null || /etc/init.d/firewall restart 2>/dev/null
-	fi
 }
 
 apply_settings() {
