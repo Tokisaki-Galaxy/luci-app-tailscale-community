@@ -84,21 +84,86 @@ detect_wan_if() {
 remove_ssrplus_exit() {
 	local wan_if
 	wan_if=$(detect_wan_if)
-
+	
+	# Read persistence setting
+	config_load tailscale
+	local ssrplus_persist
+	config_get ssrplus_persist settings ssrplus_persist '0'
+ 
 	# TCP: remove redirect to SS_SPEC_WAN_AC
 	iptables -t nat -D PREROUTING -i tailscale0 -p tcp -j SS_SPEC_WAN_AC 2>/dev/null
-
+ 
 	# UDP: remove TPROXY redirect to SS_SPEC_TPROXY
 	iptables -t mangle -D PREROUTING -i tailscale0 -p udp -j SS_SPEC_TPROXY 2>/dev/null
-
+ 
 	# FORWARD rules for direct (non-proxied) traffic
 	iptables -D FORWARD -i tailscale0 -o "$wan_if" -j ACCEPT 2>/dev/null
 	iptables -D FORWARD -i tailscale0 -o br-lan -j ACCEPT 2>/dev/null
-
+ 
 	# SNAT/MASQUERADE for direct traffic from Tailscale CGNAT range
 	iptables -t nat -D POSTROUTING -o "$wan_if" -s 100.64.0.0/10 -j MASQUERADE 2>/dev/null
-
+ 
 	logger -t "$NAME" "SSRPlus exit node rules removed"
+	
+	# Clear persistent rules if enabled
+	if [ "$ssrplus_persist" = "1" ]; then
+		clear_firewall_user
+		/etc/init.d/firewall restart 2>/dev/null || logger -t "$NAME" "Failed to restart firewall"
+	fi
+}
+
+# Write SSRPlus exit node rules to /etc/firewall.user (persistent across reboots)
+write_firewall_user() {
+	local wan_if
+	wan_if=$(detect_wan_if)
+
+	# Remove existing entries first to avoid duplicates
+	sed -i '/^# === Tailscale Exit Node SSRPlus Proxy ===/,/^# END Tailscale Exit Node SSRPlus Proxy ===/d' /etc/firewall.user 2>/dev/null
+
+	cat >> /etc/firewall.user << 'FWEOF'
+# === Tailscale Exit Node SSRPlus Proxy ===
+# Redirect tailscale0 traffic to SSRPlus transparent proxy
+
+# Check for WAN interface
+get_wan_if() {
+	[ -d /sys/class/net/pppoe-wan ] && echo "pppoe-wan" && return
+	local wan_if
+	wan_if=\$(uci -q get network.wan.device 2>/dev/null)
+	[ -n "\$wan_if" ] && echo "\$wan_if" && return
+	ip route show default 2>/dev/null | awk '{print \$5; exit}'
+}
+
+WAN_IF=\$(get_wan_if)
+
+# TCP: tailscale0 → SS_SPEC_WAN_AC
+if iptables -t nat -C PREROUTING -i tailscale0 -p tcp -j SS_SPEC_WAN_AC 2>/dev/null; then
+	iptables -t nat -I PREROUTING 1 -i tailscale0 -p tcp -j SS_SPEC_WAN_AC
+fi
+
+# UDP: tailscale0 → SS_SPEC_TPROXY
+if iptables -t mangle -C PREROUTING -i tailscale0 -p udp -j SS_SPEC_TPROXY 2>/dev/null; then
+	iptables -t mangle -I PREROUTING 1 -i tailscale0 -p udp -j SS_SPEC_TPROXY
+fi
+
+# FORWARD rules (direct traffic)
+iptables -C FORWARD -i tailscale0 -o "\$WAN_IF" -j ACCEPT 2>/dev/null || \
+	iptables -I FORWARD -i tailscale0 -o "\$WAN_IF" -j ACCEPT
+iptables -C FORWARD -i tailscale0 -o br-lan -j ACCEPT 2>/dev/null || \
+	iptables -I FORWARD -i tailscale0 -o br-lan -j ACCEPT
+
+# SNAT/MASQUERADE (Tailscale CGNAT range)
+iptables -t nat -C POSTROUTING -o "\$WAN_IF" -s 100.64.0.0/10 -j MASQUERADE 2>/dev/null || \
+	iptables -t nat -I POSTROUTING -o "\$WAN_IF" -s 100.64.0.0/10 -j MASQUERADE
+# END Tailscale Exit Node SSRPlus Proxy ===
+FWEOF
+
+	logger -t "$NAME" "SSRPlus exit node rules written to /etc/firewall.user (wan_if=\$wan_if)"
+}
+
+# Clear SSRPlus exit node rules from /etc/firewall_user
+clear_firewall_user() {
+	sed -i '/^# === Tailscale Exit Node SSRPlus Proxy ===/,/^# END Tailscale Exit Node SSRPlus Proxy ===/d' /etc/firewall.user 2>/dev/null
+	logger -t "$NAME" "SSRPlus exit node rules removed from /etc/firewall.user"
 }
 
 # Apply SSRPlus exit node iptables rules (internal: no precondition checks)
@@ -136,6 +201,11 @@ _apply_ssrplus_exit_rules() {
 # If SSRPlus is not yet running (e.g. during boot), schedules a background retry.
 apply_ssrplus_exit() {
 	local ssrplus_exit="$1"
+	
+	# Read persistence setting
+	config_load tailscale
+	local ssrplus_persist
+	config_get ssrplus_persist settings ssrplus_persist '0'
 
 	if [ "$ssrplus_exit" != "1" ]; then
 		remove_ssrplus_exit
@@ -166,6 +236,12 @@ apply_ssrplus_exit() {
 				if iptables -t nat -nL SS_SPEC_WAN_AC >/dev/null 2>&1 && \
 				   ip link show tailscale0 >/dev/null 2>&1; then
 					_apply_ssrplus_exit_rules
+					
+					# Handle firewall persistence
+					if [ "$ssrplus_persist" = "1" ]; then
+						write_firewall_user
+						/etc/init.d/firewall restart 2>/dev/null || logger -t "$NAME" "Failed to restart firewall"
+					fi
 					exit 0
 				fi
 			done
@@ -193,7 +269,7 @@ apply_settings() {
 
 	local accept_routes advertise_exit_node exit_node exit_node_allow_lan_access
 	local ssh shields_up runwebclient nosnat hostname
-	local enable_relay relay_server_port disable_fw_config ssrplus_exit
+	local enable_relay relay_server_port disable_fw_config ssrplus_exit ssrplus_persist
 
 	config_get accept_routes              settings accept_routes              '0'
 	config_get advertise_exit_node        settings advertise_exit_node        '0'
@@ -209,6 +285,7 @@ apply_settings() {
 	config_get relay_server_port          settings relay_server_port          '40000'
 	config_get disable_fw_config          settings disable_fw_config          '0'
 	config_get ssrplus_exit               settings ssrplus_exit               '0'
+	config_get ssrplus_persist            settings ssrplus_persist            '0'
 
 	# Collect advertise_routes UCI list into comma-separated string
 	local routes=""
