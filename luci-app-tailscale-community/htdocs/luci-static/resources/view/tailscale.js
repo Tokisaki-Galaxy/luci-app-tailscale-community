@@ -21,6 +21,7 @@ const tailscaleSettingsConf = [
 	[form.Flag, 'accept_routes', _('Accept Routes'), _('Allow accepting routes announced by other nodes.'), { rmempty: false }],
 	[form.Flag, 'advertise_exit_node', _('Advertise Exit Node'), _('Declare this device as an Exit Node.'), { rmempty: false }],
 	[form.Flag, 'exit_node_allow_lan_access', _('Allow LAN Access'), _('When using the exit node, access to the local LAN is allowed.'), { rmempty: false }],
+	[form.Flag, 'ssrplus_exit', _('SSRPlus Proxy for Exit Node'), _('When this device is used as a Tailscale exit node, redirect exit node traffic through SSRPlus transparent proxy.')+'<br>'+_('Requires SSRPlus to be installed and running.')+'<br>'+_('Note: Rules may need to be re-applied after SSRPlus restarts.'), { rmempty: false }],
 	[form.Flag, 'runwebclient', _('Enable Web Interface'), _('Expose a web interface on port 5252 for managing this node over Tailscale.'), { rmempty: false }],
 	[form.Flag, 'nosnat', _('Disable SNAT'), _('Disable Source NAT (SNAT) for traffic to advertised routes. Most users should leave this unchecked.'), { rmempty: false }],
 	[form.Flag, 'shields_up', _('Shields Up'), _('When enabled, blocks all inbound connections from the Tailscale network.'), { rmempty: false }],
@@ -334,6 +335,7 @@ return view.extend({
 					uci.set('tailscale', 'settings', 'advertise_routes', (settings_from_rpc.advertise_routes || []).join(', '));
 					uci.set('tailscale', 'settings', 'exit_node', settings_from_rpc.exit_node || '');
 					uci.set('tailscale', 'settings', 'exit_node_allow_lan_access', ((settings_from_rpc.exit_node_allow_lan_access || false) ? '1' : '0'));
+					uci.set('tailscale', 'settings', 'ssrplus_exit', '0');
 					uci.set('tailscale', 'settings', 'ssh', ((settings_from_rpc.ssh || false) ? '1' : '0'));
 					uci.set('tailscale', 'settings', 'shields_up', ((settings_from_rpc.shields_up || false) ? '1' : '0'));
 					uci.set('tailscale', 'settings', 'runwebclient', ((settings_from_rpc.runwebclient || false) ? '1' : '0'));

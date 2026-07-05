@@ -347,6 +347,10 @@ msgstr "未找到节点设备。"
 msgid "No tailscale-related logs found."
 msgstr ""
 
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:22
+msgid "Note: Rules may need to be re-applied after SSRPlus restarts."
+msgstr "注意：SSRPlus 重启后可能需要重新应用规则。"
+
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:414
 msgid "None"
 msgstr "无"
@@ -395,6 +399,10 @@ msgstr "DERP端口"
 msgid "Please use the login button in the settings below to authenticate."
 msgstr "请使用下方设置中的登录按钮进行认证。"
 
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:22
+msgid "Requires SSRPlus to be installed and running."
+msgstr "需要已安装并运行 SSRPlus。"
+
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:525
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:531
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:565
@@ -428,10 +436,12 @@ msgid ""
 "implicitly."
 msgstr "列表中选择出口节点。一旦开启，默认局域网之间可以互访"
 
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:22
+msgid "SSRPlus Proxy for Exit Node"
+msgstr "SSRPlus 出口节点代理"
+
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:20
-msgid ""
-"Select the firewall backend for Tailscale to use. Requires service restart "
-"to take effect."
+msgid "Select the firewall backend for Tailscale to use. Requires service restart to take effect."
 msgstr "选择 Tailscale 使用的防火墙后端。需要重启服务才能生效。"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:198
@@ -540,6 +550,12 @@ msgstr "版本"
 msgid ""
 "When enabled, blocks all inbound connections from the Tailscale network."
 msgstr "启用后，将阻止来自 Tailscale 网络的所有入站连接。"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:22
+msgid ""
+"When this device is used as a Tailscale exit node, redirect exit node "
+"traffic through SSRPlus transparent proxy."
+msgstr "当此设备作为 Tailscale 出口节点时，将出口节点流量重定向到 SSRPlus 透明代理。"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:23
 msgid "When using the exit node, access to the local LAN is allowed."

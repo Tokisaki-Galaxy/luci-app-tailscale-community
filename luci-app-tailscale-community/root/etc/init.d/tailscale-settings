@@ -66,6 +66,118 @@ remove_tailscale_dns_forward() {
 	fi
 }
 
+# Detect the WAN interface name
+detect_wan_if() {
+	local wan_if
+	if ip link show pppoe-wan >/dev/null 2>&1; then
+		echo "pppoe-wan"
+		return
+	fi
+	wan_if=$(uci -q get network.wan.device 2>/dev/null)
+	[ -n "$wan_if" ] && echo "$wan_if" && return
+	wan_if=$(ip route show default 2>/dev/null | awk '{print $5; exit}')
+	[ -n "$wan_if" ] && echo "$wan_if" && return
+	echo "wan"
+}
+
+# Remove SSRPlus exit node iptables rules
+remove_ssrplus_exit() {
+	local wan_if
+	wan_if=$(detect_wan_if)
+
+	# TCP: remove redirect to SS_SPEC_WAN_AC
+	iptables -t nat -D PREROUTING -i tailscale0 -p tcp -j SS_SPEC_WAN_AC 2>/dev/null
+
+	# UDP: remove TPROXY redirect to SS_SPEC_TPROXY
+	iptables -t mangle -D PREROUTING -i tailscale0 -p udp -j SS_SPEC_TPROXY 2>/dev/null
+
+	# FORWARD rules for direct (non-proxied) traffic
+	iptables -D FORWARD -i tailscale0 -o "$wan_if" -j ACCEPT 2>/dev/null
+	iptables -D FORWARD -i tailscale0 -o br-lan -j ACCEPT 2>/dev/null
+
+	# SNAT/MASQUERADE for direct traffic from Tailscale CGNAT range
+	iptables -t nat -D POSTROUTING -o "$wan_if" -s 100.64.0.0/10 -j MASQUERADE 2>/dev/null
+
+	logger -t "$NAME" "SSRPlus exit node rules removed"
+}
+
+# Apply SSRPlus exit node iptables rules (internal: no precondition checks)
+_apply_ssrplus_exit_rules() {
+	local wan_if
+	wan_if=$(detect_wan_if)
+
+	# TCP: redirect tailscale0 traffic to SSR transparent proxy chain
+	# This reuses SSR's China/whitelist/blacklist routing logic
+	iptables -t nat -C PREROUTING -i tailscale0 -p tcp -j SS_SPEC_WAN_AC 2>/dev/null || \
+		iptables -t nat -I PREROUTING 1 -i tailscale0 -p tcp -j SS_SPEC_WAN_AC
+
+	# UDP: redirect tailscale0 traffic to SSR TPROXY chain
+	if iptables -t mangle -nL SS_SPEC_TPROXY >/dev/null 2>&1; then
+		iptables -t mangle -C PREROUTING -i tailscale0 -p udp -j SS_SPEC_TPROXY 2>/dev/null || \
+			iptables -t mangle -I PREROUTING 1 -i tailscale0 -p udp -j SS_SPEC_TPROXY
+	fi
+
+	# FORWARD rules for direct (non-proxied) traffic that passes through SSR RETURN
+	iptables -C FORWARD -i tailscale0 -o "$wan_if" -j ACCEPT 2>/dev/null || \
+		iptables -I FORWARD -i tailscale0 -o "$wan_if" -j ACCEPT
+	iptables -C FORWARD -i tailscale0 -o br-lan -j ACCEPT 2>/dev/null || \
+		iptables -I FORWARD -i tailscale0 -o br-lan -j ACCEPT
+
+	# SNAT/MASQUERADE for direct traffic from Tailscale CGNAT range
+	iptables -t nat -C POSTROUTING -o "$wan_if" -s 100.64.0.0/10 -j MASQUERADE 2>/dev/null || \
+		iptables -t nat -I POSTROUTING -o "$wan_if" -s 100.64.0.0/10 -j MASQUERADE
+
+	logger -t "$NAME" "SSRPlus exit node rules applied (wan_if=$wan_if)"
+}
+
+# Apply SSRPlus exit node iptables rules
+# When enabled, traffic from tailscale0 is redirected through SSRPlus transparent proxy,
+# reusing its existing China/whitelist/blacklist routing logic.
+# If SSRPlus is not yet running (e.g. during boot), schedules a background retry.
+apply_ssrplus_exit() {
+	local ssrplus_exit="$1"
+
+	if [ "$ssrplus_exit" != "1" ]; then
+		remove_ssrplus_exit
+		return 0
+	fi
+
+	# Check if iptables is available
+	if ! command -v iptables >/dev/null 2>&1; then
+		logger -t "$NAME" "iptables not found, cannot apply SSRPlus exit rules"
+		return 1
+	fi
+
+	# Check if tailscale0 interface exists
+	if ! ip link show tailscale0 >/dev/null 2>&1; then
+		logger -t "$NAME" "tailscale0 interface not found, skipping SSRPlus exit rules"
+		return 1
+	fi
+
+	# Check if SSRPlus chains exist
+	if ! iptables -t nat -nL SS_SPEC_WAN_AC >/dev/null 2>&1; then
+		logger -t "$NAME" "SSRPlus not running yet (SS_SPEC_WAN_AC chain not found), scheduling retry"
+		# Background retry: wait for SSRPlus to start, try up to 6 times (30s total)
+		(
+			local retry=0
+			while [ $retry -lt 6 ]; do
+				sleep 5
+				retry=$((retry + 1))
+				if iptables -t nat -nL SS_SPEC_WAN_AC >/dev/null 2>&1 && \
+				   ip link show tailscale0 >/dev/null 2>&1; then
+					_apply_ssrplus_exit_rules
+					exit 0
+				fi
+			done
+			logger -t "$NAME" "SSRPlus exit rules retry failed after 30s (SSRPlus not started?)"
+		) &
+		return 1
+	fi
+
+	_apply_ssrplus_exit_rules
+	return 0
+}
+
 apply_settings() {
 	local ts_bin
 	if [ -x /usr/sbin/tailscale ]; then
@@ -81,7 +193,7 @@ apply_settings() {
 
 	local accept_routes advertise_exit_node exit_node exit_node_allow_lan_access
 	local ssh shields_up runwebclient nosnat hostname
-	local enable_relay relay_server_port disable_fw_config
+	local enable_relay relay_server_port disable_fw_config ssrplus_exit
 
 	config_get accept_routes              settings accept_routes              '0'
 	config_get advertise_exit_node        settings advertise_exit_node        '0'
@@ -96,6 +208,7 @@ apply_settings() {
 	config_get enable_relay               settings enable_relay               '0'
 	config_get relay_server_port          settings relay_server_port          '40000'
 	config_get disable_fw_config          settings disable_fw_config          '0'
+	config_get ssrplus_exit               settings ssrplus_exit               '0'
 
 	# Collect advertise_routes UCI list into comma-separated string
 	local routes=""
@@ -201,6 +314,10 @@ apply_settings() {
 	[ $ret -eq 0 ] \
 		&& logger -t "$NAME" "Settings applied successfully" \
 		|| logger -t "$NAME" "Failed to apply settings (exit code: $ret)"
+
+	# Apply or remove SSRPlus exit node rules
+	apply_ssrplus_exit "$ssrplus_exit"
+
 	return $ret
 }
 
@@ -211,6 +328,7 @@ handle_service_state() {
 	
 	if [ "$service_enabled" = "0" ]; then
 		logger -t "$NAME" "Service is disabled, stopping tailscale"
+		remove_ssrplus_exit
 		/etc/init.d/tailscale stop 2>/dev/null
 		/etc/init.d/tailscale disable 2>/dev/null
 		killall tailscaled 2>/dev/null

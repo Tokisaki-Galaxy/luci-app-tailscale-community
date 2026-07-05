@@ -347,6 +347,10 @@ msgstr "未找到對等裝置。"
 msgid "No tailscale-related logs found."
 msgstr ""
 
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:22
+msgid "Note: Rules may need to be re-applied after SSRPlus restarts."
+msgstr "注意：SSRPlus 重啟後可能需要重新套用規則。"
+
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:414
 msgid "None"
 msgstr ""
@@ -394,6 +398,10 @@ msgstr ""
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:210
 msgid "Please use the login button in the settings below to authenticate."
 msgstr "請使用下方設定中的登入按鈕進行認證。"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:22
+msgid "Requires SSRPlus to be installed and running."
+msgstr "需要已安裝並執行 SSRPlus。"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:525
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:531
@@ -560,6 +568,16 @@ msgid ""
 "and enables Masquerading and MSS Clamping (MTU fix) to ensure stable "
 "connections."
 msgstr "並啟用地址偽裝和 MSS鉗制確保連線穩定。"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:22
+msgid "SSRPlus Proxy for Exit Node"
+msgstr "SSRPlus 出口節點代理"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:22
+msgid ""
+"When this device is used as a Tailscale exit node, redirect exit node "
+"traffic through SSRPlus transparent proxy."
+msgstr "當此裝置作為 Tailscale 出口節點時，將出口節點流量重定向到 SSRPlus 透明代理。"
 
 #~ msgid ""
 #~ "Completely disable all Tailscale firewall auto-configuration, including "
