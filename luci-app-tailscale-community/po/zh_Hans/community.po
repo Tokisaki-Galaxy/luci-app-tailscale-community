@@ -440,6 +440,18 @@ msgstr "列表中选择出口节点。一旦开启，默认局域网之间可以
 msgid "SSRPlus Proxy for Exit Node"
 msgstr "SSRPlus 出口节点代理"
 
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:25
+msgid "Persist Firewall Rules"
+msgstr "持久化防火墙规则"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:25
+msgid "Persist SSRPlus exit node rules to /etc/firewall.user so they are applied automatically on boot."
+msgstr "将 SSRPlus 出口节点规则写入 /etc/firewall.user，以便开机自启时自动应用。"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:25
+msgid "Changes take effect after firewall restart."
+msgstr "更改在防火墙重启后生效。"
+
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:20
 msgid "Select the firewall backend for Tailscale to use. Requires service restart to take effect."
 msgstr "选择 Tailscale 使用的防火墙后端。需要重启服务才能生效。"

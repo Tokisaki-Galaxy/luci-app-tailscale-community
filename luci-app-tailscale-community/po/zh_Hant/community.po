@@ -573,6 +573,18 @@ msgstr "並啟用地址偽裝和 MSS鉗制確保連線穩定。"
 msgid "SSRPlus Proxy for Exit Node"
 msgstr "SSRPlus 出口節點代理"
 
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:25
+msgid "Persist Firewall Rules"
+msgstr "持久化防火牆規則"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:25
+msgid "Persist SSRPlus exit node rules to /etc/firewall.user so they are applied automatically on boot."
+msgstr "將 SSRPlus 出口節點規則寫入 /etc/firewall.user，以便開機自啟時自動套用。"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:25
+msgid "Changes take effect after firewall restart."
+msgstr "變更在防火牆重啟後生效。"
+
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:22
 msgid ""
 "When this device is used as a Tailscale exit node, redirect exit node "

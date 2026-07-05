@@ -540,6 +540,18 @@ msgstr ""
 msgid "Requires SSRPlus to be installed and running."
 msgstr ""
 
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:25
+msgid "Persist Firewall Rules"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:25
+msgid "Persist SSRPlus exit node rules to /etc/firewall.user so they are applied automatically on boot."
+msgstr ""
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:25
+msgid "Changes take effect after firewall restart."
+msgstr ""
+
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:22
 msgid "Note: Rules may need to be re-applied after SSRPlus restarts."
 msgstr ""
