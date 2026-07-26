@@ -28,14 +28,16 @@ setup_tailscale_dns_forward() {
 	fi
 
 	local entry="/.ts.net/100.100.100.100"
-	local found=0
+	local count
+	count=$(uci -q get dhcp.@dnsmasq[0].server 2>/dev/null | tr ' ' '\n' | grep -Fxc "$entry" 2>/dev/null)
 
-	# Check if entry already exists in dnsmasq
-	if uci -q show dhcp.@dnsmasq[0].server 2>/dev/null | grep -Fqx "dhcp.@dnsmasq[0].server='$entry'"; then
-		found=1
-	fi
-
-	if [ "$found" = "0" ]; then
+	if [ "$count" -gt 1 ]; then
+		uci -q del_list dhcp.@dnsmasq[0].server="$entry"
+		uci add_list dhcp.@dnsmasq[0].server="$entry"
+		uci commit dhcp
+		/etc/init.d/dnsmasq reload 2>/dev/null || /etc/init.d/dnsmasq restart 2>/dev/null
+		logger -t "$NAME" "Collapsed duplicate DNS forward entries"
+	elif [ "$count" -eq 0 ]; then
 		uci add_list dhcp.@dnsmasq[0].server="$entry"
 		uci commit dhcp
 		/etc/init.d/dnsmasq reload 2>/dev/null || /etc/init.d/dnsmasq restart 2>/dev/null
