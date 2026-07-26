@@ -1,0 +1,606 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: pl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:37
+msgid "(Experimental) Reduce Memory Usage"
+msgstr "(Eksperymentalne) Zmniejsz użycie pamięci"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:469
+msgid "1. Select \"Accept Routes\" (to access remote devices)."
+msgstr "1. Wybierz \"Akceptuj trasy\" (aby uzyskać dostęp do zdalnych urządzeń)."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:470
+msgid ""
+"2. In \"Advertise Routes\", select your local subnet (to allow remote "
+"devices to access this LAN)."
+msgstr ""
+"2. W \"Ogłaszaj trasy\" wybierz swoją lokalną podsieć (aby umożliwić zdalnym "
+"urządzaniom dostęp do tej sieci LAN)."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:471
+msgid "3. Click \"Auto Configure Firewall\" (to allow traffic forwarding)."
+msgstr "3. Kliknij \"Automatycznie konfiguruj zaporę\" (aby zezwolić na przekazywanie ruchu)."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:21
+msgid "Accept Routes"
+msgstr "Akceptuj trasy"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:478
+msgid "Account Settings"
+msgstr "Ustawienia konta"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:22
+msgid "Advertise Exit Node"
+msgstr "Ogłaszaj węzeł wyjścia"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:437
+msgid "Advertise Routes"
+msgstr "Ogłaszaj trasy"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:437
+msgid ""
+"Advertise subnet routes behind this device. Select from the detected subnets "
+"below or enter custom routes (comma-separated)."
+msgstr ""
+"Ogłaszaj trasy podsieci za tym urządzeniem. Wybierz z wykrytych podsieci "
+"poniżej lub wprowadź niestandardowe trasy (oddzielone przecinkami)."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:23
+msgid "Allow LAN Access"
+msgstr "Zezwól na dostęp do LAN"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:21
+msgid "Allow accepting routes announced by other nodes."
+msgstr "Zezwól na akceptowanie tras ogłaszanych przez inne węzły."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:27
+msgid "Allow connecting to this device through the SSH function of Tailscale."
+msgstr "Zezwól na łączenie się z tym urządzeniem przez funkcję SSH Tailscale."
+
+#: applications/luci-app-tailscale-community/root/usr/share/rpcd/acl.d/luci-app-tailscale-community.json:3
+msgid "Allow user access to tailscale"
+msgstr "Zezwól użytkownikowi na dostęp do Tailscale"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:552
+msgid "Are you sure you want to log out?"
+msgstr "Czy na pewno chcesz się wylogować?"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:445
+msgid "Auto Configure Firewall"
+msgstr "Automatycznie konfiguruj zaporę"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:559
+msgid "Cancel"
+msgstr "Anuluj"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:503
+msgid "Click to Log out account on this device."
+msgstr "Kliknij, aby wylogować konto z tego urządzenia."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:482
+msgid "Click to get a login URL for this device."
+msgstr "Kliknij, aby uzyskać URL logowania dla tego urządzenia."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:169
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:260
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:392
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:601
+msgid "Collecting data ..."
+msgstr "Zbieranie danych ..."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:578
+msgid "Confirm Logout"
+msgstr "Potwierdź wylogowanie"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:281
+msgid "Connection Info"
+msgstr "Informacje o połączeniu"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:28
+msgid "Controls how Tailscale DNS is handled."
+msgstr "Kontroluje sposób obsługi DNS Tailscale."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:515
+msgid ""
+"Could not open a new tab. Please check if your browser or an extension "
+"blocked the pop-up."
+msgstr ""
+"Nie można otworzyć nowej karty. Sprawdź, czy przeglądarka lub rozszerzenie "
+"zablokowało wyskakujące okno."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:487
+msgid "Custom Login Server"
+msgstr "Niestandardowy serwer logowania"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:495
+msgid "Custom Login Server Auth Key"
+msgstr "Klucz autoryzacji niestandardowego serwera logowania"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:28
+msgid "DNS Mode"
+msgstr "Tryb DNS"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:22
+msgid "Declare this device as an Exit Node."
+msgstr "Deklaruje to urządzenie jako węzeł wyjścia."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:581
+msgid "Devices List"
+msgstr "Lista urządzeń"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:29
+msgid "Disable Firewall Configuration"
+msgstr "Wyłącz konfigurację zapory"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:25
+msgid "Disable SNAT"
+msgstr "Wyłącz SNAT"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:25
+msgid ""
+"Disable Source NAT (SNAT) for traffic to advertised routes. Most users "
+"should leave this unchecked."
+msgstr ""
+"Wyłącz NAT źródłowy (SNAT) dla ruchu do ogłaszanych tras. Większość użytkowników "
+"powinna zostawić to pole niezaznaczone."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:29
+msgid "Disable Tailscale netfilter auto-configuration (--netfilter-mode=off)."
+msgstr "Wyłącz automatyczną konfigurację netfilter Tailscale (--netfilter-mode=off)."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:28
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:229
+msgid "Disabled"
+msgstr "Wyłączone"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:28
+msgid "Disabled: system DNS only."
+msgstr "Wyłączone: tylko DNS systemowy."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:504
+msgid "Disconnect from Tailscale and expire current node key."
+msgstr "Rozłącz z Tailscale i wygaś bieżący klucz węzła."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:30
+msgid "Enable Peer Relay"
+msgstr "Włącz przekazywanie między węzłami"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:27
+msgid "Enable Tailscale SSH"
+msgstr "Włącz SSH Tailscale"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:19
+msgid "Enable Tailscale Service"
+msgstr "Włącz usługę Tailscale"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:24
+msgid "Enable Web Interface"
+msgstr "Włącz interfejs webowy"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:19
+msgid ""
+"Enable or disable the Tailscale service. When disabled, the service will be "
+"stopped and the process will be killed."
+msgstr ""
+"Włącz lub wyłącz usługę Tailscale. Po wyłączeniu usługa zostanie "
+"zatrzymana, a proces zostanie zakończony."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:30
+msgid ""
+"Enable this device as a Peer Relay server. Requires a public IP and an UDP "
+"port open on the router."
+msgstr ""
+"Włącz to urządzenie jako serwer przekazywania między węzłami. Wymaga publicznego "
+"IP i otwartego portu UDP na routerze."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:229
+msgid "Enabled"
+msgstr "Włączone"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:37
+msgid ""
+"Enabling this option can reduce memory usage, but it may sacrifice some "
+"performance (set GOGC=10)."
+msgstr ""
+"Włączenie tej opcji może zmniejszyć użycie pamięci, ale może to wpłynąć "
+"na wydajność (ustawia GOGC=10)."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:540
+msgid "Error"
+msgstr "Błąd"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:150
+msgid "Error caching DERP region map: %s"
+msgstr "Błąd buforowania mapy regionu DERP: %s"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:153
+msgid "Error fetching DERP region map: %s"
+msgstr "Błąd pobierania mapy regionu DERP: %s"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:123
+msgid "Error reading cached DERP region map: %s"
+msgstr "Błąd odczytywania buforowanej mapy regionu DERP: %s"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:446
+msgid ""
+"Essential configuration for Subnet Routing (Site-to-Site) and Exit Node "
+"features."
+msgstr ""
+"Podstawowa konfiguracja dla funkcji routingu podsieci (Site-to-Site) "
+"i węzła wyjścia."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:303
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:413
+msgid "Exit Node"
+msgstr "Węzeł wyjścia"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:24
+msgid ""
+"Expose a web interface on port 5252 for managing this node over Tailscale."
+msgstr ""
+"Udostępnij interfejs webowy na porcie 5252 do zarządzania tym węzłem przez Tailscale."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:455
+msgid "Failed to configure firewall: %s"
+msgstr "Nie udało się skonfigurować zapory: %s"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:541
+msgid "Failed to get login URL. You may close this tab."
+msgstr "Nie udało się uzyskać URL logowania. Możesz zamknąć tę kartę."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:546
+msgid "Failed to get login URL: %s"
+msgstr "Nie udało się uzyskać URL logowania: %s"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:542
+msgid "Failed to get login URL: Invalid response from server."
+msgstr "Nie udało się uzyskać URL logowania: Nieprawidłowa odpowiedź z serwera."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:609
+msgid "Failed to load logs: %s"
+msgstr "Nie udało się załadować logów: %s"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:20
+msgid "Firewall Mode"
+msgstr "Tryb zapory"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:452
+msgid "Firewall configuration applied."
+msgstr "Zastosowano konfigurację zapory."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:401
+msgid "General Settings"
+msgstr "Ustawienia ogólne"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:278
+msgid "Hostname"
+msgstr "Nazwa hosta"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:464
+msgid "How to enable Site-to-Site?"
+msgstr "Jak włączyć Site-to-Site?"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:483
+msgid ""
+"If the timeout is displayed, you can refresh the page and click Login again."
+msgstr ""
+"Jeśli wyświetlany jest komunikat o przekroczeniu limitu czasu, możesz odświeżyć stronę i kliknąć Zaloguj ponownie."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:497
+msgid ""
+"If you are using custom login server but not providing an Auth Key, will "
+"redirect to the login page without pre-filling the key."
+msgstr ""
+"Jeśli korzystasz z niestandardowego serwera logowania, ale nie podajesz klucza "
+"autoryzacji, nastąpi przekierowanie do strony logowania bez wypełniania klucza."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:93
+msgid "Invalid Date"
+msgstr "Nieprawidłowa data"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:447
+msgid ""
+"It automatically creates the tailscale interface, sets up firewall zones for "
+"LAN <-> Tailscale forwarding,"
+msgstr ""
+"Automatycznie tworzy interfejs tailscale, ustawia strefy zapory dla "
+"przekazywania LAN <-> Tailscale,"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:96
+msgid "Just now"
+msgstr "Przed chwilą"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:208
+msgid "LOGGED OUT"
+msgstr "WYLOGOWANO"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:284
+msgid "Last Seen"
+msgstr "Ostatnia aktywność"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:489
+msgid "Leave blank for default Tailscale control plane."
+msgstr "Pozostaw puste dla domyślnego panelu kontrolnego Tailscale."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:565
+msgid "Logging out..."
+msgstr "Wylogowywanie..."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:481
+msgid "Login"
+msgstr "Zaloguj"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:502
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:575
+msgid "Logout"
+msgstr "Wyloguj"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:572
+msgid "Logout failed: %s"
+msgstr "Wylogowanie nie powiodło się: %s"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:587
+msgid "Logs"
+msgstr "Logi"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:28
+msgid "MagicDNS: Tailscale overrides resolv.conf."
+msgstr "MagicDNS: Tailscale nadpisuje resolv.conf."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:90
+msgid "N/A"
+msgstr "Niedostępne"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:219
+msgid "NOT RUNNING"
+msgstr "NIE DZIAŁA"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:273
+msgid "No peer devices found."
+msgstr "Nie znaleziono urządzeń partnerskich."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:246
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:591
+msgid "No tailscale-related logs found."
+msgstr "Nie znaleziono logów związanych z Tailscale."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:414
+msgid "None"
+msgstr "Brak"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:91
+msgid "Now"
+msgstr "Teraz"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:280
+msgid "OS"
+msgstr "System operacyjny"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:303
+msgid "Offline"
+msgstr "Offline"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:303
+msgid "Online"
+msgstr "Online"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:28
+msgid "OpenWrt Forward"
+msgstr "Przekazywanie OpenWrt"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:28
+msgid "OpenWrt Forward: MagicDNS via dnsmasq forwarding.(Only support ts.net)"
+msgstr "Przekazywanie OpenWrt: MagicDNS przez przekazywanie dnsmasq. (Obsługuje tylko ts.net)"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:488
+msgid ""
+"Optional: Specify a custom control server URL (e.g., a Headscale instance, "
+"%s)."
+msgstr ""
+"Opcjonalne: Podaj niestandardowy URL serwera kontrolnego (np. instancja "
+"Headscale, %s)."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:496
+msgid ""
+"Optional: Specify an authentication key for the custom control server. Leave "
+"blank if not required."
+msgstr ""
+"Opcjonalne: Podaj klucz autoryzacji dla niestandardowego serwera kontrolnego. "
+"Pozostaw puste, jeśli nie jest wymagany."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:405
+msgid "Peer Relay Port"
+msgstr "Port przekazywania między węzłami"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:210
+msgid "Please use the login button in the settings below to authenticate."
+msgstr "Użyj przycisku logowania w ustawieniach poniżej, aby się uwierzytelnić."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:525
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:531
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:565
+msgid "Please wait."
+msgstr "Proszę czekać."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:227
+msgid "RUNNING"
+msgstr "DZIAŁA"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:282
+msgid "RX"
+msgstr "Odbieranie"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:596
+msgid "Refresh"
+msgstr "Odśwież"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:525
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:531
+msgid "Requesting Login URL..."
+msgstr "Pobieranie URL logowania..."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:522
+msgid "Requesting Tailscale login URL... Please wait."
+msgstr "Pobieranie URL logowania Tailscale... Proszę czekać."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:413
+msgid ""
+"Select an exit node from the list. If enabled, Allow LAN Access is enabled "
+"implicitly."
+msgstr ""
+"Wybierz węzeł wyjścia z listy. Jeśli włączony, dostęp do LAN jest "
+"automatycznie włączony."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:20
+msgid ""
+"Select the firewall backend for Tailscale to use. Requires service restart "
+"to take effect."
+msgstr ""
+"Wybierz mechanizm zapory dla Tailscale. Wymaga restartu usługi, aby "
+"zmiany zaczęły obowiązywać."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:198
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:206
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:218
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:227
+msgid "Service Status"
+msgstr "Status usługi"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:26
+msgid "Shields Up"
+msgstr "Tarcza włączona"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:277
+msgid "Status"
+msgstr "Status"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:569
+msgid "Successfully logged out."
+msgstr "Pomyślnie wylogowano."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:199
+msgid "TAILSCALE NOT FOUND"
+msgstr "NIE ZNALEZIONO TAILSCALE"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:229
+msgid "TUN Mode"
+msgstr "Tryb TUN"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:283
+msgid "TX"
+msgstr "Wysyłanie"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:232
+msgid "Tailnet Name"
+msgstr "Nazwa Tailnet"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:366
+#: applications/luci-app-tailscale-community/root/usr/share/luci/menu.d/luci-app-tailscale-community.json:3
+msgid "Tailscale"
+msgstr "Tailscale"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:175
+msgid "Tailscale Health Check: %s"
+msgstr "Kontrola stanu Tailscale: %s"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:279
+msgid "Tailscale IP"
+msgstr "IP Tailscale"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:230
+msgid "Tailscale IPv4"
+msgstr "IPv4 Tailscale"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:231
+msgid "Tailscale IPv6"
+msgstr "IPv6 Tailscale"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:521
+msgid "Tailscale Login"
+msgstr "Logowanie Tailscale"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:366
+msgid ""
+"Tailscale is a mesh VPN solution that makes it easy to connect your devices "
+"securely. This configuration page allows you to manage Tailscale settings on "
+"your OpenWrt device."
+msgstr ""
+"Tailscale to rozwiązanie VPN mesh, które ułatwia bezpieczne łączenie urządzeń. "
+"Ta strona konfiguracyjna pozwala zarządzać ustawieniami Tailscale na "
+"urządzeniu OpenWrt."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:264
+msgid "Tailscale status error"
+msgstr "Błąd statusu Tailscale"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:523
+msgid "This can take up to 30 seconds."
+msgstr "Może to potrwać do 30 sekund."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:553
+msgid ""
+"This will disconnect this device from your Tailnet and require you to re-"
+"authenticate."
+msgstr ""
+"Spowoduje to rozłączenie tego urządzenia z Twojego Tailnet i wymaga "
+"ponownego uwierzytelnienia."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:406
+msgid ""
+"UDP port for the Peer Relay service. Open this port on your router firewall/"
+"NAT."
+msgstr ""
+"Port UDP dla usługi przekazywania między węzłami. Otwórz ten port w zaporze/"
+"NAT na routerze."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:123
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:150
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:153
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:546
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:572
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:609
+msgid "Unknown error"
+msgstr "Nieznany błąd"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:228
+msgid "Version"
+msgstr "Wersja"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:26
+msgid ""
+"When enabled, blocks all inbound connections from the Tailscale network."
+msgstr ""
+"Po włączeniu blokuje wszystkie połączenia przychodzące z sieci Tailscale."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:23
+msgid "When using the exit node, access to the local LAN is allowed."
+msgstr "Podczas korzystania z węzła wyjścia dozwolony jest dostęp do lokalnego LAN."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:472
+msgid ""
+"[Important] Log in to the Tailscale admin console and manually enable "
+"\"Subnet Routes\" for this device."
+msgstr ""
+"[Ważne] Zaloguj się do panelu administracyjnego Tailscale i ręcznie włącz "
+"\"Trasy podsieci\" dla tego urządzenia."
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:99
+msgid "ago"
+msgstr "temu"
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:448
+msgid ""
+"and enables Masquerading and MSS Clamping (MTU fix) to ensure stable "
+"connections."
+msgstr ""
+"i włącza Maskaradę oraz MSS Clamping (korekta MTU) w celu zapewnienia "
+"stabilnych połączeń."
