@@ -244,7 +244,7 @@ msgstr "获取登录 URL 失败: 服务器响应无效。"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:609
 msgid "Failed to load logs: %s"
-msgstr ""
+msgstr "加载日志失败"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:20
 msgid "Firewall Mode"
@@ -324,7 +324,7 @@ msgstr "登出失败: %s"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:587
 msgid "Logs"
-msgstr ""
+msgstr "日志"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:28
 msgid "MagicDNS: Tailscale overrides resolv.conf."
@@ -345,7 +345,7 @@ msgstr "未找到节点设备。"
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:246
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:591
 msgid "No tailscale-related logs found."
-msgstr ""
+msgstr "没有找到Tailscale相关日志"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:414
 msgid "None"
@@ -411,7 +411,7 @@ msgstr "接收"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:596
 msgid "Refresh"
-msgstr ""
+msgstr "刷新"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:525
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:531
@@ -455,7 +455,7 @@ msgstr "登出成功。"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:199
 msgid "TAILSCALE NOT FOUND"
-msgstr "未找到 TAILSCALE"
+msgstr "未找到 TAILSCALE 主程序"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:229
 msgid "TUN Mode"
