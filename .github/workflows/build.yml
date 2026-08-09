@@ -134,12 +134,13 @@ jobs:
               echo "Build triggered by Tag: Using Version=$NEW_VER, Release=$NEW_REL"
             else
               # === 场景 B: 普通 Commit (调试构建) ===
-              # Version = 日期 (YYYY.MM.DD)
-              NEW_VER=$(date +"%Y.%m.%d")
-
-              # Release = BuildNumber.git-ShortHash
+              # Version = 日期 (YYYY.MM.DD)~git短哈希
+              # 注意: apk 版本号中 '-' 仅允许作为 -r 发布分隔符，git 哈希用 '~' 连接
               SHORT_SHA=$(git -C "$src_dir" rev-parse --short HEAD)
-              NEW_REL="${{ github.run_number }}.git-$SHORT_SHA"
+              NEW_VER="$(date +"%Y.%m.%d")~$SHORT_SHA"
+
+              # Release = BuildNumber
+              NEW_REL="${{ github.run_number }}"
               echo "Build triggered by Commit: Using Version=$NEW_VER, Release=$NEW_REL"
             fi
 
