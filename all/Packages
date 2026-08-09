@@ -1,0 +1,76 @@
+Package: luci-app-tailscale-community
+Version: 4.2.3-r1
+Depends: libc, tailscale, ip-full, luci-base
+Source: feeds/base/luci-app-tailscale-community
+SourceName: luci-app-tailscale-community
+Section: luci
+SourceDateEpoch: 1784877710
+URL: https://github.com/tokisaki-galaxy/luci-app-tailscale-community
+Maintainer: OpenWrt LuCI community
+Architecture: all
+Installed-Size: 61440
+Description:  LuCI support for Tailscale
+Filename: luci-app-tailscale-community_4.2.3-r1_all.ipk
+Size: 13338
+SHA256sum: 8923f755f055a9bf0b0e91190ceb214657566125d14ad2bc15960946d21b553d
+
+Package: luci-i18n-tailscale-community-es
+Version: 0.260809.33932
+Depends: libc, luci-app-tailscale-community
+Source: feeds/base/luci-app-tailscale-community
+SourceName: luci-app-tailscale-community
+Section: luci
+SourceDateEpoch: 1784877710
+Maintainer: Tokisaki-Galaxy <moebest@outlook.jp>
+Architecture: all
+Installed-Size: 10240
+Description:  Translation for luci-app-tailscale-community - Español (Spanish)
+Filename: luci-i18n-tailscale-community-es_0.260809.33932_all.ipk
+Size: 1171
+SHA256sum: d3586f15f7f53dc8f20051b9e95702d0b51b661a021a722cc10b4b76c4755b1c
+
+Package: luci-i18n-tailscale-community-pl
+Version: 0.260809.33932
+Depends: libc, luci-app-tailscale-community
+Source: feeds/base/luci-app-tailscale-community
+SourceName: luci-app-tailscale-community
+Section: luci
+SourceDateEpoch: 1784877710
+Maintainer: Tokisaki-Galaxy <moebest@outlook.jp>
+Architecture: all
+Installed-Size: 20480
+Description:  Translation for luci-app-tailscale-community - Polski (Polish)
+Filename: luci-i18n-tailscale-community-pl_0.260809.33932_all.ipk
+Size: 4795
+SHA256sum: 3856f18ff36c67e332fc43c082915978e519a20ec624359e275b6149e317b5fc
+
+Package: luci-i18n-tailscale-community-zh-cn
+Version: 0.260809.33932
+Depends: libc, luci-app-tailscale-community
+Source: feeds/base/luci-app-tailscale-community
+SourceName: luci-app-tailscale-community
+Section: luci
+SourceDateEpoch: 1784877710
+Maintainer: Tokisaki-Galaxy <moebest@outlook.jp>
+Architecture: all
+Installed-Size: 20480
+Description:  Translation for luci-app-tailscale-community - 简体中文 (Simplified Chinese)
+Filename: luci-i18n-tailscale-community-zh-cn_0.260809.33932_all.ipk
+Size: 4587
+SHA256sum: d2ac79d446ba6f2c0c9ca5915e76ab98eff25d5dbef541f6b7b2dd687085704f
+
+Package: luci-i18n-tailscale-community-zh-tw
+Version: 0.260809.33932
+Depends: libc, luci-app-tailscale-community
+Source: feeds/base/luci-app-tailscale-community
+SourceName: luci-app-tailscale-community
+Section: luci
+SourceDateEpoch: 1784877710
+Maintainer: Tokisaki-Galaxy <moebest@outlook.jp>
+Architecture: all
+Installed-Size: 20480
+Description:  Translation for luci-app-tailscale-community - 正體中文 (Traditional Chinese)
+Filename: luci-i18n-tailscale-community-zh-tw_0.260809.33932_all.ipk
+Size: 3933
+SHA256sum: 7451b6a147a3acb2f9a557bf8bceb54b6662ef2d3883e37ff2a389966adf2033
+
