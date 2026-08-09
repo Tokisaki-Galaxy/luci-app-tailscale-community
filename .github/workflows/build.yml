@@ -9,7 +9,6 @@ on:
   workflow_dispatch:
 
 env:
-  OPENWRT_VERSION: v25.12.5
   PACKAGE_NAME: luci-app-tailscale-community
 
 permissions:
@@ -26,6 +25,12 @@ jobs:
           - name: x86_64
             path: x86/64
         format: [ ipk, apk ]
+        include:
+          # OpenWrt 24.x SDK 编译 .ipk；25.x SDK 编译 .apk
+          - format: ipk
+            openwrt_version: v24.10.8
+          - format: apk
+            openwrt_version: v25.12.5
     env:
       # 每个 format 使用独立的 SDK 目录与缓存，避免 opkg/apk 配置互相污染
       SDK_DIR: /home/runner/work/openwrt-sdk-${{ matrix.format }}
@@ -55,13 +60,14 @@ jobs:
         with:
           path: ${{ env.SDK_DIR }}
           # 缓存键：结合 format、操作系统、目标架构和 OpenWrt 版本，确保环境变化时缓存失效
-          key: ${{ runner.os }}-sdk-${{ matrix.format }}-${{ matrix.target.name }}-${{ env.OPENWRT_VERSION }}
+          key: ${{ runner.os }}-sdk-${{ matrix.format }}-${{ matrix.target.name }}-${{ matrix.openwrt_version }}
 
       - name: Download, extract OpenWrt SDK and update feeds
         if: steps.cache-sdk.outputs.cache-hit != 'true'
         run: |
-          # 从环境变量中移除 'v' 前缀以匹配版本号
-          release_version="${OPENWRT_VERSION#v}"
+          # 从版本号中移除 'v' 前缀以匹配下载路径
+          release_version="${{ matrix.openwrt_version }}"
+          release_version="${release_version#v}"
           sdk_url_prefix="https://downloads.openwrt.org/releases/${release_version}/targets/${{ matrix.target.path }}"
 
           # 查找 SDK 文件名
@@ -176,7 +182,7 @@ jobs:
         run: |
           translation_pkg=${PACKAGE_NAME#luci-app-}
 
-          # 25.x SDK 默认 USE_APK=y，必须显式禁用才会产出 .ipk
+          # 24.x SDK 默认使用 opkg，直接产出 .ipk
           {
             echo "CONFIG_PACKAGE_${PACKAGE_NAME}=m"
             echo "CONFIG_PACKAGE_luci-i18n-${translation_pkg}-zh-cn=m"
@@ -185,19 +191,12 @@ jobs:
             echo "CONFIG_LUCI_LANG_zh_Hans=y"
             echo "CONFIG_LUCI_LANG_zh_Hant=y"
             echo "CONFIG_LUCI_LANG_pl=y"
-            echo "# CONFIG_USE_APK is not set"
           } > .config
           make defconfig
 
-          echo "DEBUG USE_APK after defconfig:"
-          grep -n "CONFIG_USE_APK" .config || true
-          # defconfig 会把 default y 的 USE_APK 翻转回 y，这里强制改回不设置
-          sed -i 's/^CONFIG_USE_APK=y/# CONFIG_USE_APK is not set/' .config
-          echo "DEBUG USE_APK after sed:"
-          grep -n "CONFIG_USE_APK" .config || true
-
+          # 若该 SDK 意外启用了 APK（USE_APK 存在且为 y），则无法产出 ipk
           if grep -q '^CONFIG_USE_APK=y' .config; then
-            echo "::error::CONFIG_USE_APK is still enabled. Cannot build .ipk with this SDK."
+            echo "::error::CONFIG_USE_APK is enabled. Cannot build .ipk with this SDK. Please use an OpenWrt 24.x SDK."
             exit 1
           fi
 
