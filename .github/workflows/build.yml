@@ -9,16 +9,14 @@ on:
   workflow_dispatch:
 
 env:
-  OPENWRT_VERSION: v24.10.3
   PACKAGE_NAME: luci-app-tailscale-community
-  SDK_DIR: /home/runner/work/openwrt-sdk
 
 permissions:
   contents: write
 
 jobs:
   build:
-    name: Build Packages for ${{ matrix.target.name }}
+    name: Build ${{ matrix.format }} (${{ matrix.target.name }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -26,6 +24,16 @@ jobs:
         target:
           - name: x86_64
             path: x86/64
+        format: [ ipk, apk ]
+        include:
+          # OpenWrt 24.x SDK 编译 .ipk；25.x SDK 编译 .apk
+          - format: ipk
+            openwrt_version: v24.10.8
+          - format: apk
+            openwrt_version: v25.12.5
+    env:
+      # 每个 format 使用独立的 SDK 目录与缓存，避免 opkg/apk 配置互相污染
+      SDK_DIR: /home/runner/work/openwrt-sdk-${{ matrix.format }}
 
     steps:
       - name: Checkout package repository
@@ -34,10 +42,11 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential rsync unzip zstd coreutils cmake
+          sudo apt-get install -y build-essential rsync unzip zstd coreutils cmake xxd
           sudo ln -sf /usr/bin/sha256sum /usr/bin/sha256
 
       - name: Setup usign
+        if: matrix.format == 'ipk'
         run: |
           git clone --depth 1 https://github.com/openwrt/usign.git
           cd usign && mkdir build && cd build
@@ -50,14 +59,15 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.SDK_DIR }}
-          # 缓存键：结合操作系统、目标架构和 OpenWrt 版本，确保环境变化时缓存失效
-          key: ${{ runner.os }}-sdk-${{ matrix.target.name }}-${{ env.OPENWRT_VERSION }}
+          # 缓存键：结合 format、操作系统、目标架构和 OpenWrt 版本，确保环境变化时缓存失效
+          key: ${{ runner.os }}-sdk-${{ matrix.format }}-${{ matrix.target.name }}-${{ matrix.openwrt_version }}
 
       - name: Download, extract OpenWrt SDK and update feeds
         if: steps.cache-sdk.outputs.cache-hit != 'true'
         run: |
-          # 从环境变量中移除 'v' 前缀以匹配版本号
-          release_version="${OPENWRT_VERSION#v}"
+          # 从版本号中移除 'v' 前缀以匹配下载路径
+          release_version="${{ matrix.openwrt_version }}"
+          release_version="${release_version#v}"
           sdk_url_prefix="https://downloads.openwrt.org/releases/${release_version}/targets/${{ matrix.target.path }}"
 
           # 查找 SDK 文件名
@@ -90,6 +100,11 @@ jobs:
       - name: Prepare build environment
         working-directory: ${{ env.SDK_DIR }}
         run: |
+          # 本应用已收录进上游 openwrt/luci feed，需移除 feed 中的同名副本，
+          # 否则 make 会解析到 feeds/luci 里的官方副本而非本仓库代码
+          rm -f package/feeds/luci/${PACKAGE_NAME}
+          rm -rf feeds/luci/applications/${PACKAGE_NAME}
+
           rm -rf package/${PACKAGE_NAME}
           mkdir -p package/${PACKAGE_NAME}
           src_dir="${{ github.workspace }}"
@@ -137,12 +152,13 @@ jobs:
               echo "Build triggered by Tag: Using Version=$NEW_VER, Release=$NEW_REL"
             else
               # === 场景 B: 普通 Commit (调试构建) ===
-              # Version = 日期 (YYYY.MM.DD)
-              NEW_VER=$(date +"%Y.%m.%d")
-
-              # Release = BuildNumber.git-ShortHash
+              # Version = 日期 (YYYY.MM.DD)~git短哈希
+              # 注意: apk 版本号中 '-' 仅允许作为 -r 发布分隔符，git 哈希用 '~' 连接
               SHORT_SHA=$(git -C "$src_dir" rev-parse --short HEAD)
-              NEW_REL="${{ github.run_number }}.git-$SHORT_SHA"
+              NEW_VER="$(date +"%Y.%m.%d")~$SHORT_SHA"
+
+              # Release = BuildNumber
+              NEW_REL="${{ github.run_number }}"
               echo "Build triggered by Commit: Using Version=$NEW_VER, Release=$NEW_REL"
             fi
 
@@ -150,108 +166,105 @@ jobs:
             sed -i "s|include \$(TOPDIR)/rules.mk|include \$(TOPDIR)/rules.mk\nPKG_VERSION:=$NEW_VER\nPKG_RELEASE:=$NEW_REL|" "$TARGET_MK"
           fi
 
-          # 清理上次构建的产物（SDK 缓存可能包含旧文件）
+          # 清理上次构建的产物（SDK 缓存可能包含旧文件，含 i18n 包）
+          translation_pkg=${PACKAGE_NAME#luci-app-}
           rm -rf output_ipk output_apk upload
           mkdir -p ./bin/packages
-          find ./bin -type f -name "${PACKAGE_NAME}*.ipk" -delete
-          find ./bin -type f -name "${PACKAGE_NAME}*.apk" -delete
+          find ./bin -type f \( \
+            -name "${PACKAGE_NAME}*.apk" -o -name "luci-i18n-${translation_pkg}-*.apk" \
+            -o -name "${PACKAGE_NAME}*.ipk" -o -name "luci-i18n-${translation_pkg}-*.ipk" \
+          \) -delete
 
-      - name: Compile the package
+      # ==================== 编译 IPK (opkg) ====================
+      - name: Compile .ipk package
+        if: matrix.format == 'ipk'
         working-directory: ${{ env.SDK_DIR }}
         run: |
           translation_pkg=${PACKAGE_NAME#luci-app-}
 
-          # 为了实现 IPK 和 APK 的完全并行编译且互不干扰
-          # 在父目录为 APK 编译创建一个 SDK 目录的硬链接副本
-          cd ..
-          SDK_DIR_NAME=$(basename ${{ env.SDK_DIR }})
-          cp -al "$SDK_DIR_NAME" "${SDK_DIR_NAME}-apk"
+          # 24.x SDK 默认使用 opkg，直接产出 .ipk
+          {
+            echo "CONFIG_PACKAGE_${PACKAGE_NAME}=m"
+            echo "CONFIG_PACKAGE_luci-i18n-${translation_pkg}-zh-cn=m"
+            echo "CONFIG_PACKAGE_luci-i18n-${translation_pkg}-zh-tw=m"
+            echo "CONFIG_PACKAGE_luci-i18n-${translation_pkg}-pl=m"
+            echo "CONFIG_LUCI_LANG_zh_Hans=y"
+            echo "CONFIG_LUCI_LANG_zh_Hant=y"
+            echo "CONFIG_LUCI_LANG_pl=y"
+          } > .config
+          make defconfig
 
-          # --- 1. 编译 IPK (后台运行) ---
-          (
-            cd "$SDK_DIR_NAME"
-            echo "Building IPK format..."
-            {
-              echo "CONFIG_PACKAGE_${PACKAGE_NAME}=m"
-              echo "CONFIG_PACKAGE_luci-i18n-${translation_pkg}-zh-cn=m"
-              echo "CONFIG_PACKAGE_luci-i18n-${translation_pkg}-zh-tw=m"
-              echo "CONFIG_PACKAGE_luci-i18n-${translation_pkg}-pl=m"
-              echo "CONFIG_LUCI_LANG_zh_Hans=y"
-              echo "CONFIG_LUCI_LANG_zh_Hant=y"
-              echo "CONFIG_LUCI_LANG_pl=y"
-            } > .config
-            make defconfig
-            make package/${PACKAGE_NAME}/compile V=sw -j$(nproc)
-            mkdir -p output_ipk
-            find ./bin/packages -type f \( -name "${PACKAGE_NAME}*.ipk" -o -name "luci-i18n-${translation_pkg}-*.ipk" \) -exec cp {} output_ipk/ \;
-          ) &
-          pid_ipk=$!
-
-          # --- 2. 编译 APK (后台运行，在副本目录执行) ---
-          (
-            cd "${SDK_DIR_NAME}-apk"
-            echo "Building APK format..."
-            {
-              echo "CONFIG_PACKAGE_${PACKAGE_NAME}=m"
-              echo "CONFIG_PACKAGE_luci-i18n-${translation_pkg}-zh-cn=m"
-              echo "CONFIG_PACKAGE_luci-i18n-${translation_pkg}-zh-tw=m"
-              echo "CONFIG_PACKAGE_luci-i18n-${translation_pkg}-pl=m"
-              echo "CONFIG_LUCI_LANG_zh_Hans=y"
-              echo "CONFIG_LUCI_LANG_zh_Hant=y"
-              echo "CONFIG_LUCI_LANG_pl=y"
-              echo "CONFIG_USE_APK=y"
-            } > .config
-            make defconfig
-            if grep -q '^CONFIG_USE_APK=y' .config; then
-              make package/${PACKAGE_NAME}/compile V=sw -j$(nproc)
-              mkdir -p output_apk
-              find ./bin/packages -type f \( -name "${PACKAGE_NAME}*.apk" -o -name "luci-i18n-${translation_pkg}-*.apk" \) -exec cp {} output_apk/ \;
-            else
-              echo "::warning::CONFIG_USE_APK not supported by this SDK. Skipping."
-            fi
-          ) &
-          pid_apk=$!
-
-          # 等待所有并行编译任务完成
-          wait $pid_ipk $pid_apk
-
-          # 将 APK 编译结果移动回主 SDK 目录以供后续步骤统一处理
-          cd "$SDK_DIR_NAME"
-          if [ -d "../${SDK_DIR_NAME}-apk/output_apk" ]; then
-            mv "../${SDK_DIR_NAME}-apk/output_apk" ./
+          # 若该 SDK 意外启用了 APK（USE_APK 存在且为 y），则无法产出 ipk
+          if grep -q '^CONFIG_USE_APK=y' .config; then
+            echo "::error::CONFIG_USE_APK is enabled. Cannot build .ipk with this SDK. Please use an OpenWrt 24.x SDK."
+            exit 1
           fi
 
-      - name: Collect artifacts
-        id: collect_artifacts
+          make package/${PACKAGE_NAME}/compile V=sw -j$(nproc)
+
+          mkdir -p output_ipk
+          find ./bin/packages -type f \( -name "${PACKAGE_NAME}*.ipk" -o -name "luci-i18n-${translation_pkg}-*.ipk" \) -exec cp {} output_ipk/ \;
+          ls -l output_ipk/
+
+      # ==================== 编译 APK ====================
+      - name: Compile .apk package
+        if: matrix.format == 'apk'
+        working-directory: ${{ env.SDK_DIR }}
+        run: |
+          translation_pkg=${PACKAGE_NAME#luci-app-}
+
+          # OpenWrt 25.x SDK 使用 APK 包管理器，编译产物为 .apk 格式
+          {
+            echo "CONFIG_PACKAGE_${PACKAGE_NAME}=m"
+            echo "CONFIG_PACKAGE_luci-i18n-${translation_pkg}-zh-cn=m"
+            echo "CONFIG_PACKAGE_luci-i18n-${translation_pkg}-zh-tw=m"
+            echo "CONFIG_PACKAGE_luci-i18n-${translation_pkg}-pl=m"
+            echo "CONFIG_LUCI_LANG_zh_Hans=y"
+            echo "CONFIG_LUCI_LANG_zh_Hant=y"
+            echo "CONFIG_LUCI_LANG_pl=y"
+            echo "CONFIG_USE_APK=y"
+          } > .config
+          make defconfig
+
+          if ! grep -q '^CONFIG_USE_APK=y' .config; then
+            echo "::error::CONFIG_USE_APK not supported by this SDK. OpenWrt SDK 25.x or newer is required for APK builds."
+            exit 1
+          fi
+
+          make package/${PACKAGE_NAME}/compile V=sw -j$(nproc)
+
+          mkdir -p output_apk
+          find ./bin/packages -type f \( -name "${PACKAGE_NAME}*.apk" -o -name "luci-i18n-${translation_pkg}-*.apk" \) -exec cp {} output_apk/ \;
+          ls -l output_apk/
+
+      # ==================== 收集 IPK 产物 + opkg 索引 ====================
+      - name: Collect .ipk artifacts
+        if: matrix.format == 'ipk'
+        id: collect_ipk
         working-directory: ${{ env.SDK_DIR }}
         run: |
           REL_PATH="all"
-          mkdir -p "upload/${REL_PATH}"
-          [ -d "output_ipk" ] && cp output_ipk/*.ipk "upload/${REL_PATH}/" || true
-          [ -d "output_apk" ] && cp output_apk/*.apk "upload/${REL_PATH}/" || true
+          TARGET_DIR="upload/${REL_PATH}"
+          mkdir -p "${TARGET_DIR}"
+          [ -d "output_ipk" ] && cp output_ipk/*.ipk "${TARGET_DIR}/" || true
 
-          if [ -z "$(ls -A upload/${REL_PATH})" ]; then echo "No packages found!"; exit 1; fi
+          if [ -z "$(ls -A ${TARGET_DIR})" ]; then echo "No packages found!"; exit 1; fi
 
-          # 签名处理
+          # 签名处理 (usign)
           if [ -z "${{ secrets.USIGN_KEY }}" ]; then
             echo "::warning title=Missing USIGN_KEY::GitHub Secret 'USIGN_KEY' is not set. A temporary key has been generated for this build."
-            usign -G -s /tmp/key-build.sig -p "upload/${REL_PATH}/key-build.pub" -c "Local build key"
-            echo "::warning::Temporary signing key generated. Please save the following Private Key to your repository secrets as 'USIGN_KEY' to maintain consistent signatures:"
-            echo "------------------- BEGIN KEY -------------------"
-            cat /tmp/key-build.sig
-            echo "-------------------- END KEY --------------------"
+            usign -G -s /tmp/key-build.sig -p "${TARGET_DIR}/key-build.pub" -c "Local build key"
           else
             echo "${{ secrets.USIGN_KEY }}" > /tmp/key-build.sig
             # Extract public key from secret key (usign has no built-in command for this)
             # Hex offsets: pkalg=0:4, fingerprint=64:80, pubkey=144:208 (byte*2)
             KEY_HEX=$(tail -n 1 /tmp/key-build.sig | base64 -d | xxd -p | tr -d '\n')
             [ ${#KEY_HEX} -eq 208 ] || { echo "::error::Invalid USIGN_KEY (expected 104 bytes)"; exit 1; }
-            echo "untrusted comment: public key ${KEY_HEX:64:16}" > "upload/${REL_PATH}/key-build.pub"
-            echo "${KEY_HEX:0:4}${KEY_HEX:64:16}${KEY_HEX:144:64}" | xxd -r -p | base64 -w 0 >> "upload/${REL_PATH}/key-build.pub"
+            echo "untrusted comment: public key ${KEY_HEX:64:16}" > "${TARGET_DIR}/key-build.pub"
+            echo "${KEY_HEX:0:4}${KEY_HEX:64:16}${KEY_HEX:144:64}" | xxd -r -p | base64 -w 0 >> "${TARGET_DIR}/key-build.pub"
           fi
 
-          # 生成索引 (IPK)
-          TARGET_DIR="upload/${REL_PATH}"
+          # 生成 opkg 索引 (Packages / Packages.gz / Packages.sig)
           if ls "${TARGET_DIR}"/*.ipk >/dev/null 2>&1; then
             touch "${TARGET_DIR}/Packages"
             for ipk in "${TARGET_DIR}"/*.ipk; do
@@ -262,22 +275,47 @@ jobs:
             usign -S -m "${TARGET_DIR}/Packages" -s /tmp/key-build.sig -x "${TARGET_DIR}/Packages.sig"
           fi
 
-          # 生成索引 (APK)
-          if ls "${TARGET_DIR}"/*.apk >/dev/null 2>&1; then
-            docker run --rm -v $(pwd)/${TARGET_DIR}:/work -w /work alpine sh -c "apk add apk-tools && apk index -o APKINDEX.tar.gz *.apk"
-            usign -S -m "${TARGET_DIR}/APKINDEX.tar.gz" -s /tmp/key-build.sig -x "${TARGET_DIR}/APKINDEX.tar.gz.sig"
-          fi
-
-          # 清理私钥
           rm -f /tmp/key-build.sig
+          ls -l "${TARGET_DIR}/"
+          echo "path=upload" >> $GITHUB_OUTPUT
 
+      # ==================== 收集 APK 产物 + apk 索引 ====================
+      - name: Collect .apk artifacts
+        if: matrix.format == 'apk'
+        id: collect_apk
+        working-directory: ${{ env.SDK_DIR }}
+        run: |
+          REL_PATH="all"
+          TARGET_DIR="upload/${REL_PATH}"
+          mkdir -p "${TARGET_DIR}"
+          [ -d "output_apk" ] && cp output_apk/*.apk "${TARGET_DIR}/" || true
+
+          if [ -z "$(ls -A ${TARGET_DIR})" ]; then echo "No packages found!"; exit 1; fi
+
+          # 生成 APK 索引 (packages.adb) 并导出公钥
+          # OpenWrt 25.x 使用 apk-tools v3，索引格式为 packages.adb（而非旧版 APKINDEX.tar.gz）
+          # 使用 SDK 自带的 host apk-tools，与设备端 apk 客户端版本一致
+          SDK_HOST_APK="${{ env.SDK_DIR }}/staging_dir/host/bin/apk"
+          (
+            cd "${TARGET_DIR}"
+            MKNDX_ARGS="--root ${{ env.SDK_DIR }} --keys-dir ${{ env.SDK_DIR }} --allow-untrusted --output packages.adb"
+            if [ -f "${{ env.SDK_DIR }}/private-key.pem" ]; then
+              MKNDX_ARGS="--sign ${{ env.SDK_DIR }}/private-key.pem ${MKNDX_ARGS}"
+            fi
+            "${SDK_HOST_APK}" mkndx ${MKNDX_ARGS} *.apk
+            # 导出公钥供客户端安装到 /etc/apk/keys/（EC 公钥）
+            [ -f "${{ env.SDK_DIR }}/public-key.pem" ] && cp "${{ env.SDK_DIR }}/public-key.pem" public-key.pem
+          )
+
+          [ -f "${TARGET_DIR}/packages.adb" ] || { echo "::error::packages.adb generation failed"; exit 1; }
+          ls -l "${TARGET_DIR}/"
           echo "path=upload" >> $GITHUB_OUTPUT
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: packages-${{ matrix.target.name }}
-          path: ${{ env.SDK_DIR }}/${{ steps.collect_artifacts.outputs.path }}
+          name: packages-${{ matrix.format }}-${{ matrix.target.name }}
+          path: ${{ env.SDK_DIR }}/${{ steps.collect_ipk.outputs.path || steps.collect_apk.outputs.path }}
 
   deploy:
     name: Deploy to GitHub Pages
@@ -295,8 +333,12 @@ jobs:
           # 从头创建 deploy 目录，确保不包含任何旧文件
           mkdir -p deploy/all
 
-          # 只复制新生成的 ipk 和 apk 文件
-          find downloaded-artifacts/packages-* -type f \( -name "*.ipk" -o -name "*.apk" -o -name "Packages*" -o -name "APKINDEX*" -o -name "key-build.pub" \) -exec cp {} deploy/all/ \;
+          # 复制 ipk + apk 两种格式的包、索引和公钥
+          find downloaded-artifacts/packages-* -type f \( \
+            -name "*.ipk" -o -name "Packages*" \
+            -o -name "*.apk" -o -name "packages.adb*" \
+            -o -name "key-build.pub" -o -name "public-key.pem" \
+          \) -exec cp {} deploy/all/ \;
 
           # 验证没有私钥文件泄露
           if find deploy -name "key-build.sig" -type f | grep -q .; then
@@ -322,10 +364,10 @@ jobs:
               </style>
           </head>
           <body>
-              <h1>${{ env.PACKAGE_NAME }} OPKG Feed</h1>
+              <h1>${{ env.PACKAGE_NAME }} OPKG + APK Feed</h1>
               <p>这是 <strong>${{ env.PACKAGE_NAME }}</strong> 的官方软件源托管地址。</p>
 
-              <h3>如何使用 (How to use)</h3>
+              <h3>OpenWrt ≤ 24.10 (opkg)</h3>
               <p>在你的 OpenWrt 终端运行以下命令：</p>
               <pre><code># 1. 添加公钥
           wget https://$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]').github.io/${{ env.PACKAGE_NAME }}/all/key-build.pub -O /tmp/key-build.pub
@@ -337,6 +379,18 @@ jobs:
           # 3. 更新并安装
           opkg update
           opkg install ${{ env.PACKAGE_NAME }}</code></pre>
+
+              <h3>OpenWrt 25.x (apk)</h3>
+              <p>在你的 OpenWrt 25.x 终端运行以下命令：</p>
+              <pre><code># 1. 添加公钥
+          wget https://$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]').github.io/${{ env.PACKAGE_NAME }}/all/public-key.pem -O /etc/apk/keys/${{ env.PACKAGE_NAME }}.pem
+
+          # 2. 添加软件源
+          echo "https://$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]').github.io/${{ env.PACKAGE_NAME }}/all" > /etc/apk/repositories.d/${{ env.PACKAGE_NAME }}.list
+
+          # 3. 更新并安装
+          apk update
+          apk add ${{ env.PACKAGE_NAME }}</code></pre>
 
               <h3>可用架构 (Available Architectures)</h3>
               <ul class="arch-list">
