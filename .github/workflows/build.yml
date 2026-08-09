@@ -82,6 +82,11 @@ jobs:
       - name: Prepare build environment
         working-directory: ${{ env.SDK_DIR }}
         run: |
+          # 本应用已收录进上游 openwrt/luci feed，需移除 feed 中的同名副本，
+          # 否则 make 会解析到 feeds/luci 里的官方副本而非本仓库代码
+          rm -f package/feeds/luci/${PACKAGE_NAME}
+          rm -rf feeds/luci/applications/${PACKAGE_NAME}
+
           rm -rf package/${PACKAGE_NAME}
           mkdir -p package/${PACKAGE_NAME}
           src_dir="${{ github.workspace }}"
