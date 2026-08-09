@@ -148,10 +148,11 @@ jobs:
             sed -i "s|include \$(TOPDIR)/rules.mk|include \$(TOPDIR)/rules.mk\nPKG_VERSION:=$NEW_VER\nPKG_RELEASE:=$NEW_REL|" "$TARGET_MK"
           fi
 
-          # 清理上次构建的产物（SDK 缓存可能包含旧文件）
+          # 清理上次构建的产物（SDK 缓存可能包含旧文件，含 i18n 包）
+          translation_pkg=${PACKAGE_NAME#luci-app-}
           rm -rf output_apk upload
           mkdir -p ./bin/packages
-          find ./bin -type f -name "${PACKAGE_NAME}*.apk" -delete
+          find ./bin -type f \( -name "${PACKAGE_NAME}*.apk" -o -name "luci-i18n-${translation_pkg}-*.apk" \) -delete
 
       - name: Compile the package (APK)
         working-directory: ${{ env.SDK_DIR }}
