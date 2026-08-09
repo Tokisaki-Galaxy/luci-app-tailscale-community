@@ -189,8 +189,15 @@ jobs:
           } > .config
           make defconfig
 
+          echo "DEBUG USE_APK after defconfig:"
+          grep -n "CONFIG_USE_APK" .config || true
+          # defconfig 会把 default y 的 USE_APK 翻转回 y，这里强制改回不设置
+          sed -i 's/^CONFIG_USE_APK=y/# CONFIG_USE_APK is not set/' .config
+          echo "DEBUG USE_APK after sed:"
+          grep -n "CONFIG_USE_APK" .config || true
+
           if grep -q '^CONFIG_USE_APK=y' .config; then
-            echo "::error::CONFIG_USE_APK is still enabled after defconfig. Cannot build .ipk with this SDK."
+            echo "::error::CONFIG_USE_APK is still enabled. Cannot build .ipk with this SDK."
             exit 1
           fi
 
