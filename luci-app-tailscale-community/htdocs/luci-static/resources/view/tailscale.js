@@ -72,7 +72,7 @@ function defTabOpts(s, t, opts, params) {
 }
 
 function getRunningStatus() {
-	return L.resolveDefault(callGetStatus(), { running: false }).then(function (res) {
+	return L.resolveDefault(callGetStatus(), { status: 'stopped', peers: {} }).then(function (res) {
 		return res;
 	});
 }
@@ -318,7 +318,7 @@ function renderDevices(status) {
 return view.extend({
 	load() {
 		return Promise.all([
-			L.resolveDefault(callGetStatus(), { running: '', peers: [] }),
+			L.resolveDefault(callGetStatus(), { status: 'stopped', peers: {} }),
 			L.resolveDefault(callGetSettings(), { accept_routes: false }),
 			L.resolveDefault(callGetSubroutes(), { routes: [] })
 		])
