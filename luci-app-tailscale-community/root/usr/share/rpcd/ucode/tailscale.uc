@@ -4,8 +4,27 @@
 
 import { access, popen, readfile, writefile, unlink } from 'fs';
 import { cursor } from 'uci';
+import { connect } from 'ubus';
 
 const uci = cursor();
+
+// Defense-in-depth: explicitly verify the caller's ubus session is granted
+// "write" scope access to this object/method before performing sensitive
+// operations, instead of relying solely on rpcd's outer ACL enforcement.
+function require_write_access(request, method) {
+	let sid = request?.args?.ubus_rpc_session;
+	if (!sid) return false;
+	let conn = connect();
+	if (!conn) return false;
+	let acc = conn.call('session', 'access', {
+		ubus_rpc_session: sid,
+		scope: 'ubus',
+		object: 'tailscale',
+		'function': method
+	});
+	conn.disconnect();
+	return acc?.access == true;
+}
 
 function exec(command) {
 	let stdout_content = '';
