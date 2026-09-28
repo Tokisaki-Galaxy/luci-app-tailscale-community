@@ -284,34 +284,97 @@ function renderDevices(status) {
 		{ text: _('Last Seen') }
 	];
 
-	return E('table', { 'class': 'cbi-table' }, [
+	const existingFilter = document.getElementById('tailscale_devices_filter');
+	const currentQuery = existingFilter ? existingFilter.value : '';
+
+	const searchInput = E('input', {
+		'id': 'tailscale_devices_filter',
+		'class': 'cbi-input-text',
+		'type': 'text',
+		'placeholder': _('Filter by hostname, IP, OS...'),
+		'style': 'margin-bottom: 8px; width: 100%; max-width: 320px;'
+	});
+	if (currentQuery) {
+		searchInput.value = currentQuery;
+	}
+
+	const rows = Object.entries(peers).map(([peerid, peer]) => {
+		const td_style = 'padding-right: 20px;';
+		const hostname = peer.hostname || '';
+		const ip = peer.ip || '';
+		const ostype = peer.ostype || '';
+		const searchText = `${hostname} ${ip} ${ostype}`.toLowerCase();
+
+		const tr = E('tr', {
+			'class': 'cbi-rowstyle-1',
+			'data-search-text': searchText
+		}, [
+			E('td', { 'class': 'cbi-value-field', 'style': td_style },
+				E('span', {
+					'style': `color:${peer.exit_node ? 'blue' : (peer.online ? 'green' : 'gray')};`,
+					'title': (peer.exit_node ? _('Exit Node') + ' ' : '') + (peer.online ? _('Online') : _('Offline'))
+				}, peer.online ? '●' : '○')
+			),
+			E('td', { 'class': 'cbi-value-field', 'style': td_style }, E('strong', {}, hostname + (peer.exit_node_option ? ' (ExNode)' : ''))),
+			E('td', { 'class': 'cbi-value-field', 'style': td_style }, ip || 'N/A'),
+			E('td', { 'class': 'cbi-value-field', 'style': td_style }, ostype || 'N/A'),
+			E('td', { 'class': 'cbi-value-field', 'style': td_style }, formatConnectionInfo(peer.linkadress || '-')),
+			E('td', { 'class': 'cbi-value-field', 'style': td_style }, formatBytes(peer.rx)),
+			E('td', { 'class': 'cbi-value-field', 'style': td_style }, formatBytes(peer.tx)),
+			E('td', { 'class': 'cbi-value-field', 'style': td_style }, formatLastSeen(peer.lastseen))
+		]);
+
+		if (currentQuery && !searchText.includes(currentQuery.toLowerCase().trim())) {
+			tr.style.display = 'none';
+		}
+
+		return tr;
+	});
+
+	searchInput.addEventListener('input', function(ev) {
+		const q = (ev.target.value || '').toLowerCase().trim();
+		for (const tr of rows) {
+			const text = tr.getAttribute('data-search-text') || '';
+			tr.style.display = (!q || text.includes(q)) ? '' : 'none';
+		}
+	});
+
+	if (existingFilter && document.activeElement === existingFilter) {
+		requestAnimationFrame(() => {
+			searchInput.focus();
+			const valLen = searchInput.value.length;
+			searchInput.setSelectionRange(valLen, valLen);
+		});
+	}
+
+	const existingContainer = document.getElementById('tailscale_devices_table_container');
+	const scrollPos = existingContainer ? existingContainer.scrollTop : 0;
+
+	const table = E('table', { 'class': 'cbi-table' }, [
 		E('tr', { 'class': 'cbi-table-header' }, peerTableHeaders.map(header => {
-			let th_style = 'padding-right: 20px; text-align: left;';
+			let th_style = 'padding-right: 20px; text-align: left; position: sticky; top: 0; background: inherit; z-index: 1;';
 			if (header.style) {
 				th_style += header.style;
 			}
 			return E('th', { 'class': 'cbi-table-cell', 'style': th_style }, header.text);
 		})),
+		...rows
+	]);
 
-		...Object.entries(peers).map(([peerid, peer]) => {
-			const td_style = 'padding-right: 20px;';
+	const tableContainer = E('div', {
+		'id': 'tailscale_devices_table_container',
+		'style': 'max-height: 480px; overflow-y: auto; overflow-x: auto; border: 1px solid #ddd; border-radius: 3px;'
+	}, [table]);
 
-			return E('tr', { 'class': 'cbi-rowstyle-1' }, [
-				E('td', { 'class': 'cbi-value-field', 'style': td_style },
-					E('span', {
-						'style': `color:${peer.exit_node ? 'blue' : (peer.online ? 'green' : 'gray')};`,
-						'title': (peer.exit_node ? _('Exit Node') + ' ' : '') + (peer.online ? _('Online') : _('Offline'))
-					}, peer.online ? '●' : '○')
-				),
-				E('td', { 'class': 'cbi-value-field', 'style': td_style }, E('strong', {}, peer.hostname + (peer.exit_node_option ? ' (ExNode)' : ''))),
-				E('td', { 'class': 'cbi-value-field', 'style': td_style }, peer.ip || 'N/A'),
-				E('td', { 'class': 'cbi-value-field', 'style': td_style }, peer.ostype || 'N/A'),
-				E('td', { 'class': 'cbi-value-field', 'style': td_style }, formatConnectionInfo(peer.linkadress || '-')),
-				E('td', { 'class': 'cbi-value-field', 'style': td_style }, formatBytes(peer.rx)),
-				E('td', { 'class': 'cbi-value-field', 'style': td_style }, formatBytes(peer.tx)),
-				E('td', { 'class': 'cbi-value-field', 'style': td_style }, formatLastSeen(peer.lastseen))
-			]);
-		})
+	if (scrollPos > 0) {
+		requestAnimationFrame(() => {
+			tableContainer.scrollTop = scrollPos;
+		});
+	}
+
+	return E('div', { 'style': 'width: 100%;' }, [
+		searchInput,
+		tableContainer
 	]);
 }
 

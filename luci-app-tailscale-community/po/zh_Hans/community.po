@@ -247,6 +247,9 @@ msgid "Failed to load logs: %s"
 msgstr "加载日志失败"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:20
+msgid "Filter by hostname, IP, OS..."
+msgstr "按主机名、IP、系统过滤..."
+
 msgid "Firewall Mode"
 msgstr "防火墙模式"
 
