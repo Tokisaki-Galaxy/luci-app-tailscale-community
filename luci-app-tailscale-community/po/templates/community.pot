@@ -243,6 +243,14 @@ msgstr ""
 msgid "Failed to load logs: %s"
 msgstr ""
 
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:338
+msgid "Filter peers by name, IP, or OS..."
+msgstr ""
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:351
+msgid "Filter:"
+msgstr ""
+
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:20
 msgid "Firewall Mode"
 msgstr ""

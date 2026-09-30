@@ -245,8 +245,11 @@ msgid "Failed to load logs: %s"
 msgstr "載入日誌失敗:%s"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:20
-msgid "Filter by hostname, IP, OS..."
-msgstr "按主機名稱、IP、系統過濾..."
+msgid "Filter peers by name, IP, or OS..."
+msgstr "依名稱、IP 或作業系統篩選..."
+
+msgid "Filter:"
+msgstr "篩選:"
 
 msgid "Firewall Mode"
 msgstr "防火牆模式"
