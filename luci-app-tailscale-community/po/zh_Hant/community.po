@@ -7,17 +7,17 @@ msgstr "(實驗性) 減少記憶體使用"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:469
 msgid "1. Select \"Accept Routes\" (to access remote devices)."
-msgstr "1. 勾選 接受路由 (以存取遠端設備)。"
+msgstr "1. 勾選「接受路由」(以存取遠端設備)。"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:470
 msgid ""
 "2. In \"Advertise Routes\", select your local subnet (to allow remote "
 "devices to access this LAN)."
-msgstr "2. 在 宣告路由 選擇本裝置的區域網段 (讓遠端能存取這個區網)。"
+msgstr "2. 在「宣告路由」選擇本裝置的區域網段 (讓遠端能存取這個區網)。"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:471
 msgid "3. Click \"Auto Configure Firewall\" (to allow traffic forwarding)."
-msgstr "3. 點選 自動配置防火牆 (允許流量轉送)。"
+msgstr "3. 點選「自動配置防火牆」(允許流量轉送)。"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:21
 msgid "Accept Routes"
@@ -135,7 +135,7 @@ msgstr "停用 SNAT"
 msgid ""
 "Disable Source NAT (SNAT) for traffic to advertised routes. Most users "
 "should leave this unchecked."
-msgstr "為宣告路由的流量停用來源地址轉換 (SNAT)。大多數使用者不應勾選此項。"
+msgstr "為宣告路由的流量停用來源位址轉換 (SNAT)。大多數使用者不應勾選此項。"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:29
 msgid "Disable Tailscale netfilter auto-configuration (--netfilter-mode=off)."
@@ -148,7 +148,7 @@ msgstr "已停用"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:28
 msgid "Disabled: system DNS only."
-msgstr "已停用: 只有系統 DNS。"
+msgstr "已停用: 僅使用系統 DNS。"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:504
 msgid "Disconnect from Tailscale and expire current node key."
@@ -180,7 +180,7 @@ msgstr "啟用或停用 Tailscale 服務。停用後，該服務將停止，處�
 msgid ""
 "Enable this device as a Peer Relay server. Requires a public IP and an UDP "
 "port open on the router."
-msgstr "將此設備啟用為對等中繼伺服器。需要公開 IP 位址，且路由器上需要開啟一個 UDP 連接埠。"
+msgstr "將此設備做為對等中繼伺服器。需要公開 IP 位址，且路由器上需要開啟一個 UDP 連接埠。"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:229
 msgid "Enabled"
@@ -198,21 +198,21 @@ msgstr "錯誤"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:150
 msgid "Error caching DERP region map: %s"
-msgstr "快取 DERP 區域地圖時出錯: %s"
+msgstr "快取 DERP 區域對照表時出錯: %s"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:153
 msgid "Error fetching DERP region map: %s"
-msgstr "獲取 DERP 區域地圖時出錯: %s"
+msgstr "獲取 DERP 區域對照表時出錯: %s"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:123
 msgid "Error reading cached DERP region map: %s"
-msgstr "讀取快取的 DERP 區域地圖時出錯: %s"
+msgstr "讀取快取的 DERP 區域對照表時出錯: %s"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:446
 msgid ""
 "Essential configuration for Subnet Routing (Site-to-Site) and Exit Node "
 "features."
-msgstr "子網路路由(站對站)和出口節點功能的基本設定"
+msgstr "子網路由(站對站)和出口節點功能的基本設定"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:303
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:413
@@ -332,7 +332,7 @@ msgstr "日誌"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:28
 msgid "MagicDNS: Tailscale overrides resolv.conf."
-msgstr "MagicDNS：Tailscale 會覆寫 resolv.conf。"
+msgstr "MagicDNS：Tailscale 將接管 resolv.conf。"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:90
 msgid "N/A"
@@ -373,11 +373,11 @@ msgstr "上線"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:28
 msgid "OpenWrt Forward"
-msgstr "OpenWrt 轉發"
+msgstr "OpenWrt 轉送"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:28
 msgid "OpenWrt Forward: MagicDNS via dnsmasq forwarding.(Only support ts.net)"
-msgstr "OpenWrt 轉送：透過 dnsmasq 轉送 MagicDNS。(僅支援 ts.net)"
+msgstr "OpenWrt 轉送：僅經由 dnsmasq 轉送至 MagicDNS。(僅支援tailxxxxxx.ts.net)"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:488
 msgid ""
@@ -547,7 +547,7 @@ msgstr "啟用後，將阻止來自 Tailscale 網路的所有入站連線。"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:23
 msgid "When using the exit node, access to the local LAN is allowed."
-msgstr "使用出口節點時，允許訪問本地區域網。"
+msgstr "使用出口節點時，允許存取區域網路。"
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:472
 msgid ""
@@ -563,7 +563,7 @@ msgstr "前"
 msgid ""
 "and enables Masquerading and MSS Clamping (MTU fix) to ensure stable "
 "connections."
-msgstr "並啟用地址偽裝和 MSS鉗制確保連線穩定。"
+msgstr "並啟用IP偽裝和 MSS 箝制（MTU 修復）以確保連線穩定。"
 
 #~ msgid ""
 #~ "Completely disable all Tailscale firewall auto-configuration, including "
