@@ -14,6 +14,7 @@ const callGetSubroutes = rpc.declare({ object: 'tailscale', method: 'get_subrout
 const callSetupFirewall = rpc.declare({ object: 'tailscale', method: 'setup_firewall' });
 const callGetLogs = rpc.declare({ object: 'tailscale', method: 'get_logs' });
 let map;
+let lastDevicesStatus;
 
 const tailscaleSettingsConf = [
 	[form.Flag, 'service_enabled', _('Enable Tailscale Service'), _('Enable or disable the Tailscale service. When disabled, the service will be stopped and the process will be killed.'), { rmempty: false }],
@@ -314,7 +315,7 @@ function renderPeerRows(status, query) {
 
 	if (rows.length === 0) {
 		return [E('tr', { 'class': 'cbi-section-table-row' }, [
-			E('td', { 'class': 'cbi-value-field', 'colspan': 8 }, E('p', {}, _('No peer devices found.')))
+			E('td', { 'class': 'cbi-value-field', 'colspan': 8 }, E('p', {}, _('No matching peer devices found.')))
 		])];
 	}
 
@@ -322,6 +323,17 @@ function renderPeerRows(status, query) {
 }
 
 function renderDevices(status) {
+	const peerTableHeaders = [
+		{ text: _('Status'), style: 'width: 80px;' },
+		{ text: _('Hostname') },
+		{ text: _('Tailscale IP') },
+		{ text: _('OS') },
+		{ text: _('Connection Info') },
+		{ text: _('RX') },
+		{ text: _('TX') },
+		{ text: _('Last Seen') }
+	];
+
 	const thead = E('thead', {}, [
 		E('tr', {
 			'class': 'tr cbi-section-table-titles',
