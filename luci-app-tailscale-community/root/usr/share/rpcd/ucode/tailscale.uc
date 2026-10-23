@@ -385,11 +385,10 @@ methods.set_service_enabled = {
 			return { success: true, armed: false };
 		}
 
-		let status = methods.get_status.call();
-		if (status.status == 'not_installed') {
-			return { success: true, armed: false };
-		}
-
+		// No daemon probe here: get_status shells out to 'tailscale status'
+		// and would delay the apply for nothing. A request armed on a box
+		// without the tailscale package is simply ignored by the reload
+		// handler, which bails out when the init script is missing.
 		let r = exec('mkdir -p /var/run/tailscale-settings && touch /var/run/tailscale-settings/disable-requested');
 		if (r.code != 0) {
 			return { error: 'Failed to arm the disable request: ' + join('\n', r.stdout) };

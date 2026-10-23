@@ -101,21 +101,19 @@ EOF
 	chmod +x "$path"
 }
 
-# Versions before this change call /etc/init.d/tailscale by absolute path.
-#
-# We cannot write to /etc on a normal developer machine either, so the check
-# leans on string evidence: assert the *source text* of the script under test
-# never contains an unguarded start on a running daemon, and let the CI
-# container put a recording stub at that path for the runtime assertions.
-source_text() { cat "$INIT_SCRIPT"; }
-
-# Runtime observability of the absolute path, only available where /etc is
-# writable (CI containers). Absent that, dependent tests report skipped.
+# Versions before this change call /etc/init.d/tailscale by absolute path,
+# so the sandbox override alone would leave their lifecycle calls invisible
+# and the assertions vacuous. Where /etc is writable (CI containers, WSL as
+# root) a recording stub is installed at that path; where it is not, the
+# affected tests are skipped loudly instead of passing silently.
 AI_ABS=/etc/init.d/tailscale
 abs_observable=0
 
 install_abs_stub() {
-	if [ -d /etc/init.d ] && [ -w /etc/init.d ] && [ ! -e "$AI_ABS" ]; then
+	if [ -e "$AI_ABS" ]; then
+		return 0
+	fi
+	if [ -d /etc/init.d ] && [ -w /etc/init.d ]; then
 		mk "$AI_ABS" tailscale-abs
 		abs_observable=1
 	fi
@@ -184,20 +182,20 @@ set_option() {
 # Source level guard, independent of observable syscalls. The reported bug was
 # a `start` reachable from the reload path; assert it is gone.
 test_source_never_starts_from_reload() {
-	local reload_body
-	# body of handle_service_state, up to the next top level }
-	reload_body=$(sed -n '/^handle_service_state/,/^}/p' "$INIT_SCRIPT" | grep -v '^[[:space:]]*#' | tr '"' ' ')
-	# an unconditional start of the daemon is what destroyed the kernel state;
-	# an intentional restart on a signature change is fine
-	if printf '%s\n' "$reload_body" | grep -Eq '(tailscale|TAILSCALE_INIT)[^|]*[[:space:]]start([[:space:]]|$)'; then
-		fail "handle_service_state can still start the daemon"
-	else
+	# Every `start` of the daemon in the whole file must sit in the enable
+	# path. Scanning the file rather than one function body keeps the guard
+	# from being fooled by nested braces or by moving the code.
+	local starts bad
+	starts=$(grep -nE '^[^#]*[[:space:]]start([[:space:]]|$)' "$INIT_SCRIPT" | grep -vE '^[0-9]+:[[:space:]]*start_service\(\)')
+	bad=$(printf '%s\n' "$starts" | grep -vE 'TAILSCALE_INIT"?[[:space:]]+start' | grep -v '^$')
+	if [ -z "$bad" ]; then
 		pass
+	else
+		fail "daemon start outside the enable path: $bad"
 	fi
 
-	reload_body=$(sed -n '/^sync_service_enabled/,/^}/p' "$INIT_SCRIPT" | grep -v '^[[:space:]]*#')
-	if printf '%s\n' "$reload_body" | grep -q 'killall'; then
-		fail "sync_service_enabled still kills tailscaled by name"
+	if grep -q 'killall' "$INIT_SCRIPT"; then
+		fail "the init script still kills tailscaled by name"
 	else
 		pass
 	fi
@@ -219,6 +217,9 @@ test_second_apply_leaves_running_daemon_alone() {
 	: > "$CALLS"
 
 	handle_service_state
+	# positive anchor: the reload really did run and did inspect the daemon,
+	# so an empty call log can never be mistaken for "nothing happened"
+	assert_call "tailscale running"
 	assert_call_count "tailscale start" 0
 	assert_call_count "tailscale restart" 0
 	assert_call_count "tailscale stop" 0
@@ -233,10 +234,18 @@ test_first_apply_without_state_files() {
 	set_option service_enabled 1
 
 	handle_service_state
+	# with no state file this must adopt the config, not start anything
+	assert_call "tailscale running"
 	assert_call_count "tailscale start" 0
 	assert_call_count "tailscale restart" 0
-	# enabling is harmless and may happen, stopping must not
 	assert_call_count "tailscale stop" 0
+	# the baseline is recorded for the next apply
+	assert_call "apply_settings"
+	if [ "$(cat "$ENABLED_FILE" 2>/dev/null)" = "1" ]; then
+		pass
+	else
+		fail "enabled baseline not adopted"
+	fi
 }
 
 test_daemon_option_change_restarts_once() {

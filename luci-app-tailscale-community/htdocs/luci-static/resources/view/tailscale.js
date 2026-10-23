@@ -713,7 +713,14 @@ return view.extend({
 			// the stop after the commit, so a LuCI rollback still finds a
 			// running daemon. One concurrency slot on purpose: an overlapping
 			// apply could let the trigger read a half-written request file.
-			return callSetServiceEnabled({ enabled: wantEnabled === '0' ? '0' : '1' });
+			// Fail-open on purpose: an install whose rpcd ACL cache predates
+			// this method would otherwise be unable to apply anything. The
+			// worst case is that the stop is skipped for this apply.
+			return callSetServiceEnabled({ enabled: wantEnabled === '0' ? '0' : '1' })
+				.catch(function(err) {
+					console.warn('set_service_enabled failed: %s', err);
+					return null;
+				});
 		}).then(function () {
 			return ui.changes.apply(mode == '0');
 		});

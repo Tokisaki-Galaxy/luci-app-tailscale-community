@@ -275,9 +275,19 @@ sync_service_enabled() {
 	local requested=0
 	config_get service_enabled settings service_enabled '1'
 
-	if [ -f "$ENABLED_FILE" ]; then
-		prev=$(cat "$ENABLED_FILE")
-	fi
+	prev=$(cat "$ENABLED_FILE" 2>/dev/null)
+	case "$prev" in
+		0|1) ;;
+		*)
+			# No usable record of the last applied value (first apply after
+			# an upgrade, or a truncated file). Adopt the configuration as
+			# the baseline instead of treating it as a transition: starting
+			# a daemon here would run start_service, which arms another UCI
+			# rollback window right after the one this apply is inside.
+			echo "$service_enabled" > "$ENABLED_FILE"
+			prev="$service_enabled"
+			;;
+	esac
 
 	if [ -f "$DISABLE_REQUEST_FILE" ]; then
 		requested=1
