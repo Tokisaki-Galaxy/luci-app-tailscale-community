@@ -702,16 +702,18 @@ return view.extend({
 	// standard OpenWrt apply mechanism, which triggers /etc/init.d/tailscale-settings
 	// and provides automatic rollback protection if the device becomes unreachable.
 	handleSaveApply(ev, mode) {
-		// Read the submitted value before map.save() consumes the staged delta
+		// Read the submitted value before map.save() consumes the staged delta.
+		// uci.get() prefers the staged change over the saved value, and the
+		// staged delta is only populated once the form has been parsed, which
+		// map.save() guarantees here.
 		const wantEnabled = uci.get('tailscale', 'settings', 'service_enabled');
 
 		return map.save().then(function () {
-			// Stopping the daemon is not idempotent and cannot be rolled back:
-			// run it while the config is still staged so a failure leaves the
-			// page editable. Enabling never touches a running daemon and is
-			// left to the regular apply. One concurrency slot on purpose, an
-			// overlap would let the trigger read a half-written config.
-			return callSetServiceEnabled({ enabled: wantEnabled === '1' ? '1' : '0' });
+			// Only records the disable request; the reload handler performs
+			// the stop after the commit, so a LuCI rollback still finds a
+			// running daemon. One concurrency slot on purpose: an overlapping
+			// apply could let the trigger read a half-written request file.
+			return callSetServiceEnabled({ enabled: wantEnabled === '0' ? '0' : '1' });
 		}).then(function () {
 			return ui.changes.apply(mode == '0');
 		});

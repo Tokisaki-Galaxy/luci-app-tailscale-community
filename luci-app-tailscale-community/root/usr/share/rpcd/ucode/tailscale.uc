@@ -361,12 +361,14 @@ methods.setup_firewall = {
 	}
 };
 
-// Stop the daemon *before* UCI commits the new service_enabled value.
-// The tailscale-settings reload trigger is the wrong place for this: it runs
-// after the commit inside the LuCI rollback snapshot, so a failure there is
-// reported as success. Stopping is safe here because the staged config stays
-// in place for the regular apply, and enabling stays a no-op for a running
-// daemon (see sync_service_enabled in /etc/init.d/tailscale-settings).
+// Record that the user asked to disable the service.
+//
+// The actual stop happens in /etc/init.d/tailscale-settings on the reload
+// trigger, which runs right after rpcd commits and *before* it arms the LuCI
+// rollback timer. Stopping here would not survive a rollback: rpcd restores
+// the config files but never restarts a daemon it did not stop, so the user
+// would end up with service_enabled=1 and a dead tunnel. The request file is
+// dropped by the reload handler as soon as the config says enabled again.
 methods.set_service_enabled = {
 	args: { enabled: '' },
 	call: function(request) {
@@ -376,20 +378,24 @@ methods.set_service_enabled = {
 		}
 
 		if (enabled == '1') {
-			return { success: true, changed: false };
+			let r = exec('rm -f /var/run/tailscale-settings/disable-requested');
+			if (r.code != 0) {
+				return { error: 'Failed to clear the disable request: ' + join('\n', r.stdout) };
+			}
+			return { success: true, armed: false };
 		}
 
 		let status = methods.get_status.call();
 		if (status.status == 'not_installed') {
-			return { success: true, changed: false };
+			return { success: true, armed: false };
 		}
 
-		let stop = exec('/etc/init.d/tailscale stop 2>&1');
-		if (stop.code != 0) {
-			return { error: 'Failed to stop tailscale: ' + join(' ', stop.stderr) };
+		let r = exec('mkdir -p /var/run/tailscale-settings && touch /var/run/tailscale-settings/disable-requested');
+		if (r.code != 0) {
+			return { error: 'Failed to arm the disable request: ' + join('\n', r.stdout) };
 		}
 
-		return { success: true, changed: true };
+		return { success: true, armed: true };
 	}
 };
 

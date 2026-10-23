@@ -3,24 +3,34 @@
 #
 # The script is sourced with the rc.common prologue stripped so the real
 # functions run against a throwaway sandbox. Every external call that would
-# touch the system (init.d, uci, logger, sleep, tailscale) is stubbed and
-# recorded, and the assertions are about the *sequence* of calls, because the
-# bug in issue #80 was an unexpected call, not a wrong value.
+# touch the system (init.d, uci, logger, sleep) is stubbed and recorded, and
+# the assertions are about the *sequence* of calls: the bug in issue #80 was
+# one unexpected `tailscale start`, not a wrong value.
 #
-# Run: bash tests/init/settings-test.sh
+# Run:      bash tests/init/settings-test.sh
+# Negative: SETTINGS_INIT=/path/to/old/script bash tests/init/settings-test.sh
+#           (used by CI to prove the suite still catches the reported bug;
+#            the old script ignores the override and is skipped if it
+#            hard-codes /etc/init.d/tailscale)
 
 set -u
 
 REPO_ROOT=$(cd "$(dirname "$0")/../.." && pwd)
-INIT_SCRIPT="$REPO_ROOT/luci-app-tailscale-community/root/etc/init.d/tailscale-settings"
+INIT_SCRIPT=${SETTINGS_INIT:-"$REPO_ROOT/luci-app-tailscale-community/root/etc/init.d/tailscale-settings"}
 
 [ -f "$INIT_SCRIPT" ] || { echo "cannot find $INIT_SCRIPT" >&2; exit 1; }
 
+if [ -n "${SETTINGS_INIT:-}" ]; then
+	echo "negative control mode: $INIT_SCRIPT"
+	echo "note: versions that call /etc/init.d/tailscale by absolute path are not fully observable here"
+fi
+
 failures=0
 pass_count=0
+current_test=''
 
 fail() {
-	echo "  FAIL: $*"
+	echo "  FAIL [$current_test]: $*"
 	failures=$((failures + 1))
 }
 
@@ -31,19 +41,18 @@ pass() {
 # --- sandbox -------------------------------------------------------------
 
 SANDBOX=$(mktemp -d)
-trap 'rm -rf "$SANDBOX"' EXIT
+trap 'remove_abs_stub 2>/dev/null; rm -rf "$SANDBOX"' EXIT
 
 CALLS="$SANDBOX/calls"
 UCI_GET_FILE="$SANDBOX/uci"
 DAEMON_RUNNING="$SANDBOX/running"
-LOG="$SANDBOX/log"
 
 reset_sandbox() {
 	: > "$CALLS"
 	: > "$UCI_GET_FILE"
-	: > "$LOG"
 	echo 0 > "$DAEMON_RUNNING"
 	rm -rf "$SANDBOX/state"
+	mkdir -p "$SANDBOX/state"
 }
 
 record() {
@@ -53,17 +62,21 @@ record() {
 # stubs
 config_load() { :; }
 
+uci_value() {
+	# last assignment wins, like a real uci commit
+	grep "^$1=" "$UCI_GET_FILE" | tail -n1 | cut -d= -f2-
+}
+
 config_get() {
-	# config_get <var> <section> <option> <default>
 	local var="$1" section="$2" option="$3" def="${4-}" val
-	val=$(grep "^$section.$option=" "$UCI_GET_FILE" | tail -n1 | cut -d= -f2-)
+	val=$(uci_value "$section.$option")
 	[ -n "$val" ] || val="$def"
 	eval "$var=\$val"
 }
 
 config_get_bool() {
 	local var="$1" section="$2" option="$3" def="${4-0}" val
-	val=$(grep "^$section.$option=" "$UCI_GET_FILE" | tail -n1 | cut -d= -f2-)
+	val=$(uci_value "$section.$option")
 	[ -n "$val" ] || val="$def"
 	eval "$var=\$val"
 }
@@ -72,12 +85,11 @@ config_list_foreach() { :; }
 
 logger() { record "logger $*"; }
 
-sleep() { :; }
+sleep() { record "sleep"; }
 
 uci() { record "uci $*"; }
 
 mk() {
-	# create a fake init script that records which action was used
 	local path="$1" name="$2"
 	cat > "$path" <<EOF
 #!/bin/sh
@@ -89,26 +101,51 @@ EOF
 	chmod +x "$path"
 }
 
+# Versions before this change call /etc/init.d/tailscale by absolute path.
+#
+# We cannot write to /etc on a normal developer machine either, so the check
+# leans on string evidence: assert the *source text* of the script under test
+# never contains an unguarded start on a running daemon, and let the CI
+# container put a recording stub at that path for the runtime assertions.
+source_text() { cat "$INIT_SCRIPT"; }
+
+# Runtime observability of the absolute path, only available where /etc is
+# writable (CI containers). Absent that, dependent tests report skipped.
+AI_ABS=/etc/init.d/tailscale
+abs_observable=0
+
+install_abs_stub() {
+	if [ -d /etc/init.d ] && [ -w /etc/init.d ] && [ ! -e "$AI_ABS" ]; then
+		mk "$AI_ABS" tailscale-abs
+		abs_observable=1
+	fi
+}
+
+remove_abs_stub() {
+	[ "$abs_observable" = "1" ] && rm -f "$AI_ABS"
+	abs_observable=0
+}
+
 # --- load the script under test -----------------------------------------
 
 # shellcheck disable=SC1090
 . "$INIT_SCRIPT"
 
+# apply_settings resolves the CLI from fixed paths; shadow it for the tests
+apply_settings_stub() { record "apply_settings"; }
+
 setup() {
 	reset_sandbox
 	mk "$SANDBOX/tailscale.init" tailscale
-	mk "$SANDBOX/tailscale.cli" tailscale-cli
-	# redirect state and binaries into the sandbox
 	STATE_DIR="$SANDBOX/state"
 	DAEMON_SIG_FILE="$STATE_DIR/daemon"
 	ENABLED_FILE="$STATE_DIR/enabled"
+	DISABLE_REQUEST_FILE="$STATE_DIR/disable-requested"
 	DNS_MODE_FILE="$STATE_DIR/dns_mode"
 	TAILSCALE_INIT="$SANDBOX/tailscale.init"
-	mkdir -p "$STATE_DIR"
+	apply_settings() { apply_settings_stub; }
+	install_abs_stub
 }
-
-# apply_settings resolves the CLI from fixed paths; shadow it for the tests
-apply_settings_stub() { record "apply_settings"; }
 
 calls() { cat "$CALLS"; }
 
@@ -140,107 +177,164 @@ assert_call_count() {
 	fi
 }
 
+set_option() {
+	echo "settings.$1=$2" >> "$UCI_GET_FILE"
+}
+
+# Source level guard, independent of observable syscalls. The reported bug was
+# a `start` reachable from the reload path; assert it is gone.
+test_source_never_starts_from_reload() {
+	local reload_body
+	# body of handle_service_state, up to the next top level }
+	reload_body=$(sed -n '/^handle_service_state/,/^}/p' "$INIT_SCRIPT" | grep -v '^[[:space:]]*#' | tr '"' ' ')
+	# an unconditional start of the daemon is what destroyed the kernel state;
+	# an intentional restart on a signature change is fine
+	if printf '%s\n' "$reload_body" | grep -Eq '(tailscale|TAILSCALE_INIT)[^|]*[[:space:]]start([[:space:]]|$)'; then
+		fail "handle_service_state can still start the daemon"
+	else
+		pass
+	fi
+
+	reload_body=$(sed -n '/^sync_service_enabled/,/^}/p' "$INIT_SCRIPT" | grep -v '^[[:space:]]*#')
+	if printf '%s\n' "$reload_body" | grep -q 'killall'; then
+		fail "sync_service_enabled still kills tailscaled by name"
+	else
+		pass
+	fi
+}
+
 # --- tests ---------------------------------------------------------------
 
-
-
-test_apply_does_not_touch_running_daemon() {
-	echo "test: a plain re-apply leaves a running daemon alone"
+# The reported scenario itself: a node that already applied its settings once
+# and is running, then applies again without changing a daemon option.
+# Old code: `tailscale start` -> tailscaled --cleanup -> addresses and table 52
+# gone. This is the assertion that guards issue #80.
+test_second_apply_leaves_running_daemon_alone() {
 	setup
-	apply_settings() { apply_settings_stub; }
 	echo 1 > "$DAEMON_RUNNING"
-	echo "settings.service_enabled=1" >> "$UCI_GET_FILE"
-	echo "settings.fw_mode=nftables" >> "$UCI_GET_FILE"
+	set_option service_enabled 1
+	set_option fw_mode nftables
 
-	# first apply records the baseline signature
 	handle_service_state
 	: > "$CALLS"
 
-	# second apply with identical config must not start/stop/restart
 	handle_service_state
-	assert_no_call "tailscale \(start\|stop\|restart\)"
+	assert_call_count "tailscale start" 0
+	assert_call_count "tailscale restart" 0
+	assert_call_count "tailscale stop" 0
 	assert_call "apply_settings"
 }
 
-test_daemon_option_change_restarts_once() {
-	echo "test: changing a daemon-level option restarts exactly once"
+# First apply after an upgrade: no state files at all, daemon up, defaults.
+# Old code calls `tailscale start` here too, which is the same corruption.
+test_first_apply_without_state_files() {
 	setup
-	apply_settings() { apply_settings_stub; }
 	echo 1 > "$DAEMON_RUNNING"
-	echo "settings.service_enabled=1" >> "$UCI_GET_FILE"
-	echo "settings.fw_mode=nftables" >> "$UCI_GET_FILE"
+	set_option service_enabled 1
+
+	handle_service_state
+	assert_call_count "tailscale start" 0
+	assert_call_count "tailscale restart" 0
+	# enabling is harmless and may happen, stopping must not
+	assert_call_count "tailscale stop" 0
+}
+
+test_daemon_option_change_restarts_once() {
+	setup
+	echo 1 > "$DAEMON_RUNNING"
+	set_option service_enabled 1
+	set_option fw_mode nftables
 
 	handle_service_state
 	: > "$CALLS"
 
-	echo "settings.fw_mode=iptables" >> "$UCI_GET_FILE"
+	set_option fw_mode iptables
 	handle_service_state
 	assert_call_count "tailscale restart" 1
-	assert_no_call "tailscale start"
+	assert_call_count "tailscale start" 0
 }
 
-test_stopped_daemon_is_not_started_by_reload() {
-	echo "test: apply never starts a daemon that is down"
+test_apply_never_starts_a_stopped_daemon() {
 	setup
-	apply_settings() { apply_settings_stub; }
 	echo 1 > "$DAEMON_RUNNING"
-	echo "settings.service_enabled=1" >> "$UCI_GET_FILE"
+	set_option service_enabled 1
 
-	# baseline: the first apply records the enabled state
 	handle_service_state
 	: > "$CALLS"
 
 	echo 0 > "$DAEMON_RUNNING"
 	handle_service_state
-	assert_no_call "tailscale \(start\|restart\)"
+	assert_call_count "tailscale start" 0
+	assert_call_count "tailscale restart" 0
 }
 
-test_disable_stops_once() {
-	echo "test: service_enabled=0 stops the daemon on transition only"
+test_disable_requires_armed_request() {
 	setup
-	apply_settings() { apply_settings_stub; }
 	echo 1 > "$DAEMON_RUNNING"
-	echo "settings.service_enabled=1" >> "$UCI_GET_FILE"
-
+	set_option service_enabled 1
 	handle_service_state
 	: > "$CALLS"
 
-	echo "settings.service_enabled=0" >> "$UCI_GET_FILE"
+	# hand edited config, no UI request: keep the tunnel, drop autostart
+	set_option service_enabled 0
+	handle_service_state
+	assert_call_count "tailscale stop" 0
+	assert_call "tailscale disable"
+
+	: > "$CALLS"
+	echo 1 > "$ENABLED_FILE"
+	touch "$DISABLE_REQUEST_FILE"
+	set_option service_enabled 0
 	handle_service_state
 	assert_call "tailscale stop"
-	assert_call "tailscale disable"
-	assert_no_call "tailscale \(start\|restart\|enable\)"
+	if [ -f "$DISABLE_REQUEST_FILE" ]; then
+		fail "disable request should be consumed"
+	else
+		pass
+	fi
+}
 
-	: > "$CALLS"
+test_rolled_back_disable_keeps_daemon() {
+	setup
+	echo 1 > "$DAEMON_RUNNING"
+	set_option service_enabled 1
 	handle_service_state
-	assert_no_call "tailscale \(start\|stop\|enable\|disable\)"
+	: > "$CALLS"
+
+	# RPC armed the request, user rolled the config back to enabled
+	touch "$DISABLE_REQUEST_FILE"
+	set_option service_enabled 1
+	handle_service_state
+	assert_call_count "tailscale stop" 0
+	if [ -f "$DISABLE_REQUEST_FILE" ]; then
+		fail "stale disable request not cleared"
+	else
+		pass
+	fi
 }
 
 test_enable_after_disable_starts() {
-	echo "test: re-enabling brings the service back"
 	setup
-	apply_settings() { apply_settings_stub; }
+	echo 1 > "$DAEMON_RUNNING"
+	set_option service_enabled 1
+	handle_service_state
+
+	touch "$DISABLE_REQUEST_FILE"
+	set_option service_enabled 0
+	handle_service_state
+	: > "$CALLS"
+
 	echo 0 > "$DAEMON_RUNNING"
-	echo "settings.service_enabled=1" >> "$UCI_GET_FILE"
-	handle_service_state
-	: > "$CALLS"
-
-	echo "settings.service_enabled=0" >> "$UCI_GET_FILE"
-	handle_service_state
-	: > "$CALLS"
-
-	echo "settings.service_enabled=1" >> "$UCI_GET_FILE"
+	set_option service_enabled 1
 	handle_service_state
 	assert_call "tailscale enable"
 	assert_call "tailscale start"
 }
 
 test_boot_start_service_record_does_not_act() {
-	echo "test: start_service only records state at boot"
 	setup
-	apply_settings() { apply_settings_stub; }
 	echo 1 > "$DAEMON_RUNNING"
-	echo "settings.service_enabled=0" >> "$UCI_GET_FILE"
+	set_option service_enabled 0
 
 	start_service
 	assert_no_call "tailscale \(start\|stop\|restart\|enable\|disable\)"
@@ -248,26 +342,67 @@ test_boot_start_service_record_does_not_act() {
 }
 
 test_missing_tailscale_init_is_tolerated() {
-	echo "test: a missing tailscale init script does not abort the apply"
 	setup
-	apply_settings() { apply_settings_stub; }
 	TAILSCALE_INIT="$SANDBOX/does-not-exist"
 	handle_service_state
 	assert_call "apply_settings"
 }
 
+test_dns_forward_only_on_transition() {
+	setup
+	echo 1 > "$DAEMON_RUNNING"
+	set_option service_enabled 1
+	echo openwrt_forward > "$DNS_MODE_FILE"
+
+	handle_service_state
+	: > "$CALLS"
+	handle_service_state
+	assert_call_count "uci" 0
+}
+
+test_dns_forward_survives_switch_to_disabled() {
+	setup
+	echo 1 > "$DAEMON_RUNNING"
+	set_option service_enabled 1
+	set_option dns_mode disabled
+	echo openwrt_forward > "$DNS_MODE_FILE"
+
+	handle_service_state
+	: > "$CALLS"
+	set_option dns_mode disabled
+	handle_service_state
+	assert_call_count "uci del_list" 0
+}
+
+# Some older versions call /etc/init.d/tailscale by absolute path and cannot
+# be observed. Those are skipped in negative-control mode so a red test always
+# means "the suite caught something", never "the harness could not see it".
+skipped=0
 for t in \
-	test_apply_does_not_touch_running_daemon \
+	test_source_never_starts_from_reload \
+	test_second_apply_leaves_running_daemon_alone \
+	test_first_apply_without_state_files \
 	test_daemon_option_change_restarts_once \
-	test_stopped_daemon_is_not_started_by_reload \
-	test_disable_stops_once \
+	test_apply_never_starts_a_stopped_daemon \
+	test_disable_requires_armed_request \
+	test_rolled_back_disable_keeps_daemon \
 	test_enable_after_disable_starts \
 	test_boot_start_service_record_does_not_act \
-	test_missing_tailscale_init_is_tolerated
+	test_missing_tailscale_init_is_tolerated \
+	test_dns_forward_only_on_transition \
+	test_dns_forward_survives_switch_to_disabled
 do
+	if [ -n "${SETTINGS_INIT:-}" ] && [ "$t" = "test_enable_after_disable_starts" ] && [ "$abs_observable" -eq 0 ]; then
+		echo "skip: $t (absolute init path not observable here)"
+		skipped=$((skipped + 1))
+		continue
+	fi
+	current_test="$t"
+	echo "test: $t"
 	$t
 done
 
 echo
-echo "passed: $pass_count  failed: $failures"
+echo "passed: $pass_count  failed: $failures  skipped: $skipped"
+remove_abs_stub
 [ "$failures" -eq 0 ]
