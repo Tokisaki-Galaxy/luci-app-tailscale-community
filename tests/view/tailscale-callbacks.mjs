@@ -31,7 +31,7 @@ if (typeof String.prototype.format !== 'function') {
 }
 
 function check(name, condition, detail) {
-	if (condition) {
+	if (condition === true) {
 		passes++;
 		return;
 	}
@@ -49,7 +49,6 @@ function textOf(node) {
 
 function E(tag, attrs, children) {
 	if (Array.isArray(tag)) {
-		// E([ ...children ]) form used by the modal bodies
 		children = tag;
 		tag = 'div';
 		attrs = {};
@@ -62,23 +61,25 @@ function E(tag, attrs, children) {
 	return { tag: tag, attrs: attrs || {}, children: Array.isArray(children) ? children : [] };
 }
 
+const settle = function() { return new Promise(function(r) { setTimeout(r, 60); }); };
+
 function makeHarness(responses, opts) {
+	opts = opts || {};
 	const notifications = [];
 	const calls = [];
 	const buttons = {};
 	const elements = {};
 	const modals = [];
-	const byName = buttons;
+	let pollFns = [];
 
-	function makeOption(name) {
+	function makeOption() {
 		const self = {
-			name: name,
+			name: null,
 			taboption: function(t, type, optName) {
 				self.name = optName;
 				return self;
 			},
 			value: function() { return self; },
-			withDescription: function() { return self; },
 			depends: function() { return self; },
 			tab: function() {},
 			section: function() { return self; },
@@ -88,12 +89,11 @@ function makeHarness(responses, opts) {
 			get: function() { return self._onclick; },
 			set: function(fn) {
 				self._onclick = fn;
-				byName[self.name] = fn;
+				buttons[self.name] = fn;
 			}
 		});
 		return self;
 	}
-
 
 	const mapObj = {
 		section: function() { return makeOption(); },
@@ -101,6 +101,7 @@ function makeHarness(responses, opts) {
 		parse: function() { return Promise.resolve(); },
 		render: function() { return E('div', {}, []); }
 	};
+
 	const formStub = new Proxy({ Map: function() { return mapObj; } }, {
 		get: function(target, prop) {
 			if (prop in target) return target[prop];
@@ -128,8 +129,6 @@ function makeHarness(responses, opts) {
 			notifications.push({ text: (nodes || []).map(textOf).join(' '), cls: c || 'info' });
 		},
 		showModal: function(title, content) {
-			// the logout flow opens a confirmation dialog; invoke the confirm
-			// button's handler so the destructive branch is exercised
 			modals.push(content);
 		},
 		hideModal: function() {},
@@ -139,18 +138,24 @@ function makeHarness(responses, opts) {
 	const L = {
 		resolveDefault: function(p, d) { return Promise.resolve(p).catch(function() { return d; }); },
 		Poll: {
-			add: function() {},
-			remove: function() {}
+			add: function(fn) { if (pollFns.indexOf(fn) === -1) pollFns.push(fn); },
+			remove: function(fn) { pollFns = pollFns.filter(function(f) { return f !== fn; }); }
 		}
 	};
 
 	const uci = {
 		load: function() { return Promise.resolve(); },
-		get: function() { return null; },
+		get: function(name, s, o) {
+			// pretend the settings section exists so load() skips first-run init
+			if (o === undefined && s === 'settings') return 'settings';
+			return null;
+		},
 		set: function() {},
 		add: function() {},
 		unset: function() {},
-		changes: function() { return (opts && opts.pending) || []; },
+		changes: function() {
+			return Promise.resolve(opts.pending ? { tailscale: [ 'settings.advertise_routes' ] } : {});
+		},
 		save: function() { return Promise.resolve(); }
 	};
 
@@ -165,7 +170,10 @@ function makeHarness(responses, opts) {
 		function(s) { return s; },
 		L,
 		{ getElementById: function(id) { return elements[id] || null; }, createElement: function() { return {}; } },
-		{ setTimeout: function(fn, ms) { return setTimeout(fn, Math.min(ms, 5)); } },
+		{
+			setTimeout: function(fn, ms) { return setTimeout(fn, opts.realTimers ? ms : Math.min(ms, 5)); },
+			open: function() { return null; }
+		},
 		{ getItem: function() { return null; }, setItem: function() {} }
 	);
 
@@ -173,40 +181,51 @@ function makeHarness(responses, opts) {
 		obj: obj,
 		calls: calls,
 		notifications: notifications,
-		buttons: buttons,
+		// load() gathers the staged-changes snapshot, render() builds the form
+		start: async function() {
+			await L.resolveDefault(obj.load(), []);
+			await settle();
+			await obj.render([ {}, { accept_routes: false }, { routes: [] } ]);
+		},
+		button: function(name) {
+			return buttons[name];
+		},
 		setElement: function(id, node) {
 			elements[id] = node;
 		},
 		modals: function() {
 			return modals;
 		},
-		// callbacks are looked up by their form option name, not by order:
-		// the view assigns several onclick handlers during render
-		firewall: function() {
-			return buttons['_setup_firewall'];
-		},
-		logout: function() {
-			return buttons['_logout'];
-		},
-		refreshLogs: function() {
-			return buttons['_refresh_logs'];
+		pollers: function() {
+			return pollFns.slice();
 		}
 	};
 }
 
-const settle = function() { return new Promise(function(r) { setTimeout(r, 50); }); };
+async function press(node) {
+	if (!node || typeof node !== 'object') return false;
+	if (node.tag === 'button' && node.attrs && node.attrs['class'] === 'cbi-button cbi-button-negative') {
+		await node.attrs.click();
+		return true;
+	}
+	for (const child of (node.children || [])) {
+		if (await press(child)) return true;
+	}
+	return false;
+}
 
 async function run() {
-	console.log('test: the view renders and the firewall callback is attached');
+	console.log('test: the view loads and the firewall callback is attached');
 	const h0 = makeHarness({});
-	await h0.obj.render([{}, {}, { routes: [] }]);
-	check('render returned something', h0.obj != null);
-	check('the firewall callback was captured', typeof h0.firewall() === 'function');
+	await h0.start();
+	check('the firewall callback exists', typeof h0.button('_setup_firewall') === 'function');
+	check('the logout callback exists', typeof h0.button('_logout') === 'function');
+	check('the logs callback exists', typeof h0.button('_refresh_logs') === 'function');
 
 	console.log('test: { error } from setup_firewall is shown as an error');
 	const h1 = makeHarness({ setup_firewall: { error: 'Exception in setup_firewall: boom' } });
-	await h1.obj.render([{}, {}, { routes: [] }]);
-	await h1.firewall()();
+	await h1.start();
+	await h1.button('_setup_firewall')();
 	check('exactly one error notification',
 		h1.notifications.filter(function(n) { return n.cls === 'error'; }).length === 1,
 		JSON.stringify(h1.notifications));
@@ -219,11 +238,11 @@ async function run() {
 
 	console.log('test: success polls the background job until done');
 	const h2 = makeHarness({
-		setup_firewall: { success: true, changed_network: true, changed_firewall: true, job: 'running' },
-		get_firewall_status: { success: true, state: 'done' }
+		setup_firewall: { success: true, changed_network: true, changed_firewall: true, run_id: 7 },
+		get_firewall_status: { success: true, state: 'done', run_id: 7 }
 	});
-	await h2.obj.render([{}, {}, { routes: [] }]);
-	await h2.firewall()();
+	await h2.start();
+	await h2.button('_setup_firewall')();
 	await settle();
 	check('get_firewall_status was called',
 		h2.calls.some(function(c) { return c.method === 'get_firewall_status'; }),
@@ -237,11 +256,11 @@ async function run() {
 
 	console.log('test: a failed background job is reported');
 	const h3 = makeHarness({
-		setup_firewall: { success: true, changed_network: true, changed_firewall: false, job: 'running' },
-		get_firewall_status: { success: true, state: 'failed', message: 'Network reload failed' }
+		setup_firewall: { success: true, changed_network: true, changed_firewall: false, run_id: 8 },
+		get_firewall_status: { success: true, state: 'failed', message: 'Network reload failed', run_id: 8 }
 	});
-	await h3.obj.render([{}, {}, { routes: [] }]);
-	await h3.firewall()();
+	await h3.start();
+	await h3.button('_setup_firewall')();
 	await settle();
 	check('an error notification is shown',
 		h3.notifications.some(function(n) { return n.cls === 'error'; }),
@@ -252,10 +271,10 @@ async function run() {
 
 	console.log('test: nothing changed means no polling');
 	const h4 = makeHarness({
-		setup_firewall: { success: true, changed_network: false, changed_firewall: false, job: 'idle' }
+		setup_firewall: { success: true, changed_network: false, changed_firewall: false, run_id: 0 }
 	});
-	await h4.obj.render([{}, {}, { routes: [] }]);
-	await h4.firewall()();
+	await h4.start();
+	await h4.button('_setup_firewall')();
 	await settle();
 	check('no polling happens',
 		!h4.calls.some(function(c) { return c.method === 'get_firewall_status'; }),
@@ -266,31 +285,32 @@ async function run() {
 
 	console.log('test: transport failures reach the user');
 	const h5 = makeHarness({ setup_firewall: new Error('XHR request aborted by browser') });
-	await h5.obj.render([{}, {}, { routes: [] }]);
-	await h5.firewall()();
+	await h5.start();
+	await h5.button('_setup_firewall')();
 	check('the abort text is kept',
 		h5.notifications.some(function(n) { return n.text.indexOf('XHR request aborted') !== -1; }),
 		JSON.stringify(h5.notifications));
 
-	console.log('test: a stale result from a previous run is not accepted');
+	console.log('test: a result from a previous run is not accepted');
 	const h6 = makeHarness({
-		setup_firewall: { success: true, changed_network: true, changed_firewall: false, job: 'running', run_id: 200 },
-		get_firewall_status: { success: true, state: 'done', run_id: 100, message: '' }
-	});
-	await h6.obj.render([{}, {}, { routes: [] }]);
-	await h6.firewall()();
+		setup_firewall: { success: true, changed_network: true, changed_firewall: false, run_id: 200 },
+		// the only answer available belongs to an earlier run and says done
+		get_firewall_status: { success: true, state: 'done', run_id: 100 }
+	}, { realTimers: true });
+	await h6.start();
+	await h6.button('_setup_firewall')();
 	await settle();
-	check('the job was actually polled',
-		h6.calls.some(function(c) { return c.method === 'get_firewall_status'; }),
+	const stalePass = h6.notifications.slice();
+	check('the earlier run was polled', h6.calls.some(function(c) { return c.method === 'get_firewall_status'; }),
 		JSON.stringify(h6.calls.map(function(c) { return c.method; })));
-	check('the previous run outcome is ignored',
-		!h6.notifications.some(function(n) { return n.text.indexOf('applied') !== -1; }),
-		JSON.stringify(h6.notifications));
+	check('its outcome is not announced as this run\'s',
+		!stalePass.some(function(n) { return n.text.indexOf('applied') !== -1; }),
+		JSON.stringify(stalePass));
 
 	console.log('test: an empty reply does not leak its format placeholder');
 	const h7 = makeHarness({ setup_firewall: null });
-	await h7.obj.render([{}, {}, { routes: [] }]);
-	await h7.firewall()();
+	await h7.start();
+	await h7.button('_setup_firewall')();
 	check('no %s reaches the user',
 		h7.notifications.every(function(n) { return n.text.indexOf('%s') === -1; }),
 		JSON.stringify(h7.notifications));
@@ -300,21 +320,8 @@ async function run() {
 
 	console.log('test: logout reports the backend error instead of success');
 	const h8 = makeHarness({ do_logout: { error: 'Tailscale is not running. Cannot perform logout.' } });
-	await h8.obj.render([{}, {}, { routes: [] }]);
-	await h8.logout()();
-	// the confirmation dialog is modal: walk its tree and press the
-	// destructive button
-	const press = async function(node) {
-		if (!node || typeof node !== 'object') return false;
-		if (node.tag === 'button' && node.attrs && node.attrs['class'] === 'cbi-button cbi-button-negative') {
-			await node.attrs.click();
-			return true;
-		}
-		for (const child of (node.children || [])) {
-			if (await press(child)) return true;
-		}
-		return false;
-	};
+	await h8.start();
+	await h8.button('_logout')();
 	for (const modal of h8.modals())
 		await press(modal);
 	await settle();
@@ -326,25 +333,21 @@ async function run() {
 		JSON.stringify(h8.notifications));
 
 	console.log('test: log loading reports the backend error');
-	// the logs tab writes into a DOM node; give the stub one so the text is
-	// observable instead of silently skipped
 	const logNode = { replaced: null, replaceChildren: function() { this.replaced = Array.prototype.slice.call(arguments); } };
 	const h9 = makeHarness({ get_logs: { success: false, logs: [], error: 'logread unavailable' } });
-	await h9.obj.render([{}, {}, { routes: [] }]);
+	await h9.start();
 	h9.setElement('tailscale_logs_display', logNode);
-	await h9.refreshLogs()();
+	await h9.button('_refresh_logs')();
 	await settle();
 	const logText = textOf(logNode.replaced);
-	check('the log error is surfaced',
-		logText.indexOf('logread unavailable') !== -1,
-		logText);
+	check('the log error is surfaced', logText.indexOf('logread unavailable') !== -1, logText);
 
 	console.log('test: unsaved changes are not silently ignored');
 	const h10 = makeHarness({
-		setup_firewall: { success: true, changed_network: true, changed_firewall: true, job: 'running', run_id: 5 }
-	}, { pending: ['tailscale.settings.advertise_routes'] });
-	await h10.obj.render([{}, {}, { routes: [] }]);
-	await h10.firewall()();
+		setup_firewall: { success: true, changed_network: true, changed_firewall: true, run_id: 5 }
+	}, { pending: true });
+	await h10.start();
+	await h10.button('_setup_firewall')();
 	await settle();
 	check('setup_firewall is not called while changes are staged',
 		!h10.calls.some(function(c) { return c.method === 'setup_firewall'; }),
@@ -362,4 +365,3 @@ run().catch(function(e) {
 	console.error(e);
 	process.exit(1);
 });
-

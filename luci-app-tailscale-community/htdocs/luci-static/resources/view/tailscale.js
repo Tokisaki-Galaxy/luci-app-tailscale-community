@@ -18,6 +18,21 @@ const callGetFirewallStatus = rpc.declare({ object: 'tailscale', method: 'get_fi
 let map;
 let lastDevicesStatus;
 
+// Set by render() from the last apply's staged-changes snapshot; see the
+// unsaved-changes guard on the firewall button.
+let pendingChanges = null;
+
+function pendingConfigCount() {
+	if (pendingChanges == null)
+		return 0;
+	if (Array.isArray(pendingChanges))
+		return pendingChanges.length;
+	let count = 0;
+	for (const key in pendingChanges)
+		count += Array.isArray(pendingChanges[key]) ? pendingChanges[key].length : 1;
+	return count;
+}
+
 // The ucode methods report business failures as { error: ... } in a *successful*
 // ubus reply, so rpc.declare's rejection never fires for them. Every consumer of
 // a write operation has to unwrap the reply itself; without this the UI happily
@@ -172,7 +187,7 @@ function pollFirewallJob(runId, timeoutSec) {
 		// L.Poll skips a tick while the previous call is still pending, so a
 		// request that never settles would stop the polling loop entirely.
 		// The timer is what actually ends the wait.
-		const timer = window.setTimeout(function() {
+		const timer = setTimeout(function() {
 			giveUp(_('Timed out waiting for the firewall reload'));
 		}, (timeoutSec || 30) * 1000);
 
@@ -501,7 +516,14 @@ return view.extend({
 			L.resolveDefault(callGetSubroutes(), { routes: [] })
 		])
 		.then(function([status, settings_from_rpc, subroutes]) {
-			return uci.load('tailscale').then(function() {
+			// Take the staged-changes snapshot now, while the page is loading.
+			// The firewall button needs it synchronously; see pendingConfigCount.
+			return Promise.all([
+				uci.load('tailscale'),
+				uci.changes ? L.resolveDefault(uci.changes(), {}) : Promise.resolve({})
+			]).then(function ([, changes]) {
+				pendingChanges = changes || {};
+			}).then(function() {
 				if (uci.get('tailscale', 'settings') === null) {
 					// No existing settings found; initialize UCI with RPC settings
 					uci.add('tailscale', 'settings', 'settings');
@@ -632,8 +654,11 @@ return view.extend({
 			// The button writes network/firewall UCI directly, so any staged
 			// changes in the form above would be silently left unapplied and
 			// the user would compare the firewall against an old config.
-			const pending = uci.changes ? uci.changes() : [];
-			if (pending.length > 0) {
+			// uci.changes() is an RPC that returns a promise of an object
+			// keyed by config name, so it cannot be consulted from a click
+			// handler without turning the handler async; the last known
+			// state is refreshed on every load instead.
+			if (pendingConfigCount() > 0) {
 				ui.addNotification(null, E('p', {}, _('You have unapplied changes. Save & Apply them first, then configure the firewall.')), 'warning');
 				return null;
 			}
@@ -725,7 +750,7 @@ return view.extend({
 			};
 			// Show a "loading" modal and execute the asynchronous RPC call
 			ui.showModal(_('Requesting Login URL...'), E('em', {}, _('Please wait.')));
-							return callDoLogin(payload).then(function(res) {
+			return callDoLogin(payload).then(function(res) {
 				ui.hideModal();
 				if (res && res.url) {
 					// After successfully obtaining the URL, redirect the previously opened tab
