@@ -13,6 +13,7 @@ const callDoLogout = rpc.declare({ object: 'tailscale', method: 'do_logout' });
 const callGetSubroutes = rpc.declare({ object: 'tailscale', method: 'get_subroutes' });
 const callSetupFirewall = rpc.declare({ object: 'tailscale', method: 'setup_firewall' });
 const callGetLogs = rpc.declare({ object: 'tailscale', method: 'get_logs' });
+const callSetServiceEnabled = rpc.declare({ object: 'tailscale', method: 'set_service_enabled', params: ['enabled'] });
 let map;
 let lastDevicesStatus;
 
@@ -701,7 +702,17 @@ return view.extend({
 	// standard OpenWrt apply mechanism, which triggers /etc/init.d/tailscale-settings
 	// and provides automatic rollback protection if the device becomes unreachable.
 	handleSaveApply(ev, mode) {
+		// Read the submitted value before map.save() consumes the staged delta
+		const wantEnabled = uci.get('tailscale', 'settings', 'service_enabled');
+
 		return map.save().then(function () {
+			// Stopping the daemon is not idempotent and cannot be rolled back:
+			// run it while the config is still staged so a failure leaves the
+			// page editable. Enabling never touches a running daemon and is
+			// left to the regular apply. One concurrency slot on purpose, an
+			// overlap would let the trigger read a half-written config.
+			return callSetServiceEnabled({ enabled: wantEnabled === '1' ? '1' : '0' });
+		}).then(function () {
 			return ui.changes.apply(mode == '0');
 		});
 	},

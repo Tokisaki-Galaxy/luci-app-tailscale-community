@@ -361,6 +361,38 @@ methods.setup_firewall = {
 	}
 };
 
+// Stop the daemon *before* UCI commits the new service_enabled value.
+// The tailscale-settings reload trigger is the wrong place for this: it runs
+// after the commit inside the LuCI rollback snapshot, so a failure there is
+// reported as success. Stopping is safe here because the staged config stays
+// in place for the regular apply, and enabling stays a no-op for a running
+// daemon (see sync_service_enabled in /etc/init.d/tailscale-settings).
+methods.set_service_enabled = {
+	args: { enabled: '' },
+	call: function(request) {
+		let enabled = request?.args?.enabled;
+		if (enabled != '0' && enabled != '1') {
+			return { error: 'Invalid enabled value, expected 0 or 1.' };
+		}
+
+		if (enabled == '1') {
+			return { success: true, changed: false };
+		}
+
+		let status = methods.get_status.call();
+		if (status.status == 'not_installed') {
+			return { success: true, changed: false };
+		}
+
+		let stop = exec('/etc/init.d/tailscale stop 2>&1');
+		if (stop.code != 0) {
+			return { error: 'Failed to stop tailscale: ' + join(' ', stop.stderr) };
+		}
+
+		return { success: true, changed: true };
+	}
+};
+
 methods.get_logs = {
 	args: { lines: 200 },
 	call: function(request) {
