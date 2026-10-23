@@ -240,6 +240,7 @@ methods.setup_firewall = {
 
 			let changed_network = false;
 			let changed_firewall = false;
+			let run_id = 0;
 
 			// 1. config Network Interface
 			let net_ts = uci.get('network', 'tailscale');
@@ -351,7 +352,23 @@ methods.setup_firewall = {
 			}
 
 			if (changed_network || changed_firewall) {
-				exec('/bin/sh -c ' + shell_quote('/usr/libexec/tailscale-setup-firewall >/dev/null 2>&1 &'));
+				if (!access('/usr/libexec/tailscale-setup-firewall')) {
+					return { error: 'Firewall worker /usr/libexec/tailscale-setup-firewall is missing. Reinstall the package.' };
+				}
+
+				// The run id ties the polled result to this request, and the
+				// queued state replaces any previous result before the worker
+				// gets a chance to overwrite it. Without both, a poll arriving
+				// while the worker is still starting would read the previous
+				// run's "done" and report success for work that has not run.
+				run_id = time();
+				try {
+					writefile('/var/run/tailscale-fwsetup.status.tmp',
+						'queued\nstart\n\n' + run_id + '\n');
+					rename('/var/run/tailscale-fwsetup.status.tmp', '/var/run/tailscale-fwsetup.status');
+				} catch (e) { /* the worker overwrites it anyway */ }
+
+				exec('/bin/sh -c ' + shell_quote('/usr/libexec/tailscale-setup-firewall ' + run_id + ' >/dev/null 2>&1 &'));
 			}
 
 			return {
@@ -359,6 +376,7 @@ methods.setup_firewall = {
 				changed_network: changed_network,
 				changed_firewall: changed_firewall,
 				job: (changed_network || changed_firewall) ? 'running' : 'idle',
+				run_id: run_id,
 				message: (changed_network || changed_firewall) ? 'Configuration committed, reloading network and firewall in the background.' : 'Tailscale firewall/interface already configured.'
 			};
 
@@ -418,23 +436,23 @@ methods.get_firewall_status = {
 	call: function() {
 		let path = '/var/run/tailscale-fwsetup.status';
 		if (!access(path)) {
-			return { success: true, state: 'idle', message: '' };
+			return { success: true, state: 'idle', step: '', message: '', run_id: 0 };
 		}
 		try {
 			let raw = readfile(path);
 			if (raw == null) {
-				return { success: true, state: 'idle', message: '' };
+				return { success: true, state: 'idle', step: '', message: '', run_id: 0 };
 			}
-			let data = json(raw);
+			let lines = split(rtrim(raw, '\n'), '\n');
 			return {
 				success: true,
-				state: data?.state || 'unknown',
-				step: data?.step || '',
-				message: data?.message || '',
-				ts: data?.ts || 0
+				state: lines[0] || 'unknown',
+				step: lines[1] || '',
+				message: lines[2] || '',
+				run_id: int(lines[3]) || 0
 			};
 		} catch (e) {
-			return { success: true, state: 'unknown', message: 'Unreadable job state: ' + e };
+			return { success: true, state: 'unknown', step: '', message: 'Unreadable job state: ' + e, run_id: 0 };
 		}
 	}
 };

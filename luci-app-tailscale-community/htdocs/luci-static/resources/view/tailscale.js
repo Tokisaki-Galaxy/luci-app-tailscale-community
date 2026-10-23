@@ -22,13 +22,17 @@ let lastDevicesStatus;
 // ubus reply, so rpc.declare's rejection never fires for them. Every consumer of
 // a write operation has to unwrap the reply itself; without this the UI happily
 // shows "applied" for a reply that only says { error: '...' }.
-function unwrapRpc(res, fallback) {
+function unwrapRpc(res, action) {
+	const what = action || _('Operation');
 	if (res == null)
-		throw new Error(fallback || _('Empty reply from server'));
+		throw new Error(_('Empty reply from server'));
 	if (res.error)
 		throw new Error(String(res.error));
-	if (res.success === false || res.ok === false)
-		throw new Error(res.message || fallback || _('Operation failed'));
+	if (res.success === false || res.ok === false) {
+		if (res.message)
+			throw new Error(String(res.message));
+		throw new Error(_('%s failed').format(what));
+	}
 	return res;
 }
 
@@ -97,7 +101,7 @@ function getRunningStatus() {
 // Poll the background firewall job until it finishes. A poll that fails
 // (network reloading, the connection dropped for a moment) is expected and is
 // simply retried on the next tick instead of being reported as an error.
-function pollFirewallJob(timeoutSec) {
+function pollFirewallJob(runId, timeoutSec) {
 	const deadline = Date.now() + (timeoutSec || 30) * 1000;
 
 	return new Promise(function(resolve, reject) {
@@ -105,49 +109,72 @@ function pollFirewallJob(timeoutSec) {
 		let finished = false;
 
 		function stop() {
+			if (finished)
+				return false;
 			finished = true;
+			clearTimeout(timer);
 			L.Poll.remove(poll);
+			return true;
+		}
+
+		function giveUp(message) {
+			if (stop())
+				reject(new Error(message));
 		}
 
 		function check() {
+			if (finished)
+				return Promise.resolve();
+
+			if (Date.now() > deadline) {
+				giveUp(_('Timed out waiting for the firewall reload'));
+				return Promise.resolve();
+			}
+
 			return callGetFirewallStatus().then(function(res) {
+				if (finished)
+					return;
+
+				// a result from an earlier run is not this run's answer
+				if (runId && res?.run_id && res.run_id !== runId)
+					return;
+
 				const state = res?.state || 'unknown';
 
 				if (state === 'done') {
-					stop();
-					ui.addTimeLimitedNotification(null, [ E('p', _('Firewall configuration applied.')) ], 5000, 'info');
+					if (stop())
+						ui.addTimeLimitedNotification(null, [ E('p', _('Firewall configuration applied.')) ], 5000, 'info');
 					resolve(res);
 					return;
 				}
 
 				if (state === 'failed') {
-					stop();
-					reject(new Error(res?.message || _('Firewall reload failed')));
+					giveUp(res?.message || _('Firewall reload failed'));
 					return;
 				}
 
 				if (state !== lastState) {
 					lastState = state;
-					if (state === 'running' && res?.step === 'firewall') {
+					if (state === 'running' && res?.step === 'firewall')
 						ui.addTimeLimitedNotification(null, [ E('p', _('Reloading firewall...')) ], 3000, 'info');
-					}
-				}
-
-				if (Date.now() > deadline) {
-					stop();
-					reject(new Error(_('Timed out waiting for the firewall reload')));
 				}
 			});
 		}
 
 		function poll() {
-			if (finished) {
+			if (finished)
 				return Promise.resolve();
-			}
-			return check().catch(function() {
-				// connection dropped by the reload, try again next tick
-			});
+			// a dropped connection during the reload is expected: leave it to
+			// the next tick, the timer below still guarantees termination
+			return check().catch(function() {});
 		}
+
+		// L.Poll skips a tick while the previous call is still pending, so a
+		// request that never settles would stop the polling loop entirely.
+		// The timer is what actually ends the wait.
+		const timer = window.setTimeout(function() {
+			giveUp(_('Timed out waiting for the firewall reload'));
+		}, (timeoutSec || 30) * 1000);
 
 		L.Poll.add(poll, 2);
 		poll();
@@ -602,11 +629,20 @@ return view.extend({
 		+'<br>'+_('and enables Masquerading and MSS Clamping (MTU fix) to ensure stable connections.');
 		fwBtn.inputstyle = 'action';
 		fwBtn.onclick = function() {
+			// The button writes network/firewall UCI directly, so any staged
+			// changes in the form above would be silently left unapplied and
+			// the user would compare the firewall against an old config.
+			const pending = uci.changes ? uci.changes() : [];
+			if (pending.length > 0) {
+				ui.addNotification(null, E('p', {}, _('You have unapplied changes. Save & Apply them first, then configure the firewall.')), 'warning');
+				return null;
+			}
+
 			// The reload runs in the background and can briefly interrupt the
 			// connection carrying this page, so the reply only confirms the
 			// commit; the outcome is polled separately.
 			return callSetupFirewall().then(function(res) {
-				unwrapRpc(res, _('Failed to configure firewall: %s'));
+				unwrapRpc(res, _('Configuring firewall'));
 
 				if (!res.changed_network && !res.changed_firewall) {
 					ui.addNotification(null, E('p', {}, _('Firewall configuration already applied.')), 'info');
@@ -614,7 +650,7 @@ return view.extend({
 				}
 
 				ui.addTimeLimitedNotification(null, [ E('p', _('Configuration committed, reloading network and firewall. This can take a moment.')) ], 5000, 'info');
-				return pollFirewallJob();
+				return pollFirewallJob(res.run_id);
 			}).catch(function(err) {
 				ui.addNotification(null, E('p', {}, _('Failed to configure firewall: %s').format(err?.message || err || _('Unknown error'))), 'error');
 			});
@@ -725,7 +761,7 @@ return view.extend({
 							ui.showModal(_('Logging out...'), E('em', {}, _('Please wait.')));
 
 							return callDoLogout().then(function(res) {
-								unwrapRpc(res, _('Logout failed: %s'));
+								unwrapRpc(res, _('Logout'));
 								ui.hideModal();
 								ui.addTimeLimitedNotification(null, [ E('p', _('Successfully logged out.')) ], 5000, 'info');
 							}).catch(function(err) {
@@ -763,7 +799,7 @@ return view.extend({
 				display.replaceChildren(E('em', {}, _('Collecting data ...')));
 			}
 			return callGetLogs().then(function(res) {
-				unwrapRpc(res, _('Failed to load logs'));
+				unwrapRpc(res, _('Loading logs'));
 				if (display) {
 					display.replaceChildren(renderLogs(res));
 				}
