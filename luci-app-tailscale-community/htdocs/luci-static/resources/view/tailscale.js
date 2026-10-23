@@ -14,8 +14,23 @@ const callGetSubroutes = rpc.declare({ object: 'tailscale', method: 'get_subrout
 const callSetupFirewall = rpc.declare({ object: 'tailscale', method: 'setup_firewall' });
 const callGetLogs = rpc.declare({ object: 'tailscale', method: 'get_logs' });
 const callSetServiceEnabled = rpc.declare({ object: 'tailscale', method: 'set_service_enabled', params: ['enabled'] });
+const callGetFirewallStatus = rpc.declare({ object: 'tailscale', method: 'get_firewall_status' });
 let map;
 let lastDevicesStatus;
+
+// The ucode methods report business failures as { error: ... } in a *successful*
+// ubus reply, so rpc.declare's rejection never fires for them. Every consumer of
+// a write operation has to unwrap the reply itself; without this the UI happily
+// shows "applied" for a reply that only says { error: '...' }.
+function unwrapRpc(res, fallback) {
+	if (res == null)
+		throw new Error(fallback || _('Empty reply from server'));
+	if (res.error)
+		throw new Error(String(res.error));
+	if (res.success === false || res.ok === false)
+		throw new Error(res.message || fallback || _('Operation failed'));
+	return res;
+}
 
 const tailscaleSettingsConf = [
 	[form.Flag, 'service_enabled', _('Enable Tailscale Service'), _('Enable or disable the Tailscale service. When disabled, the service will be stopped and the process will be killed.'), { rmempty: false }],
@@ -76,6 +91,66 @@ function defTabOpts(s, t, opts, params) {
 function getRunningStatus() {
 	return L.resolveDefault(callGetStatus(), { status: 'stopped', peers: {} }).then(function (res) {
 		return res;
+	});
+}
+
+// Poll the background firewall job until it finishes. A poll that fails
+// (network reloading, the connection dropped for a moment) is expected and is
+// simply retried on the next tick instead of being reported as an error.
+function pollFirewallJob(timeoutSec) {
+	const deadline = Date.now() + (timeoutSec || 30) * 1000;
+
+	return new Promise(function(resolve, reject) {
+		let lastState = '';
+		let finished = false;
+
+		function stop() {
+			finished = true;
+			L.Poll.remove(poll);
+		}
+
+		function check() {
+			return callGetFirewallStatus().then(function(res) {
+				const state = res?.state || 'unknown';
+
+				if (state === 'done') {
+					stop();
+					ui.addTimeLimitedNotification(null, [ E('p', _('Firewall configuration applied.')) ], 5000, 'info');
+					resolve(res);
+					return;
+				}
+
+				if (state === 'failed') {
+					stop();
+					reject(new Error(res?.message || _('Firewall reload failed')));
+					return;
+				}
+
+				if (state !== lastState) {
+					lastState = state;
+					if (state === 'running' && res?.step === 'firewall') {
+						ui.addTimeLimitedNotification(null, [ E('p', _('Reloading firewall...')) ], 3000, 'info');
+					}
+				}
+
+				if (Date.now() > deadline) {
+					stop();
+					reject(new Error(_('Timed out waiting for the firewall reload')));
+				}
+			});
+		}
+
+		function poll() {
+			if (finished) {
+				return Promise.resolve();
+			}
+			return check().catch(function() {
+				// connection dropped by the reload, try again next tick
+			});
+		}
+
+		L.Poll.add(poll, 2);
+		poll();
 	});
 }
 
@@ -527,17 +602,23 @@ return view.extend({
 		+'<br>'+_('and enables Masquerading and MSS Clamping (MTU fix) to ensure stable connections.');
 		fwBtn.inputstyle = 'action';
 		fwBtn.onclick = function() {
+			// The reload runs in the background and can briefly interrupt the
+			// connection carrying this page, so the reply only confirms the
+			// commit; the outcome is polled separately.
 			return callSetupFirewall().then(function(res) {
-			const msg = res?.message || _('Firewall configuration applied.');
-			ui.addNotification(null, E('p', {}, msg), 'info');
-		}).catch(function(err) {
-			ui.addNotification(null, E('p', {}, _('Failed to configure firewall: %s').format(err?.message || err || 'Unknown error')), 'error');
-		}).then(function() {
-			return new Promise(function(resolve) {
-				window.setTimeout(resolve, 3000);
+				unwrapRpc(res, _('Failed to configure firewall: %s'));
+
+				if (!res.changed_network && !res.changed_firewall) {
+					ui.addNotification(null, E('p', {}, _('Firewall configuration already applied.')), 'info');
+					return null;
+				}
+
+				ui.addTimeLimitedNotification(null, [ E('p', _('Configuration committed, reloading network and firewall. This can take a moment.')) ], 5000, 'info');
+				return pollFirewallJob();
+			}).catch(function(err) {
+				ui.addNotification(null, E('p', {}, _('Failed to configure firewall: %s').format(err?.message || err || _('Unknown error'))), 'error');
 			});
-		});
-	};
+		};
 
 		const helpTitle = s.taboption('general', form.DummyValue, '_help_title');
 		helpTitle.title = _('How to enable Site-to-Site?');
@@ -608,7 +689,7 @@ return view.extend({
 			};
 			// Show a "loading" modal and execute the asynchronous RPC call
 			ui.showModal(_('Requesting Login URL...'), E('em', {}, _('Please wait.')));
-			return callDoLogin(payload).then(function(res) {
+							return callDoLogin(payload).then(function(res) {
 				ui.hideModal();
 				if (res && res.url) {
 					// After successfully obtaining the URL, redirect the previously opened tab
@@ -618,7 +699,7 @@ return view.extend({
 					doc.body.innerHTML =
 						'<h2>' + _('Error') + '</h2>' +
 						'<p>' + _('Failed to get login URL. You may close this tab.') + '</p>';
-					ui.addTimeLimitedNotification(null, [ E('p', _('Failed to get login URL: Invalid response from server.')) ], 7000, 'error');
+					ui.addTimeLimitedNotification(null, [ E('p', _('Failed to get login URL: %s').format(res?.error || _('Invalid response from server.'))) ], 7000, 'error');
 				}
 			}).catch(function(err) {
 				ui.hideModal();
@@ -644,6 +725,7 @@ return view.extend({
 							ui.showModal(_('Logging out...'), E('em', {}, _('Please wait.')));
 
 							return callDoLogout().then(function(res) {
+								unwrapRpc(res, _('Logout failed: %s'));
 								ui.hideModal();
 								ui.addTimeLimitedNotification(null, [ E('p', _('Successfully logged out.')) ], 5000, 'info');
 							}).catch(function(err) {
@@ -681,6 +763,7 @@ return view.extend({
 				display.replaceChildren(E('em', {}, _('Collecting data ...')));
 			}
 			return callGetLogs().then(function(res) {
+				unwrapRpc(res, _('Failed to load logs'));
 				if (display) {
 					display.replaceChildren(renderLogs(res));
 				}
