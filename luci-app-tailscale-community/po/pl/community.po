@@ -3,7 +3,7 @@ msgstr "Content-Type: text/plain; charset=UTF-8\n"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:47
 msgid "%s failed"
-msgstr ""
+msgstr "Niepowodzenie operacji: %s"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:71
 msgid "(Experimental) Reduce Memory Usage"
@@ -72,7 +72,7 @@ msgstr "Zezwól użytkownikowi na dostęp do Tailscale"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:170
 msgid "Another firewall reload is already running"
-msgstr ""
+msgstr "Trwa już ponowne ładowanie zapory"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:775
 msgid "Are you sure you want to log out?"
@@ -106,10 +106,12 @@ msgid ""
 "Configuration committed, reloading network and firewall. This can "
 "take a moment."
 msgstr ""
+"Konfiguracja została zatwierdzona, ponowne ładowanie sieci i zapory. "
+"Może to chwilę potrwać."
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:672
 msgid "Configuring firewall"
-msgstr ""
+msgstr "Konfigurowanie zapory"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:802
 msgid "Confirm Logout"
@@ -145,11 +147,11 @@ msgstr "Tryb DNS"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:70
 msgid "Daemon MTU"
-msgstr ""
+msgstr "MTU demona"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:841
 msgid "Daemon Settings"
-msgstr ""
+msgstr "Ustawienia demona"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:56
 msgid "Declare this device as an Exit Node."
@@ -196,7 +198,7 @@ msgstr "Rozłącz z Tailscale i wygaś bieżący klucz węzła."
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:41
 msgid "Empty reply from server"
-msgstr ""
+msgstr "Pusta odpowiedź z serwera"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:64
 msgid "Enable Peer Relay"
@@ -298,11 +300,11 @@ msgstr "Nie udało się załadować logów: %s"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:487
 msgid "Filter peers by name, IP, or OS..."
-msgstr ""
+msgstr "Filtruj węzły po nazwie, IP lub systemie operacyjnym..."
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:504
 msgid "Filter:"
-msgstr ""
+msgstr "Filtruj:"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:54
 msgid "Firewall Mode"
@@ -310,7 +312,7 @@ msgstr "Tryb zapory"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:675
 msgid "Firewall configuration already applied."
-msgstr ""
+msgstr "Konfiguracja zapory jest już zastosowana."
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:159
 msgid "Firewall configuration applied."
@@ -318,7 +320,7 @@ msgstr "Zastosowano konfigurację zapory."
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:165
 msgid "Firewall reload failed"
-msgstr ""
+msgstr "Nie udało się ponownie załadować zapory"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:600
 msgid "General Settings"
@@ -355,7 +357,7 @@ msgstr "Nieprawidłowa data"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:765
 msgid "Invalid response from server."
-msgstr ""
+msgstr "Nieprawidłowa odpowiedź z serwera."
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:646
 msgid ""
@@ -383,7 +385,7 @@ msgstr "Pozostaw puste dla domyślnego panelu kontrolnego Tailscale."
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:829
 msgid "Loading logs"
-msgstr ""
+msgstr "Ładowanie logów"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:788
 msgid "Logging out..."
@@ -421,7 +423,7 @@ msgstr "NIE DZIAŁA"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:439
 msgid "No matching peer devices found."
-msgstr ""
+msgstr "Nie znaleziono pasujących urządzeń partnerskich."
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:400
 msgid "No peer devices found."
@@ -464,7 +466,7 @@ msgstr ""
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:39
 msgid "Operation"
-msgstr ""
+msgstr "Operacja"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:711
 msgid ""
@@ -512,7 +514,7 @@ msgstr "Odśwież"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:177
 msgid "Reloading firewall..."
-msgstr ""
+msgstr "Ponowne ładowanie zapory..."
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:748
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:754
@@ -551,10 +553,12 @@ msgid ""
 "Set a custom MTU for the Tailscale daemon. Leave blank to use the "
 "default value."
 msgstr ""
+"Ustaw niestandardowe MTU dla demona Tailscale. Pozostaw puste, aby "
+"użyć wartości domyślnej."
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:60
 msgid "Shields Up"
-msgstr "Tarcza włączona"
+msgstr "Blokuj połączenia przychodzące"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:448
 msgid "Status"
@@ -634,7 +638,7 @@ msgstr ""
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:143
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:194
 msgid "Timed out waiting for the firewall reload"
-msgstr ""
+msgstr "Upłynął limit czasu oczekiwania na ponowne załadowanie zapory"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:605
 msgid ""
@@ -677,6 +681,8 @@ msgid ""
 "You have unapplied changes. Save & Apply them first so the firewall "
 "matches the form."
 msgstr ""
+"Masz niezastosowane zmiany. Najpierw je zapisz i zastosuj, aby zapora "
+"była zgodna z formularzem."
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:695
 msgid ""
