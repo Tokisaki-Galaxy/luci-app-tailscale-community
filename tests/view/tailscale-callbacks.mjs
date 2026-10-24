@@ -68,16 +68,17 @@ function makeHarness(responses, opts) {
 	const notifications = [];
 	const calls = [];
 	const buttons = {};
+	const options = {};
 	const elements = {};
 	const modals = [];
 	let pollFns = [];
 
-	function makeOption() {
+	function makeOption(name) {
 		const self = {
-			name: null,
+			name: name || null,
+			title: null,
 			taboption: function(t, type, optName) {
-				self.name = optName;
-				return self;
+				return makeOption(optName);
 			},
 			value: function() { return self; },
 			depends: function() { return self; },
@@ -89,20 +90,23 @@ function makeHarness(responses, opts) {
 			get: function() { return self._onclick; },
 			set: function(fn) {
 				self._onclick = fn;
-				buttons[self.name] = fn;
+				if (self.name) buttons[self.name] = fn;
 			}
 		});
+		if (name) options[name] = self;
 		return self;
 	}
 
-	const mapObj = {
-		section: function() { return makeOption(); },
-		save: function() { return Promise.resolve(); },
-		parse: function() { return Promise.resolve(); },
-		render: function() { return E('div', {}, []); }
-	};
+	function makeSection() {
+		const s = makeOption();
+		s.section = function() { return s; };
+		s.save = function() { return Promise.resolve(); };
+		s.parse = function() { return Promise.resolve(); };
+		s.render = function() { return E('div', {}, []); };
+		return s;
+	}
 
-	const formStub = new Proxy({ Map: function() { return mapObj; } }, {
+	const formStub = new Proxy({ Map: function() { return makeSection(); } }, {
 		get: function(target, prop) {
 			if (prop in target) return target[prop];
 			return function() { return makeOption(); };
@@ -189,6 +193,9 @@ function makeHarness(responses, opts) {
 		},
 		button: function(name) {
 			return buttons[name];
+		},
+		option: function(name) {
+			return options[name];
 		},
 		setElement: function(id, node) {
 			elements[id] = node;
@@ -384,6 +391,47 @@ async function run() {
 	check('it does not wait for the timeout',
 		!h12.notifications.some(function(n) { return n.text.indexOf('Timed out') !== -1; }),
 		JSON.stringify(h12.notifications));
+
+	console.log('test: the firewall help text mentions WAN and the Exit Node steps');
+	const h13 = makeHarness({});
+	await h13.start();
+
+	// Issue #82: the description named LAN and Tailscale only, so a user with
+	// an Exit Node concluded the button did not cover WAN. Each claim is
+	// asserted separately, because one sentence containing "WAN" is not
+	// enough: dropping either of the first two must fail here.
+	const desc = String((h13.option('_setup_firewall') || {}).description || '');
+
+	check('the description names the LAN and Tailscale directions',
+		desc.indexOf('forwarding between LAN and Tailscale') !== -1, desc);
+	check('the description names Tailscale to WAN as a separate direction',
+		desc.indexOf('plus Tailscale to WAN') !== -1, desc);
+	check('the description explains what the WAN forwarding is for',
+		desc.indexOf('The Tailscale to WAN forwarding is what lets clients') !== -1,
+		desc);
+	check('the description does not claim a full mesh',
+		desc.indexOf('between LAN, Tailscale and WAN') === -1, desc);
+
+	const exitHelp = h13.option('_exit_node_help');
+	check('the exit node help block exists', !!exitHelp);
+
+	const texts = [];
+	(function collect(node) {
+		if (!node) return;
+		if (typeof node === 'string') texts.push(node);
+		if (Array.isArray(node)) { node.forEach(collect); return; }
+		if (node.attrs && typeof node.attrs === 'string') texts.push(node.attrs);
+		(node.children || []).forEach(collect);
+	})(exitHelp && exitHelp.render ? exitHelp.render.call(exitHelp) : null);
+
+	const joined = texts.join('\n');
+	check('the exit node help has four numbered steps',
+		[ '1. ', '2. ', '3. ', '4. ' ].every(function(n) {
+			return texts.some(function(t) { return t.indexOf(n) === 0; });
+		}),
+		joined.slice(0, 400));
+	check('the exit node help names the admin console approval',
+		joined.indexOf('admin console') !== -1, joined.slice(0, 400));
 
 	console.log('');
 	console.log('passed: ' + passes + '  failed: ' + failures);

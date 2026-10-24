@@ -643,8 +643,9 @@ return view.extend({
 
 		const fwBtn = s.taboption('general', form.Button, '_setup_firewall', _('Auto Configure Firewall'));
 		fwBtn.description = _('Essential configuration for Subnet Routing (Site-to-Site) and Exit Node features.')
-		+'<br>'+_('It automatically creates the tailscale interface, sets up firewall zones for LAN <-> Tailscale forwarding,')
-		+'<br>'+_('and enables Masquerading and MSS Clamping (MTU fix) to ensure stable connections.');
+		+'<br>'+_('It creates the tailscale interface, adds it to a firewall zone, and sets up forwarding between LAN and Tailscale, plus Tailscale to WAN.')
+		+'<br>'+_('The Tailscale to WAN forwarding is what lets clients send their internet traffic through this device as an Exit Node.')
+		+'<br>'+_('Masquerading and MSS Clamping (MTU fix) are enabled to keep connections stable.');
 		fwBtn.inputstyle = 'action';
 		fwBtn.onclick = function() {
 			// The button writes network/firewall UCI directly, so staged changes
@@ -693,6 +694,29 @@ return view.extend({
 					_('2. In "Advertise Routes", select your local subnet (to allow remote devices to access this LAN).'), E('br'),
 					_('3. Click "Auto Configure Firewall" (to allow traffic forwarding).'), E('br'),
 					E('strong', { 'style': 'color: #d9534f;' }, _('[Important] Log in to the Tailscale admin console and manually enable "Subnet Routes" for this device.'))
+				])
+			]);
+		};
+
+		// Exit Node is a different feature with a different step that LuCI cannot
+		// complete on its own: the admin console approval happens in the user's
+		// Tailscale account. Without it a client reaches the LAN but gets no
+		// internet, which reads as "the firewall button did not work".
+		const exitHelp = s.taboption('general', form.DummyValue, '_exit_node_help');
+		exitHelp.title = _('How to enable Exit Node?');
+		exitHelp.render = function() {
+			return E('div', { 'class': 'cbi-value', 'style': 'margin-top: 1em; border-top: 1px font-weight: bold;' }, [
+				E('label', { 'class': 'cbi-value-title' }, this.title),
+				E('div', { 'class': 'cbi-value-field', 'style': 'line-height: 1.6em; font-size: 95%; color: #555;' }, [
+					_('1. Enable "Advertise Exit Node".'), E('br'),
+					_('2. Click "Auto Configure Firewall" (it forwards Tailscale traffic to WAN).'), E('br'),
+					_('3. In the Tailscale admin console, edit this device under the route settings and approve it as an Exit Node.'), E('br'),
+					// No quotes around the client's control on purpose: "Exit node"
+					// is a menu in the Tailscale client, not a field on this page,
+					// and quoting it would send the reader to the dropdown above,
+					// which selects the opposite direction.
+					_('4. On the client, set this device as its exit node.'), E('br'),
+					E('strong', { 'style': 'color: #d9534f;' }, _('[Important] Step 3 cannot be done here: it needs your Tailscale account.'))
 				])
 			]);
 		};
