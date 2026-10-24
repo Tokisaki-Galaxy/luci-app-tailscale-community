@@ -8,20 +8,38 @@
 # one unexpected `tailscale start`, not a wrong value.
 #
 # Run:      bash tests/init/settings-test.sh
-# Negative: SETTINGS_INIT=/path/to/old/script bash tests/init/settings-test.sh
-#           (used by CI to prove the suite still catches the reported bug;
-#            the old script ignores the override and is skipped if it
-#            hard-codes /etc/init.d/tailscale)
+# Negative: bash tests/init/settings-test.sh --negative-control
+#           Runs the suite against the frozen pre-fix script in
+#           fixtures/tailscale-settings.prefix-80 and expects it to fail.
+#           A frozen fixture is used on purpose: pointing at origin/master
+#           would silently turn into a comparison with the fixed version
+#           once this lands.
 
 set -u
 
 REPO_ROOT=$(cd "$(dirname "$0")/../.." && pwd)
-INIT_SCRIPT=${SETTINGS_INIT:-"$REPO_ROOT/luci-app-tailscale-community/root/etc/init.d/tailscale-settings"}
+FIXTURE_PREFIX="$REPO_ROOT/tests/init/fixtures/tailscale-settings.prefix-80"
+
+# --negative-control runs the same suite against the frozen pre-fix script and
+# inverts the exit status: the suite must FAIL there, otherwise it no longer
+# guards issue #80.
+NEGATIVE=0
+if [ "${1:-}" = "--negative-control" ]; then
+	NEGATIVE=1
+fi
+
+if [ "$NEGATIVE" -eq 1 ]; then
+	INIT_SCRIPT="$FIXTURE_PREFIX"
+	[ -f "$INIT_SCRIPT" ] || { echo "missing fixture $INIT_SCRIPT" >&2; exit 1; }
+	echo "negative control mode: running against the pre-fix script"
+else
+	INIT_SCRIPT=${SETTINGS_INIT:-"$REPO_ROOT/luci-app-tailscale-community/root/etc/init.d/tailscale-settings"}
+fi
 
 [ -f "$INIT_SCRIPT" ] || { echo "cannot find $INIT_SCRIPT" >&2; exit 1; }
 
-if [ -n "${SETTINGS_INIT:-}" ]; then
-	echo "negative control mode: $INIT_SCRIPT"
+if [ -n "${SETTINGS_INIT:-}" ] && [ "$NEGATIVE" -eq 0 ]; then
+	echo "custom script under test: $INIT_SCRIPT"
 	echo "note: versions that call /etc/init.d/tailscale by absolute path are not fully observable here"
 fi
 
@@ -350,6 +368,71 @@ test_boot_start_service_record_does_not_act() {
 	if [ "$(cat "$ENABLED_FILE")" = "0" ]; then pass; else fail "enabled state not recorded"; fi
 }
 
+# A manual `disable` in the shell, or a config edited by hand, can leave the
+# recorded state saying "enabled" while the daemon is down. The reload handler
+# must bring it back: that is the only thing that will.
+test_manual_disable_then_enabled_config_starts() {
+	setup
+	echo 0 > "$DAEMON_RUNNING"
+	set_option service_enabled 1
+	echo 0 > "$ENABLED_FILE"
+
+	handle_service_state
+	assert_call "tailscale enable"
+	assert_call "tailscale start"
+}
+
+# Boot must not overwrite a state the reload handler is still learning from,
+# otherwise a manual `disable` is resurrected by the next `start_service`.
+test_boot_keeps_existing_state_record() {
+	setup
+	echo 0 > "$DAEMON_RUNNING"
+	set_option service_enabled 0
+	echo 1 > "$ENABLED_FILE"
+
+	start_service
+	if [ "$(cat "$ENABLED_FILE")" = "1" ]; then
+		pass
+	else
+		fail "start_service overwrote the recorded state"
+	fi
+}
+
+# Enabling must not restart a daemon that is already up. Dropping the running
+# probe here reintroduces issue #80 through the enable path instead of the
+# plain apply path, which is how the first fixed version missed it.
+test_enable_does_not_start_a_running_daemon() {
+	setup
+	echo 1 > "$DAEMON_RUNNING"
+	set_option service_enabled 1
+	echo 0 > "$ENABLED_FILE"
+
+	handle_service_state
+	assert_no_call "tailscale \(start\|restart\|stop\)"
+	# the recorded state is corrected without touching the running daemon
+	if [ "$(cat "$ENABLED_FILE")" = "1" ]; then
+		pass
+	else
+		fail "recorded state not corrected"
+	fi
+}
+
+# The dangerous shape: the flag flips to enabled while the daemon is already
+# running. A naive implementation reaches the start call from here, which runs
+# the upstream `tailscaled --cleanup` against a live daemon. This is how the
+# first version reintroduced #80 through the enable path.
+test_enable_path_keeps_the_running_probe() {
+	setup
+	echo 1 > "$DAEMON_RUNNING"
+	set_option service_enabled 1
+	echo 0 > "$ENABLED_FILE"
+	rm -f "$DISABLE_REQUEST_FILE"
+
+	handle_service_state
+	assert_call_count "tailscale start" 0
+	assert_call_count "tailscale restart" 0
+}
+
 test_missing_tailscale_init_is_tolerated() {
 	setup
 	TAILSCALE_INIT="$SANDBOX/does-not-exist"
@@ -397,6 +480,9 @@ for t in \
 	test_rolled_back_disable_keeps_daemon \
 	test_enable_after_disable_starts \
 	test_boot_start_service_record_does_not_act \
+	test_manual_disable_then_enabled_config_starts \
+	test_boot_keeps_existing_state_record \
+	test_enable_does_not_start_a_running_daemon \
 	test_missing_tailscale_init_is_tolerated \
 	test_dns_forward_only_on_transition \
 	test_dns_forward_survives_switch_to_disabled
@@ -414,4 +500,14 @@ done
 echo
 echo "passed: $pass_count  failed: $failures  skipped: $skipped"
 remove_abs_stub
+
+if [ "$NEGATIVE" -eq 1 ]; then
+	if [ "$failures" -eq 0 ]; then
+		echo "NEGATIVE CONTROL FAILED: the suite passes against the pre-fix script"
+		exit 1
+	fi
+	echo "negative control ok: the suite fails against the pre-fix script as expected"
+	exit 0
+fi
+
 [ "$failures" -eq 0 ]

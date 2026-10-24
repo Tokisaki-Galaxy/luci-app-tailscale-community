@@ -317,6 +317,16 @@ sync_service_enabled() {
 
 	rm -f "$DISABLE_REQUEST_FILE"
 
+	# The service should run. A daemon that is already up must not be touched:
+	# that is the whole point of this handler. A daemon that is down is only
+	# brought back when the user explicitly turned the service on in this
+	# apply, not because some unrelated option happened to be saved, and not
+	# because it crashed or was stopped by hand.
+	if tailscale_running; then
+		[ "$prev" = "1" ] || echo "1" > "$ENABLED_FILE"
+		return 0
+	fi
+
 	if [ "$prev" = "1" ]; then
 		return 0
 	fi
@@ -379,11 +389,16 @@ start_service() {
 	mkdir -p "$STATE_DIR"
 	config_load tailscale
 	daemon_signature > "$DAEMON_SIG_FILE"
-	# Record the flag without acting on it: at boot the service state is
-	# already correct, acting here would start or stop a daemon we do not own.
-	local service_enabled=1
-	config_get service_enabled settings service_enabled '1'
-	echo "$service_enabled" > "$ENABLED_FILE"
+	# Record the desired flag without acting on it: at boot the service state
+	# is already correct and acting here would start or stop a daemon we do
+	# not own. Only seed the file when there is nothing to inherit, so a
+	# manual `disable` in the shell survives until the reload handler sees a
+	# real transition.
+	if [ ! -f "$ENABLED_FILE" ]; then
+		local service_enabled=1
+		config_get service_enabled settings service_enabled '1'
+		echo "$service_enabled" > "$ENABLED_FILE"
+	fi
 	apply_settings
 	apply_dns_forward
 }
