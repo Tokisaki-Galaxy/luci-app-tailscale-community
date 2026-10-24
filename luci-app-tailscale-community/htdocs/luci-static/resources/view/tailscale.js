@@ -13,6 +13,7 @@ const callDoLogout = rpc.declare({ object: 'tailscale', method: 'do_logout' });
 const callGetSubroutes = rpc.declare({ object: 'tailscale', method: 'get_subroutes' });
 const callSetupFirewall = rpc.declare({ object: 'tailscale', method: 'setup_firewall' });
 const callGetLogs = rpc.declare({ object: 'tailscale', method: 'get_logs' });
+const callSetServiceEnabled = rpc.declare({ object: 'tailscale', method: 'set_service_enabled', params: ['enabled'] });
 let map;
 let lastDevicesStatus;
 
@@ -701,7 +702,26 @@ return view.extend({
 	// standard OpenWrt apply mechanism, which triggers /etc/init.d/tailscale-settings
 	// and provides automatic rollback protection if the device becomes unreachable.
 	handleSaveApply(ev, mode) {
+		// Read the submitted value before map.save() consumes the staged delta.
+		// uci.get() prefers the staged change over the saved value, and the
+		// staged delta is only populated once the form has been parsed, which
+		// map.save() guarantees here.
+		const wantEnabled = uci.get('tailscale', 'settings', 'service_enabled');
+
 		return map.save().then(function () {
+			// Only records the disable request; the reload handler performs
+			// the stop after the commit, so a LuCI rollback still finds a
+			// running daemon. One concurrency slot on purpose: an overlapping
+			// apply could let the trigger read a half-written request file.
+			// Fail-open on purpose: an install whose rpcd ACL cache predates
+			// this method would otherwise be unable to apply anything. The
+			// worst case is that the stop is skipped for this apply.
+			return callSetServiceEnabled({ enabled: wantEnabled === '0' ? '0' : '1' })
+				.catch(function(err) {
+					console.warn('set_service_enabled failed: %s', err);
+					return null;
+				});
+		}).then(function () {
 			return ui.changes.apply(mode == '0');
 		});
 	},

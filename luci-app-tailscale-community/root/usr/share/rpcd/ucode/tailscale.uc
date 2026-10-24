@@ -361,6 +361,43 @@ methods.setup_firewall = {
 	}
 };
 
+// Record that the user asked to disable the service.
+//
+// The actual stop happens in /etc/init.d/tailscale-settings on the reload
+// trigger, which runs right after rpcd commits and *before* it arms the LuCI
+// rollback timer. Stopping here would not survive a rollback: rpcd restores
+// the config files but never restarts a daemon it did not stop, so the user
+// would end up with service_enabled=1 and a dead tunnel. The request file is
+// dropped by the reload handler as soon as the config says enabled again.
+methods.set_service_enabled = {
+	args: { enabled: '' },
+	call: function(request) {
+		let enabled = request?.args?.enabled;
+		if (enabled != '0' && enabled != '1') {
+			return { error: 'Invalid enabled value, expected 0 or 1.' };
+		}
+
+		if (enabled == '1') {
+			let r = exec('rm -f /var/run/tailscale-settings/disable-requested');
+			if (r.code != 0) {
+				return { error: 'Failed to clear the disable request: ' + join('\n', r.stdout) };
+			}
+			return { success: true, armed: false };
+		}
+
+		// No daemon probe here: get_status shells out to 'tailscale status'
+		// and would delay the apply for nothing. A request armed on a box
+		// without the tailscale package is simply ignored by the reload
+		// handler, which bails out when the init script is missing.
+		let r = exec('mkdir -p /var/run/tailscale-settings && touch /var/run/tailscale-settings/disable-requested');
+		if (r.code != 0) {
+			return { error: 'Failed to arm the disable request: ' + join('\n', r.stdout) };
+		}
+
+		return { success: true, armed: true };
+	}
+};
+
 methods.get_logs = {
 	args: { lines: 200 },
 	call: function(request) {
