@@ -149,7 +149,6 @@ methods.do_login = {
 		if (status.status != 'logout') {
 			return { error: 'Tailscale is already logged in and running.' };
 		}
-
 		// --- 1. Prepare and Run Login Command (Once) ---
 		const loginserver = trim(form_data.loginserver) || '';
 		const loginserver_authkey = trim(form_data.loginserver_authkey) || '';
@@ -177,7 +176,7 @@ methods.do_login = {
 					let parts = split(trline, ' ');
 					for (let part in parts) {
 						if (index(part, 'http') != -1) {
-							return { url: part };
+							return { success: true, url: part };
 						}
 					}
 				}
@@ -199,7 +198,7 @@ methods.do_logout = {
 		if (logout_result.code != 0) {
 			return { error: 'Failed to logout: ' + logout_result.stderr };
 		}
-		return { success: true };
+		return { success: true, message: 'Logged out.' };
 	}
 };
 
@@ -241,6 +240,7 @@ methods.setup_firewall = {
 
 			let changed_network = false;
 			let changed_firewall = false;
+			let run_id = 0;
 
 			// 1. config Network Interface
 			let net_ts = uci.get('network', 'tailscale');
@@ -335,24 +335,57 @@ methods.setup_firewall = {
 				changed_firewall = true;
 			}
 
-			// 4. save
+			// 4. save and hand the reload to a background worker
+			//
+			// Reloading network/firewall synchronously here was the reason the
+			// button failed through a reverse proxy: the reload tears down the
+			// connection carrying this very request. The worker records its
+			// progress in /var/run/tailscale-fwsetup.status and the UI polls it.
 			if (changed_network) {
 				uci.save('network');
 				uci.commit('network');
-				exec('/etc/init.d/network reload');
 			}
 
 			if (changed_firewall) {
 				uci.save('firewall');
 				uci.commit('firewall');
-				exec('/etc/init.d/firewall reload');
+			}
+
+			if (changed_network || changed_firewall) {
+				if (!access('/usr/libexec/tailscale-setup-firewall')) {
+					return { error: 'Firewall worker /usr/libexec/tailscale-setup-firewall is missing. Reinstall the package.' };
+				}
+
+				// The run id ties the polled result to this request, and the
+				// queued state replaces any previous result before the worker
+				// gets a chance to overwrite it. Without both, a poll arriving
+				// while the worker is still starting would read the previous
+				// run's "done" and report success for work that has not run.
+				run_id = time();
+				let st = writefile('/var/run/tailscale-fwsetup.status.tmp',
+					'queued\nstart\n\n' + run_id + '\n');
+				if (st == null || rename('/var/run/tailscale-fwsetup.status.tmp', '/var/run/tailscale-fwsetup.status') == null) {
+					// Without a writable status file the poll can never see a
+					// result, so say so instead of letting the UI wait it out.
+					return { error: 'Cannot write the firewall status file in /var/run. Configuration was not changed.' };
+				}
+
+				// The background shell exits immediately, so its status only
+				// tells us whether sh itself started. Anything the worker
+				// reports afterwards lands in the status file.
+				let spawn = exec('/bin/sh -c ' + shell_quote('/usr/libexec/tailscale-setup-firewall ' + run_id + ' >/dev/null 2>&1 &'));
+				if (spawn.code != 0) {
+					return { error: 'Failed to start the firewall worker: ' + join('\n', spawn.stdout) };
+				}
 			}
 
 			return {
 				success: true,
 				changed_network: changed_network,
 				changed_firewall: changed_firewall,
-				message: (changed_network || changed_firewall) ? 'Tailscale firewall/interface configuration applied.' : 'Tailscale firewall/interface already configured.'
+				job: (changed_network || changed_firewall) ? 'running' : 'idle',
+				run_id: run_id,
+				message: (changed_network || changed_firewall) ? 'Configuration committed, reloading network and firewall in the background.' : 'Tailscale firewall/interface already configured.'
 			};
 
 		} catch (e) {
@@ -398,6 +431,38 @@ methods.set_service_enabled = {
 	}
 };
 
+// Result of the last background firewall setup job.
+//
+// Read here rather than in the browser so the ACL needs no file rights: the
+// ucode plugin runs as root and rpcd only enforces path ACLs on the file
+// ubus object.
+methods.get_firewall_status = {
+	call: function() {
+		let path = '/var/run/tailscale-fwsetup.status';
+		if (!access(path)) {
+			return { success: true, state: 'idle', step: '', message: '', run_id: 0 };
+		}
+		try {
+			let raw = readfile(path);
+			if (raw == null) {
+				return { success: true, state: 'idle', step: '', message: '', run_id: 0 };
+			}
+			let lines = split(rtrim(raw, '\n'), '\n');
+			return {
+				success: true,
+				state: lines[0] || 'unknown',
+				step: lines[1] || '',
+				message: lines[2] || '',
+				// the run id is always the last line, so a message that somehow
+				// still contains a newline cannot shift it into line 3
+				run_id: int(lines[length(lines) - 1]) || 0
+			};
+		} catch (e) {
+			return { success: true, state: 'unknown', step: '', message: 'Unreadable job state: ' + e, run_id: 0 };
+		}
+	}
+};
+
 methods.get_logs = {
 	args: { lines: 200 },
 	call: function(request) {
@@ -405,9 +470,9 @@ methods.get_logs = {
 		let cmd = 'logread -l ' + lines + ' 2>/dev/null | grep -i -E "tailscale" || true';
 		let result = exec(cmd);
 		if (result.code == 0) {
-			return { logs: result.stdout };
+			return { success: true, logs: result.stdout };
 		}
-		return { logs: [], error: join(' ', result.stderr) };
+		return { success: false, logs: [], error: join(' ', result.stderr) };
 	}
 };
 

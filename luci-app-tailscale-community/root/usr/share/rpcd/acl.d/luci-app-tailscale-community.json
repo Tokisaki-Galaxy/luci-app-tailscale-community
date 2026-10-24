@@ -7,7 +7,8 @@
 					"get_status",
 					"get_settings",
 					"get_subroutes",
-					"get_logs"
+					"get_logs",
+					"get_firewall_status"
 				]
 			},
 			"uci": [ "tailscale" ]

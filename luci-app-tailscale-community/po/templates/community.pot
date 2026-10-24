@@ -235,9 +235,6 @@ msgstr ""
 msgid "Failed to get login URL: %s"
 msgstr ""
 
-#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:542
-msgid "Failed to get login URL: Invalid response from server."
-msgstr ""
 
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:609
 msgid "Failed to load logs: %s"
@@ -560,4 +557,63 @@ msgstr ""
 msgid ""
 "and enables Masquerading and MSS Clamping (MTU fix) to ensure stable "
 "connections."
+msgstr ""
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:27
+msgid "Empty reply from server"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:33
+msgid "%s failed"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:25
+msgid "Operation"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:635
+msgid "Configuring firewall"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:632
+msgid ""
+"You have unapplied changes. Save & Apply them first, then configure the "
+"firewall."
+msgstr ""
+
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:645
+msgid ""
+"Configuration committed, reloading network and firewall. This can take "
+"a moment."
+msgstr ""
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:152
+msgid "Reloading firewall..."
+msgstr ""
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:143
+msgid "Firewall reload failed"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:172
+msgid "Timed out waiting for the firewall reload"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:640
+msgid "Firewall configuration already applied."
+msgstr ""
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:792
+msgid "Loading logs"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:180
+msgid "Another firewall reload is already running"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:661
+msgid ""
+"You have unapplied changes. Save & Apply them first so the firewall matches "
+"the form."
 msgstr ""
