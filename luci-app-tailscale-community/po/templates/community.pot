@@ -607,3 +607,13 @@ msgstr ""
 #: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:792
 msgid "Loading logs"
 msgstr ""
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:180
+msgid "Another firewall reload is already running"
+msgstr ""
+
+#: applications/luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:661
+msgid ""
+"You have unapplied changes. Save & Apply them first so the firewall matches "
+"the form."
+msgstr ""

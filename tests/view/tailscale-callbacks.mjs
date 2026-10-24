@@ -342,19 +342,48 @@ async function run() {
 	const logText = textOf(logNode.replaced);
 	check('the log error is surfaced', logText.indexOf('logread unavailable') !== -1, logText);
 
-	console.log('test: unsaved changes are not silently ignored');
+	console.log('test: unsaved changes are pointed out without blocking the work');
+	// The warning is advisory: blocking on a stale answer would make the
+	// button unusable after the first save on the same page.
 	const h10 = makeHarness({
-		setup_firewall: { success: true, changed_network: true, changed_firewall: true, run_id: 5 }
+		setup_firewall: { success: true, changed_network: true, changed_firewall: true, run_id: 5 },
+		get_firewall_status: { success: true, state: 'done', run_id: 5 }
 	}, { pending: true });
 	await h10.start();
 	await h10.button('_setup_firewall')();
 	await settle();
-	check('setup_firewall is not called while changes are staged',
-		!h10.calls.some(function(c) { return c.method === 'setup_firewall'; }),
-		JSON.stringify(h10.calls.map(function(c) { return c.method; })));
 	check('the user is told to save first',
 		h10.notifications.some(function(n) { return n.text.indexOf('unapplied changes') !== -1; }),
 		JSON.stringify(h10.notifications));
+	check('the setup still runs',
+		h10.calls.some(function(c) { return c.method === 'setup_firewall'; }),
+		JSON.stringify(h10.calls.map(function(c) { return c.method; })));
+
+	console.log('test: no warning when nothing is staged');
+	const h11 = makeHarness({
+		setup_firewall: { success: true, changed_network: false, changed_firewall: false, run_id: 0 }
+	});
+	await h11.start();
+	await h11.button('_setup_firewall')();
+	await settle();
+	check('no unsaved-changes warning appears',
+		!h11.notifications.some(function(n) { return n.text.indexOf('unapplied changes') !== -1; }),
+		JSON.stringify(h11.notifications));
+
+	console.log('test: a busy worker is reported instead of waiting to time out');
+	const h12 = makeHarness({
+		setup_firewall: { success: true, changed_network: true, changed_firewall: false, run_id: 9 },
+		get_firewall_status: { success: true, state: 'busy', message: 'Another firewall reload is already running', run_id: 0 }
+	});
+	await h12.start();
+	await h12.button('_setup_firewall')();
+	await settle();
+	check('the busy message reaches the user',
+		h12.notifications.some(function(n) { return n.text.indexOf('already running') !== -1; }),
+		JSON.stringify(h12.notifications));
+	check('it does not wait for the timeout',
+		!h12.notifications.some(function(n) { return n.text.indexOf('Timed out') !== -1; }),
+		JSON.stringify(h12.notifications));
 
 	console.log('');
 	console.log('passed: ' + passes + '  failed: ' + failures);

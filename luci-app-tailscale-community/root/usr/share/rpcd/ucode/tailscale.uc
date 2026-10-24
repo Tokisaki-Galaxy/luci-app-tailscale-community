@@ -362,13 +362,21 @@ methods.setup_firewall = {
 				// while the worker is still starting would read the previous
 				// run's "done" and report success for work that has not run.
 				run_id = time();
-				try {
-					writefile('/var/run/tailscale-fwsetup.status.tmp',
-						'queued\nstart\n\n' + run_id + '\n');
-					rename('/var/run/tailscale-fwsetup.status.tmp', '/var/run/tailscale-fwsetup.status');
-				} catch (e) { /* the worker overwrites it anyway */ }
+				let st = writefile('/var/run/tailscale-fwsetup.status.tmp',
+					'queued\nstart\n\n' + run_id + '\n');
+				if (st == null || rename('/var/run/tailscale-fwsetup.status.tmp', '/var/run/tailscale-fwsetup.status') == null) {
+					// Without a writable status file the poll can never see a
+					// result, so say so instead of letting the UI wait it out.
+					return { error: 'Cannot write the firewall status file in /var/run. Configuration was not changed.' };
+				}
 
-				exec('/bin/sh -c ' + shell_quote('/usr/libexec/tailscale-setup-firewall ' + run_id + ' >/dev/null 2>&1 &'));
+				// The background shell exits immediately, so its status only
+				// tells us whether sh itself started. Anything the worker
+				// reports afterwards lands in the status file.
+				let spawn = exec('/bin/sh -c ' + shell_quote('/usr/libexec/tailscale-setup-firewall ' + run_id + ' >/dev/null 2>&1 &'));
+				if (spawn.code != 0) {
+					return { error: 'Failed to start the firewall worker: ' + join('\n', spawn.stdout) };
+				}
 			}
 
 			return {
@@ -383,10 +391,6 @@ methods.setup_firewall = {
 		} catch (e) {
 			return { error: 'Exception in setup_firewall: ' + e + '\nStack: ' + (e.stacktrace || '') };
 		}
-	}
-};
-
-		return { success: true, armed: true };
 	}
 };
 
@@ -449,7 +453,9 @@ methods.get_firewall_status = {
 				state: lines[0] || 'unknown',
 				step: lines[1] || '',
 				message: lines[2] || '',
-				run_id: int(lines[3]) || 0
+				// the run id is always the last line, so a message that somehow
+				// still contains a newline cannot shift it into line 3
+				run_id: int(lines[length(lines) - 1]) || 0
 			};
 		} catch (e) {
 			return { success: true, state: 'unknown', step: '', message: 'Unreadable job state: ' + e, run_id: 0 };

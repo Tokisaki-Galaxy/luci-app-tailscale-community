@@ -18,18 +18,16 @@ const callGetFirewallStatus = rpc.declare({ object: 'tailscale', method: 'get_fi
 let map;
 let lastDevicesStatus;
 
-// Set by render() from the last apply's staged-changes snapshot; see the
-// unsaved-changes guard on the firewall button.
-let pendingChanges = null;
-
-function pendingConfigCount() {
-	if (pendingChanges == null)
+// uci.changes() returns an object keyed by config name; count the entries so
+// the firewall button can warn about unsaved work.
+function countPending(changes) {
+	if (changes == null)
 		return 0;
-	if (Array.isArray(pendingChanges))
-		return pendingChanges.length;
+	if (Array.isArray(changes))
+		return changes.length;
 	let count = 0;
-	for (const key in pendingChanges)
-		count += Array.isArray(pendingChanges[key]) ? pendingChanges[key].length : 1;
+	for (const key in changes)
+		count += Array.isArray(changes[key]) ? changes[key].length : 1;
 	return count;
 }
 
@@ -165,6 +163,11 @@ function pollFirewallJob(runId, timeoutSec) {
 
 				if (state === 'failed') {
 					giveUp(res?.message || _('Firewall reload failed'));
+					return;
+				}
+
+				if (state === 'busy') {
+					giveUp(res?.message || _('Another firewall reload is already running'));
 					return;
 				}
 
@@ -516,14 +519,7 @@ return view.extend({
 			L.resolveDefault(callGetSubroutes(), { routes: [] })
 		])
 		.then(function([status, settings_from_rpc, subroutes]) {
-			// Take the staged-changes snapshot now, while the page is loading.
-			// The firewall button needs it synchronously; see pendingConfigCount.
-			return Promise.all([
-				uci.load('tailscale'),
-				uci.changes ? L.resolveDefault(uci.changes(), {}) : Promise.resolve({})
-			]).then(function ([, changes]) {
-				pendingChanges = changes || {};
-			}).then(function() {
+			return uci.load('tailscale').then(function() {
 				if (uci.get('tailscale', 'settings') === null) {
 					// No existing settings found; initialize UCI with RPC settings
 					uci.add('tailscale', 'settings', 'settings');
@@ -651,21 +647,27 @@ return view.extend({
 		+'<br>'+_('and enables Masquerading and MSS Clamping (MTU fix) to ensure stable connections.');
 		fwBtn.inputstyle = 'action';
 		fwBtn.onclick = function() {
-			// The button writes network/firewall UCI directly, so any staged
-			// changes in the form above would be silently left unapplied and
-			// the user would compare the firewall against an old config.
-			// uci.changes() is an RPC that returns a promise of an object
-			// keyed by config name, so it cannot be consulted from a click
-			// handler without turning the handler async; the last known
-			// state is refreshed on every load instead.
-			if (pendingConfigCount() > 0) {
-				ui.addNotification(null, E('p', {}, _('You have unapplied changes. Save & Apply them first, then configure the firewall.')), 'warning');
-				return null;
-			}
+			// The button writes network/firewall UCI directly, so staged changes
+			// in the form above would be left unapplied and the user would be
+			// comparing the firewall against an old config. Ask at click time
+			// rather than trusting a snapshot: uci.changes() is an RPC and the
+			// answer goes stale as soon as the page is saved once.
+			// This only warns; blocking would misfire whenever the answer is
+			// stale, and the apply below is harmless either way.
+			return L.resolveDefault(uci.changes(), {}).then(function(changes) {
+				if (countPending(changes) > 0) {
+					ui.addNotification(null, E('p', {}, _('You have unapplied changes. Save & Apply them first so the firewall matches the form.')), 'warning');
+				}
+				return runSetupFirewall();
+			}).catch(function() {
+				return runSetupFirewall();
+			});
+		};
 
-			// The reload runs in the background and can briefly interrupt the
-			// connection carrying this page, so the reply only confirms the
-			// commit; the outcome is polled separately.
+		// The reload runs in the background and can briefly interrupt the
+		// connection carrying this page, so the reply only confirms the commit;
+		// the outcome is polled separately.
+		function runSetupFirewall() {
 			return callSetupFirewall().then(function(res) {
 				unwrapRpc(res, _('Configuring firewall'));
 
@@ -677,9 +679,9 @@ return view.extend({
 				ui.addTimeLimitedNotification(null, [ E('p', _('Configuration committed, reloading network and firewall. This can take a moment.')) ], 5000, 'info');
 				return pollFirewallJob(res.run_id);
 			}).catch(function(err) {
-				ui.addNotification(null, E('p', {}, _('Failed to configure firewall: %s').format(err?.message || err || _('Unknown error'))), 'error');
+				ui.addNotification(null, E('p', {}, _('Failed to configure firewall: %s').format(err?.message || err?.error || err || _('Unknown error'))), 'error');
 			});
-		};
+		}
 
 		const helpTitle = s.taboption('general', form.DummyValue, '_help_title');
 		helpTitle.title = _('How to enable Site-to-Site?');

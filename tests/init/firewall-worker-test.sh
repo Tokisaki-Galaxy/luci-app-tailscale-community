@@ -40,12 +40,13 @@ mkdir -p "$STATE_DIR"
 # network) must never run inside a test, so the top level statements are
 # stripped and only the function definitions are kept.
 load_functions() {
-	sed -n '/^write_state()/,/^}/p;/^lock_is_live()/,/^}/p' "$WORKER" > "$SANDBOX/functions.sh"
+	sed -n '/^write_state()/,/^}/p;/^lock_age()/,/^}/p' "$WORKER" > "$SANDBOX/functions.sh"
 	. "$SANDBOX/functions.sh"
 }
 
 STATE_FILE="$STATE_DIR/status"
 LOCK_FILE="$STATE_DIR/lock"
+LOCK_DIR="$LOCK_FILE.d"
 RUN_ID="1234"
 load_functions
 
@@ -73,19 +74,31 @@ check "still four lines" [ "$(wc -l < "$STATE_FILE" | tr -d ' ')" = "4" ]
 echo "test: the file is replaced atomically, never left half written"
 check "no temp file left behind" [ ! -e "$STATE_FILE.tmp" ]
 
-echo "test: lock staleness ignores a recycled pid"
-# a lock written five minutes ago must not block a new run
-printf '%s\n%s\n' "$$" "$(( $(date +%s) - 600 ))" > "$LOCK_FILE"
-lock_is_live
-check "old lock treated as stale" [ $? -ne 0 ]
+echo "test: a message containing a newline does not shift the run id"
+write_state failed network "$(printf 'Network reload failed\n    at line two')"
+check "the file stays at four lines" [ "$(wc -l < "$STATE_FILE" | tr -d ' ')" = "4" ]
+check "the run id stays on the last line" [ "$(tail -n1 "$STATE_FILE")" = "1234" ]
 
-printf '%s\n%s\n' "$$" "$(date +%s)" > "$LOCK_FILE"
-lock_is_live
-check "fresh lock treated as live" [ $? -eq 0 ]
+echo "test: lock age recognises a stale holder"
+load_functions
+LOCK_DIR="$SANDBOX/lockdir"
+mkdir -p "$LOCK_DIR"
+date +%s > "$LOCK_DIR/ts"
+age=$(lock_age)
+check "a fresh lock is young" [ "$age" -lt 60 ]
 
-printf 'not-a-pid\nwhatever\n' > "$LOCK_FILE"
-lock_is_live
-check "garbage lock treated as stale" [ $? -ne 0 ]
+echo "$(( $(date +%s) - 600 ))" > "$LOCK_DIR/ts"
+age=$(lock_age)
+check "a six hundred second old lock is stale" [ "$age" -gt 300 ]
+
+printf 'not-a-number\n' > "$LOCK_DIR/ts"
+age=$(lock_age)
+check "an unreadable timestamp counts as stale" [ "$age" -gt 300 ]
+
+rm -rf "$LOCK_DIR"
+mkdir -p "$LOCK_DIR"
+check "mkdir makes a second acquisition fail" sh -c "! mkdir '$LOCK_DIR' 2>/dev/null"
+rm -rf "$LOCK_DIR"
 
 echo
 echo "passed: $passes  failed: $failures"
