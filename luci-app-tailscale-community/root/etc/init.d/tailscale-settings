@@ -129,6 +129,36 @@ apply_dns_forward() {
 	echo "$dns_mode" > "$DNS_MODE_FILE"
 }
 
+# Run 'tailscale set' and recover from one known failure: a daemon built
+# without auto-update support (ts_omit_clientupdate) rejects every edit whose
+# result still has AutoUpdate.Apply=true, so while that flag is saved none of
+# the settings below can be applied. Reset it once and retry. Any other
+# failure, and the result of the retry, is reported unchanged.
+run_tailscale_set() {
+	local ts_bin="$1" err ret
+	shift
+
+	err=$("$ts_bin" "$@" 2>&1)
+	ret=$?
+
+	if [ $ret -ne 0 ]; then
+		case "$err" in
+			*'Auto-update support is disabled in this build'*)
+				logger -t "$NAME" "AutoUpdate.Apply=true is unsupported in this build, resetting it"
+				if "$ts_bin" set --auto-update=false; then
+					err=$("$ts_bin" "$@" 2>&1)
+					ret=$?
+				else
+					logger -t "$NAME" "Failed to reset auto-update"
+				fi
+				;;
+		esac
+	fi
+
+	[ -z "$err" ] || printf '%s\n' "$err" >&2
+	return $ret
+}
+
 apply_settings() {
 	local ts_bin
 	if [ -x /usr/sbin/tailscale ]; then
@@ -253,7 +283,7 @@ apply_settings() {
 	fi
 
 	logger -t "$NAME" "Applying settings"
-	"$ts_bin" "$@"
+	run_tailscale_set "$ts_bin" "$@"
 	local ret=$?
 	[ $ret -eq 0 ] \
 		&& logger -t "$NAME" "Settings applied successfully" \
