@@ -115,3 +115,4 @@ dist
 .yarn/build-state.yml
 .pnp.*
 *.po~
+scripts/__pycache__/
