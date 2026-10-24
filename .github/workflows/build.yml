@@ -15,6 +15,90 @@ permissions:
   contents: write
 
 jobs:
+  lint:
+    name: Syntax checks and behaviour tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout package repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install lint dependencies
+        run: sudo apt-get update && sudo apt-get install -y gettext
+
+      - name: Shell syntax check
+        run: |
+          for f in luci-app-tailscale-community/root/etc/init.d/* \
+                   luci-app-tailscale-community/root/usr/libexec/*; do
+            [ -f "$f" ] || continue
+            echo "checking $f"
+            dash -n "$f"
+          done
+
+      - name: Validate JSON files
+        run: |
+          for f in $(find luci-app-tailscale-community -name '*.json'); do
+            echo "checking $f"
+            python3 -m json.tool "$f" > /dev/null
+          done
+
+      - name: Check translation template
+        run: |
+          # catches placeholder drift between msgid and msgstr in the template;
+          # a missing msgfmt used to fail the whole job with exit 127
+          msgfmt --check-format -o /dev/null luci-app-tailscale-community/po/templates/community.pot
+
+      # Each suite is skipped rather than failed when the file it tests is not
+      # present yet, so this job can land before the PRs that add the tests.
+      - name: Run init script behaviour tests
+        run: |
+          if [ -f tests/init/settings-test.sh ]; then
+            bash tests/init/settings-test.sh
+          else
+            echo "tests/init/settings-test.sh not present, skipping"
+          fi
+
+      - name: Run firewall worker tests
+        run: |
+          if [ -f tests/init/firewall-worker-test.sh ]; then
+            bash tests/init/firewall-worker-test.sh
+          else
+            echo "tests/init/firewall-worker-test.sh not present, skipping"
+          fi
+
+      - name: Run LuCI view callback tests
+        run: |
+          if [ -f tests/view/tailscale-callbacks.mjs ]; then
+            node tests/view/tailscale-callbacks.mjs
+          else
+            echo "tests/view/tailscale-callbacks.mjs not present, skipping"
+          fi
+
+  build:
+    name: Build ${{ matrix.format }} (${{ matrix.target.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - name: x86_64
+            path: x86/64
+        format: [ ipk, apk ]
+        include:
+          # OpenWrt 24.x SDK 编译 .ipk；25.x SDK 编译 .apk
+          - format: ipk
+            openwrt_version: v24.10.8
+          - format: apk
+            openwrt_version: v25.12.5
+    env:
+      # 每个 format 使用独立的 SDK 目录与缓存，避免 opkg/apk 配置互相污染
+      SDK_DIR: /home/runner/work/openwrt-sdk-${{ matrix.format }}
+
+    steps:
+      - name: Checkout package repository
+        uses: actions/checkout@v4
+
   build:
     name: Build ${{ matrix.format }} (${{ matrix.target.name }})
     runs-on: ubuntu-latest
@@ -71,20 +155,38 @@ jobs:
           sdk_url_prefix="https://downloads.openwrt.org/releases/${release_version}/targets/${{ matrix.target.path }}"
 
           # 查找 SDK 文件名
-          sdk_filename=$(curl -s "$sdk_url_prefix/" | \
-                        grep -o '<a href="openwrt-sdk-.*-x86_64\.tar\.\(xz\|zst\)">' | \
-                        sed -e 's/.*<a href="//' -e 's/">//' | \
-                        head -n 1)
+          # 优先从 sha256sums 解析：目录索引页偶尔会整页 502，而文件本身可用，
+          # 只依赖目录页会让整个构建因为上游的索引故障而失败
+          sdk_filename=""
+          for i in 1 2 3; do
+            sdk_filename=$(curl -fsSL --retry 3 --retry-delay 5 --max-time 60 \
+                            "$sdk_url_prefix/sha256sums" 2>/dev/null | \
+                           sed -n 's/^[0-9a-f]\{64\} \*\(openwrt-sdk-.*-x86_64\.tar\.\(xz\|zst\)\)$/\1/p' | \
+                           head -n 1)
+            [ -n "$sdk_filename" ] && break
+            sleep $((i * 5))
+          done
+
+          # 回退：解析目录索引页
+          if [ -z "$sdk_filename" ]; then
+            sdk_filename=$(curl -fsSL --retry 3 --retry-delay 5 --max-time 60 \
+                            "$sdk_url_prefix/" 2>/dev/null | \
+                          grep -o '<a href="openwrt-sdk-.*-x86_64\.tar\.\(xz\|zst\)">' | \
+                          sed -e 's/.*<a href="//' -e 's/">//' | \
+                          head -n 1)
+          fi
 
           if [ -z "$sdk_filename" ]; then
             echo "::error::Could not find SDK file at ${sdk_url_prefix}/"
-            echo "Available files:"
-            curl -s "$sdk_url_prefix/" | grep -o '<a href="[^"]*">[^<]*</a>' | sed -e 's/<a href="\(.*\)".*>\(.*\)/\1\t\2/'
+            echo "sha256sums:"
+            curl -fsSL --max-time 30 "$sdk_url_prefix/sha256sums" | grep -i sdk || echo "(unavailable)"
+            echo "index:"
+            curl -fsSL --max-time 30 "$sdk_url_prefix/" | grep -o '<a href="[^"]*">[^<]*</a>' | head -n 20 || echo "(unavailable)"
             exit 1
           fi
 
           echo "Downloading SDK: ${sdk_url_prefix}/${sdk_filename}"
-          wget -q "${sdk_url_prefix}/${sdk_filename}"
+          wget -q --tries=3 --timeout=60 "${sdk_url_prefix}/${sdk_filename}"
 
           echo "Extracting SDK..."
           # 解压 SDK 并重命名为固定的目录名，以匹配缓存路径
@@ -125,6 +227,20 @@ jobs:
           echo "Determined package source root: $pkg_src_dir"
 
           rsync -a --delete "${pkg_src_dir}/" ./package/${PACKAGE_NAME}/
+
+          # ucode 语法检查：SDK 自带 host 版 ucode，语法错误直接失败
+          UCODE_BIN=$(find "${{ env.SDK_DIR }}/staging_dir/host/bin" -maxdepth 1 -name ucode -type f | head -n 1)
+          if [ -n "$UCODE_BIN" ]; then
+            for f in ./package/${PACKAGE_NAME}/root/usr/share/rpcd/ucode/*.uc; do
+              echo "ucode check: $f"
+              if ! "$UCODE_BIN" -c -o /dev/null "$f"; then
+                echo "::error::ucode syntax error in $f"
+                exit 1
+              fi
+            done
+          else
+            echo "::warning::host ucode not found, skipping ucode syntax check"
+          fi
 
           # 验证复制结果
           TARGET_MK="./package/${PACKAGE_NAME}/Makefile"
