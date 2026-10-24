@@ -36,6 +36,9 @@ jobs:
             dash -n "$f"
           done
 
+      - name: Validate workflow files
+        run: python3 tests/ci/check-workflows.py
+
       - name: Validate JSON files
         run: |
           for f in $(find luci-app-tailscale-community -name '*.json'); do
@@ -74,30 +77,6 @@ jobs:
           else
             echo "tests/view/tailscale-callbacks.mjs not present, skipping"
           fi
-
-  build:
-    name: Build ${{ matrix.format }} (${{ matrix.target.name }})
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        target:
-          - name: x86_64
-            path: x86/64
-        format: [ ipk, apk ]
-        include:
-          # OpenWrt 24.x SDK 编译 .ipk；25.x SDK 编译 .apk
-          - format: ipk
-            openwrt_version: v24.10.8
-          - format: apk
-            openwrt_version: v25.12.5
-    env:
-      # 每个 format 使用独立的 SDK 目录与缓存，避免 opkg/apk 配置互相污染
-      SDK_DIR: /home/runner/work/openwrt-sdk-${{ matrix.format }}
-
-    steps:
-      - name: Checkout package repository
-        uses: actions/checkout@v4
 
   build:
     name: Build ${{ matrix.format }} (${{ matrix.target.name }})
