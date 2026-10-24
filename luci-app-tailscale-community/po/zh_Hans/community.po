@@ -3,7 +3,7 @@ msgstr "Content-Type: text/plain; charset=UTF-8\n"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:47
 msgid "%s failed"
-msgstr ""
+msgstr "%s失败"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:71
 msgid "(Experimental) Reduce Memory Usage"
@@ -11,13 +11,13 @@ msgstr "(实验性) 减少内存使用"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:692
 msgid "1. Select \"Accept Routes\" (to access remote devices)."
-msgstr "1. 勾选 接受路由 (接受远程设备访问)。"
+msgstr "1. 勾选 接受路由 (以访问远程设备)。"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:693
 msgid ""
 "2. In \"Advertise Routes\", select your local subnet (to allow remote "
 "devices to access this LAN)."
-msgstr "2. 在 通告路由 选择本设备的局域网段 (让远程设备能访问你)。"
+msgstr "2. 在 通告路由 中选择本地子网 (让远程设备能访问本局域网)。"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:694
 msgid "3. Click \"Auto Configure Firewall\" (to allow traffic forwarding)."
@@ -47,7 +47,7 @@ msgstr "通告此设备后的子网路由。从下面的子网中选择，或输
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:57
 msgid "Allow LAN Access"
-msgstr "允许局域网访问"
+msgstr "允许访问局域网"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:55
 msgid "Allow accepting routes announced by other nodes."
@@ -63,7 +63,7 @@ msgstr "允许用户访问 Tailscale"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:170
 msgid "Another firewall reload is already running"
-msgstr ""
+msgstr "另一个防火墙重新加载任务正在进行中"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:775
 msgid "Are you sure you want to log out?"
@@ -96,11 +96,11 @@ msgstr "正在收集数据..."
 msgid ""
 "Configuration committed, reloading network and firewall. This can "
 "take a moment."
-msgstr ""
+msgstr "配置已提交，正在重新加载网络和防火墙。这可能需要一点时间。"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:672
 msgid "Configuring firewall"
-msgstr ""
+msgstr "正在配置防火墙"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:802
 msgid "Confirm Logout"
@@ -134,11 +134,11 @@ msgstr "DNS 模式"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:70
 msgid "Daemon MTU"
-msgstr ""
+msgstr "守护进程 MTU"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:841
 msgid "Daemon Settings"
-msgstr ""
+msgstr "守护进程设置"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:56
 msgid "Declare this device as an Exit Node."
@@ -164,7 +164,7 @@ msgstr "为通告路由的流量禁用源地址转换 (SNAT)。大多数用户�
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:63
 msgid "Disable Tailscale netfilter auto-configuration (--netfilter-mode=off)."
-msgstr ""
+msgstr "禁用 Tailscale netfilter 自动配置 (--netfilter-mode=off)。"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:62
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:351
@@ -173,7 +173,7 @@ msgstr "已禁用"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:62
 msgid "Disabled: system DNS only."
-msgstr "已禁用：使用系统指定DNS模式"
+msgstr "已禁用：仅使用系统 DNS。"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:727
 msgid "Disconnect from Tailscale and expire current node key."
@@ -181,7 +181,7 @@ msgstr "从 Tailscale 断开连接并使当前节点密钥过期。"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:41
 msgid "Empty reply from server"
-msgstr ""
+msgstr "服务器返回空响应"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:64
 msgid "Enable Peer Relay"
@@ -193,7 +193,7 @@ msgstr "启用 Tailscale SSH"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:53
 msgid "Enable Tailscale Service"
-msgstr "Tailscale服务开关"
+msgstr "启用 Tailscale 服务"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:58
 msgid "Enable Web Interface"
@@ -209,7 +209,7 @@ msgstr "启用或禁用Tailscale服务。禁用后，服务将被停止，当前
 msgid ""
 "Enable this device as a Peer Relay server. Requires a public IP and "
 "an UDP port open on the router."
-msgstr "将此设备设定为节点中继服务器（DERP）。需要此路由器具备公网IP以及开放一个UDP端口"
+msgstr "将此设备设为节点中继服务器。需要此路由器具备公网 IP，并在路由器上开放一个 UDP 端口。"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:351
 msgid "Enabled"
@@ -256,7 +256,7 @@ msgstr "在端口 5252 上暴露一个 Web 界面，用于通过 Tailscale 管�
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:682
 msgid "Failed to configure firewall: %s"
-msgstr "获取防火墙设置失败: %s"
+msgstr "配置防火墙失败: %s"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:764
 msgid "Failed to get login URL. You may close this tab."
@@ -269,7 +269,7 @@ msgstr "获取登录 URL 失败: %s"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:835
 msgid "Failed to load logs: %s"
-msgstr "加载日志失败"
+msgstr "加载日志失败: %s"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:487
 msgid "Filter peers by name, IP, or OS..."
@@ -285,7 +285,7 @@ msgstr "防火墙模式"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:675
 msgid "Firewall configuration already applied."
-msgstr ""
+msgstr "防火墙配置已应用。"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:159
 msgid "Firewall configuration applied."
@@ -293,7 +293,7 @@ msgstr "已应用防火墙配置"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:165
 msgid "Firewall reload failed"
-msgstr ""
+msgstr "重新加载防火墙失败"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:600
 msgid "General Settings"
@@ -325,7 +325,7 @@ msgstr "无效日期"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:765
 msgid "Invalid response from server."
-msgstr ""
+msgstr "服务器响应无效。"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:646
 msgid ""
@@ -351,7 +351,7 @@ msgstr "留空以使用默认的 Tailscale 控制平面。"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:829
 msgid "Loading logs"
-msgstr ""
+msgstr "正在加载日志"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:788
 msgid "Logging out..."
@@ -377,7 +377,7 @@ msgstr "日志"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:62
 msgid "MagicDNS: Tailscale overrides resolv.conf."
-msgstr "MagicDNS:Tailscale将根据设置覆写系统resolv.conf配置"
+msgstr "MagicDNS：Tailscale 会覆写 resolv.conf。"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:212
 msgid "N/A"
@@ -389,7 +389,7 @@ msgstr "未运行"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:439
 msgid "No matching peer devices found."
-msgstr ""
+msgstr "未找到匹配的节点设备。"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:400
 msgid "No peer devices found."
@@ -430,7 +430,7 @@ msgstr "OpenWrt 转发：通过dnsmasq转发MagicDNS（仅支持 ts.net域名）
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:39
 msgid "Operation"
-msgstr ""
+msgstr "操作"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:711
 msgid ""
@@ -446,7 +446,7 @@ msgstr "可选：为自定义控制服务器指定一个认证密钥。如果不
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:604
 msgid "Peer Relay Port"
-msgstr "DERP端口"
+msgstr "节点中继端口"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:332
 msgid "Please use the login button in the settings below to authenticate."
@@ -472,7 +472,7 @@ msgstr "刷新"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:177
 msgid "Reloading firewall..."
-msgstr ""
+msgstr "正在重新加载防火墙..."
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:748
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:754
@@ -487,7 +487,7 @@ msgstr "正在请求 Tailscale 登录 URL... 请稍候。"
 msgid ""
 "Select an exit node from the list. If enabled, Allow LAN Access is "
 "enabled implicitly."
-msgstr "列表中选择出口节点。一旦开启，默认局域网之间可以互访"
+msgstr "从列表中选择出口节点。启用后会同时开启允许局域网访问。"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:54
 msgid ""
@@ -506,11 +506,11 @@ msgstr "服务状态"
 msgid ""
 "Set a custom MTU for the Tailscale daemon. Leave blank to use the "
 "default value."
-msgstr ""
+msgstr "为 Tailscale 守护进程设置自定义 MTU。留空则使用默认值。"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:60
 msgid "Shields Up"
-msgstr "开启防护 (Shields Up)"
+msgstr "屏蔽入站连接"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:448
 msgid "Status"
@@ -587,13 +587,13 @@ msgstr "这将使此设备从您的 Tailnet 断开连接，并需要您重新进
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:143
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:194
 msgid "Timed out waiting for the firewall reload"
-msgstr ""
+msgstr "等待防火墙重新加载超时"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:605
 msgid ""
 "UDP port for the Peer Relay service. Open this port on your router "
 "firewall/NAT."
-msgstr "DERP的UDP端口号。需要在防火墙/NAT规则中开放该端口。"
+msgstr "节点中继服务的 UDP 端口。需要在路由器的防火墙/NAT 上开放该端口。"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:245
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:272
@@ -623,13 +623,13 @@ msgstr "使用出口节点时，允许访问本地局域网。"
 msgid ""
 "You have unapplied changes. Save & Apply them first so the firewall "
 "matches the form."
-msgstr ""
+msgstr "您有未应用的更改。请先保存并应用，让防火墙配置与表单保持一致。"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:695
 msgid ""
 "[Important] Log in to the Tailscale admin console and manually enable "
 "\"Subnet Routes\" for this device."
-msgstr "【重要】 登录 Tailscale 控制平面，在设备设置中手动授权子网路由。"
+msgstr "【重要】登录 Tailscale 管理控制台，手动为此设备启用“子网路由”。"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:221
 msgid "ago"
