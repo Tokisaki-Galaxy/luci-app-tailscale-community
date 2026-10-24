@@ -61,6 +61,12 @@ jobs:
           # a new _() string cannot land without its template entry
           python3 scripts/i18n.py --check
 
+      - name: Check help text quotes real labels
+        run: |
+          # a guide that says "click X" is useless when the form shows a
+          # different word for X; this cross-checks every quoted span
+          python3 tests/ci/check-po-labels.py
+
       # Each suite is skipped rather than failed when the file it tests is not
       # present yet, so this job can land before the PRs that add the tests.
       - name: Run init script behaviour tests
