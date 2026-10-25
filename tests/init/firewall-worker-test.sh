@@ -50,6 +50,12 @@ LOCK_DIR="$LOCK_FILE.d"
 RUN_ID="1234"
 load_functions
 
+echo "test: the worker can be started by path"
+# tailscale.uc runs it as '/bin/sh -c "/usr/libexec/tailscale-setup-firewall <id> &"'.
+# Without the execute bit (git mode 100755) that fails with "Permission denied",
+# and because the shell is backgrounded nothing reports it.
+check "worker has the execute bit" [ -x "$WORKER" ]
+
 echo "test: plain messages round-trip"
 write_state running network "Reloading network"
 check "state line" [ "$(sed -n 1p "$STATE_FILE")" = "running" ]
