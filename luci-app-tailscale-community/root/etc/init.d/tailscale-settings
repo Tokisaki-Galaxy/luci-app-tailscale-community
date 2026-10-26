@@ -172,6 +172,11 @@ apply_settings() {
 
 	config_load tailscale
 
+	if [ -x "$TAILSCALE_INIT" ] && ! tailscale_running; then
+		logger -t "$NAME" "tailscale is not running, skip applying settings"
+		return 0
+	fi
+
 	local accept_routes advertise_exit_node exit_node exit_node_allow_lan_access
 	local ssh shields_up runwebclient nosnat hostname
 	local enable_relay relay_server_port disable_fw_config
