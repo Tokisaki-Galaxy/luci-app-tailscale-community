@@ -713,6 +713,72 @@ test_set_reports_the_retry_result() {
 	assert_stderr_lacks "Auto-update support is disabled"
 }
 
+# --- apply_settings and a daemon that is not running -----------------------
+#
+# apply_settings resolves the CLI from fixed paths, so it is run from a copy of
+# the script whose CLI paths point at the fake CLI.
+load_apply_settings() {
+	sed -e "s|/usr/sbin/tailscale|$TS_FAKE|g" \
+	    -e "s|/usr/bin/tailscale|$TS_FAKE|g" "$INIT_SCRIPT" > "$SANDBOX/init-fake-cli"
+	# shellcheck disable=SC1090,SC1091
+	. "$SANDBOX/init-fake-cli"
+	# sourcing put the production defaults back
+	STATE_DIR="$SANDBOX/state"
+	DAEMON_SIG_FILE="$STATE_DIR/daemon"
+	ENABLED_FILE="$STATE_DIR/enabled"
+	DISABLE_REQUEST_FILE="$STATE_DIR/disable-requested"
+	DNS_MODE_FILE="$STATE_DIR/dns_mode"
+	TAILSCALE_INIT="$SANDBOX/tailscale.init"
+}
+
+# Boot with the service disabled: the autostart link is gone, the daemon is not
+# running and `tailscale set` could only wait and fail.
+test_apply_settings_skips_set_when_daemon_not_running() {
+	setup
+	mk_fake_tailscale
+	load_apply_settings
+	echo 0 > "$DAEMON_RUNNING"
+
+	apply_settings
+	rc=$?
+	assert_rc 0
+	# positive anchor: the daemon really was probed
+	assert_call "tailscale running"
+	assert_no_call "tailscale set"
+	assert_call "logger .*skip applying settings"
+}
+
+# The normal case: the daemon is up, so the settings are applied as before.
+test_apply_settings_runs_set_when_daemon_running() {
+	setup
+	mk_fake_tailscale
+	load_apply_settings
+	echo 1 > "$DAEMON_RUNNING"
+	ts_reply 0 ''
+	ts_reply 0 ''
+
+	apply_settings
+	rc=$?
+	assert_rc 0
+	assert_call "tailscale set"
+	assert_no_call "skip applying settings"
+}
+
+# Without the init script the daemon cannot be probed, so keep applying.
+test_apply_settings_runs_set_without_init_script() {
+	setup
+	mk_fake_tailscale
+	load_apply_settings
+	TAILSCALE_INIT="$SANDBOX/does-not-exist"
+	ts_reply 0 ''
+	ts_reply 0 ''
+
+	apply_settings
+	rc=$?
+	assert_rc 0
+	assert_call "tailscale set"
+}
+
 # apply_settings resolves the CLI from fixed paths, so the call site cannot be
 # exercised from here. Guard it at source level instead.
 test_source_apply_settings_uses_the_helper() {
@@ -760,6 +826,9 @@ for t in \
 	test_set_retry_is_bounded \
 	test_set_message_on_success_is_ignored \
 	test_set_reports_the_retry_result \
+	test_apply_settings_skips_set_when_daemon_not_running \
+	test_apply_settings_runs_set_when_daemon_running \
+	test_apply_settings_runs_set_without_init_script \
 	test_source_apply_settings_uses_the_helper
 do
 	if [ -n "${SETTINGS_INIT:-}" ] && [ "$t" = "test_enable_after_disable_starts" ] && [ "$abs_observable" -eq 0 ]; then
@@ -774,6 +843,11 @@ do
 	# against it.
 	if [ "$NEGATIVE" -eq 1 ]; then
 		case "$t" in
+			test_apply_settings_*)
+				echo "skip: $t (not about issue #80)"
+				skipped=$((skipped + 1))
+				continue
+				;;
 			test_set_*|test_source_apply_settings_uses_the_helper)
 				echo "skip: $t (the pre-fix script predates run_tailscale_set)"
 				skipped=$((skipped + 1))
