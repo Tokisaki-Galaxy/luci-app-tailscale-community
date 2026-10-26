@@ -439,5 +439,6 @@ service_triggers() {
 
 reload_service() {
 	mkdir -p "$STATE_DIR"
+	config_load tailscale
 	handle_service_state
 }
