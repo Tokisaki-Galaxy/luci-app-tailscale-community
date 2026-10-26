@@ -466,6 +466,195 @@ test_dns_forward_survives_switch_to_disabled() {
 	assert_call_count "uci del_list" 0
 }
 
+# --- run_tailscale_set -----------------------------------------------------
+#
+# A daemon built without auto-update support (ts_omit_clientupdate) rejects
+# every 'tailscale set' while the saved prefs have AutoUpdate.Apply=true. The
+# helper resets that flag once and retries, and must leave every other failure
+# alone.
+#
+# The fake CLI answers from a queue, one "<exit code>|<stderr text>" line per
+# invocation, and records every call. An invocation beyond the queue fails
+# with exit code 99, so an unbounded retry shows up as extra calls instead of
+# hanging the suite.
+UNSUPPORTED_MSG='Error: Auto-update support is disabled in this build'
+
+mk_fake_tailscale() {
+	TS_FAKE="$SANDBOX/tailscale"
+	TS_REPLIES="$SANDBOX/ts-replies"
+	TS_STDERR="$SANDBOX/ts-stderr"
+	: > "$TS_REPLIES"
+	cat > "$TS_FAKE" <<EOF
+#!/bin/sh
+echo "tailscale \$*" >> "$CALLS"
+reply=\$(head -n1 "$TS_REPLIES")
+[ -n "\$reply" ] || reply='99|unexpected extra tailscale call'
+tail -n +2 "$TS_REPLIES" > "$TS_REPLIES.next"
+mv "$TS_REPLIES.next" "$TS_REPLIES"
+msg=\${reply#*|}
+[ -z "\$msg" ] || echo "\$msg" >&2
+exit "\${reply%%|*}"
+EOF
+	chmod +x "$TS_FAKE"
+}
+
+ts_reply() {
+	echo "$1|$2" >> "$TS_REPLIES"
+}
+
+# Sets rc; whatever the helper writes to stderr ends up in $TS_STDERR.
+run_set() {
+	run_tailscale_set "$TS_FAKE" set --accept-routes=true 2> "$TS_STDERR"
+	rc=$?
+}
+
+assert_rc() {
+	if [ "$rc" = "$1" ]; then
+		pass
+	else
+		fail "exit code: want $1, got $rc"
+	fi
+}
+
+assert_ts_calls() {
+	local want="$1" got
+	got=$(calls | grep '^tailscale ')
+	if [ "$got" = "$want" ]; then
+		pass
+	else
+		fail "tailscale calls: want [$(printf '%s' "$want" | tr '\n' ';')], got [$(printf '%s' "$got" | tr '\n' ';')]"
+	fi
+}
+
+assert_stderr_has() {
+	if grep -qF -- "$1" "$TS_STDERR"; then
+		pass
+	else
+		fail "stderr lacks '$1', got: $(tr '\n' ';' < "$TS_STDERR")"
+	fi
+}
+
+assert_stderr_lacks() {
+	if grep -qF -- "$1" "$TS_STDERR"; then
+		fail "stderr unexpectedly has '$1'"
+	else
+		pass
+	fi
+}
+
+test_set_success_runs_once_without_reset() {
+	setup
+	mk_fake_tailscale
+	ts_reply 0 ''
+
+	run_set
+	assert_rc 0
+	assert_ts_calls "tailscale set --accept-routes=true"
+	assert_no_call "logger"
+}
+
+# The reported bug: reset the flag, then apply the very same arguments again.
+test_set_unsupported_auto_update_resets_and_retries() {
+	setup
+	mk_fake_tailscale
+	ts_reply 1 "$UNSUPPORTED_MSG"
+	ts_reply 0 ''
+	ts_reply 0 ''
+
+	run_set
+	assert_rc 0
+	assert_ts_calls "tailscale set --accept-routes=true
+tailscale set --auto-update=false
+tailscale set --accept-routes=true"
+	assert_call "logger .*resetting it"
+	# the first attempt was recovered from, so its error must not leak out
+	assert_stderr_lacks "Auto-update support is disabled"
+}
+
+# Any other failure is not ours to fix: no reset, same exit code, same message.
+test_set_other_failure_is_left_alone() {
+	setup
+	mk_fake_tailscale
+	ts_reply 7 'failed to connect to local tailscaled'
+
+	run_set
+	assert_rc 7
+	assert_ts_calls "tailscale set --accept-routes=true"
+	assert_stderr_has "failed to connect to local tailscaled"
+}
+
+# When the reset itself fails there is nothing to retry: report the original error.
+test_set_failed_reset_skips_retry() {
+	setup
+	mk_fake_tailscale
+	ts_reply 1 "$UNSUPPORTED_MSG"
+	ts_reply 1 'reset failed'
+
+	run_set
+	assert_rc 1
+	assert_ts_calls "tailscale set --accept-routes=true
+tailscale set --auto-update=false"
+	assert_stderr_has "Auto-update support is disabled in this build"
+	assert_call "logger .*Failed to reset auto-update"
+}
+
+# One retry only: a second rejection is returned as is, never reset in a loop.
+test_set_retry_is_bounded() {
+	setup
+	mk_fake_tailscale
+	ts_reply 1 "$UNSUPPORTED_MSG"
+	ts_reply 0 ''
+	ts_reply 1 "$UNSUPPORTED_MSG"
+
+	run_set
+	assert_rc 1
+	assert_ts_calls "tailscale set --accept-routes=true
+tailscale set --auto-update=false
+tailscale set --accept-routes=true"
+	assert_stderr_has "Auto-update support is disabled in this build"
+}
+
+# The message alone is not enough, the command has to have failed.
+test_set_message_on_success_is_ignored() {
+	setup
+	mk_fake_tailscale
+	ts_reply 0 "$UNSUPPORTED_MSG"
+
+	run_set
+	assert_rc 0
+	assert_ts_calls "tailscale set --accept-routes=true"
+}
+
+# The caller gets the exit code and message of the retry, not of the first try.
+test_set_reports_the_retry_result() {
+	setup
+	mk_fake_tailscale
+	ts_reply 1 "$UNSUPPORTED_MSG"
+	ts_reply 0 ''
+	ts_reply 3 'some other error'
+
+	run_set
+	assert_rc 3
+	assert_stderr_has "some other error"
+	assert_stderr_lacks "Auto-update support is disabled"
+}
+
+# apply_settings resolves the CLI from fixed paths, so the call site cannot be
+# exercised from here. Guard it at source level instead.
+test_source_apply_settings_uses_the_helper() {
+	if grep -qE '^[[:space:]]*run_tailscale_set "\$ts_bin" "\$@"' "$INIT_SCRIPT"; then
+		pass
+	else
+		fail "apply_settings does not call run_tailscale_set"
+	fi
+
+	if grep -qE '^[[:space:]]*"\$ts_bin" "\$@"' "$INIT_SCRIPT"; then
+		fail "a bare tailscale call bypasses run_tailscale_set"
+	else
+		pass
+	fi
+}
+
 # Some older versions call /etc/init.d/tailscale by absolute path and cannot
 # be observed. Those are skipped in negative-control mode so a red test always
 # means "the suite caught something", never "the harness could not see it".
@@ -485,12 +674,31 @@ for t in \
 	test_enable_does_not_start_a_running_daemon \
 	test_missing_tailscale_init_is_tolerated \
 	test_dns_forward_only_on_transition \
-	test_dns_forward_survives_switch_to_disabled
+	test_dns_forward_survives_switch_to_disabled \
+	test_set_success_runs_once_without_reset \
+	test_set_unsupported_auto_update_resets_and_retries \
+	test_set_other_failure_is_left_alone \
+	test_set_failed_reset_skips_retry \
+	test_set_retry_is_bounded \
+	test_set_message_on_success_is_ignored \
+	test_set_reports_the_retry_result \
+	test_source_apply_settings_uses_the_helper
 do
 	if [ -n "${SETTINGS_INIT:-}" ] && [ "$t" = "test_enable_after_disable_starts" ] && [ "$abs_observable" -eq 0 ]; then
 		echo "skip: $t (absolute init path not observable here)"
 		skipped=$((skipped + 1))
 		continue
+	fi
+	# The frozen pre-fix script predates run_tailscale_set, so these tests would
+	# fail there for a reason unrelated to issue #80.
+	if [ "$NEGATIVE" -eq 1 ]; then
+		case "$t" in
+			test_set_*|test_source_apply_settings_uses_the_helper)
+				echo "skip: $t (the pre-fix script predates run_tailscale_set)"
+				skipped=$((skipped + 1))
+				continue
+				;;
+		esac
 	fi
 	current_test="$t"
 	echo "test: $t"
