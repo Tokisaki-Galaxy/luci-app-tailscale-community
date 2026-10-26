@@ -78,7 +78,13 @@ record() {
 }
 
 # stubs
-config_load() { :; }
+# CONFIG_STRICT=1 mimics a fresh rc.common shell: config_get only answers with
+# its default until config_load tailscale has run, like the real CONFIG_*
+# variables. Off by default, so the tests that call the handlers directly keep
+# reading the sandbox config without a config_load.
+CONFIG_STRICT=0
+CONFIG_LOADED=0
+config_load() { [ "$1" = tailscale ] && CONFIG_LOADED=1; return 0; }
 
 uci_value() {
 	# last assignment wins, like a real uci commit
@@ -86,15 +92,19 @@ uci_value() {
 }
 
 config_get() {
-	local var="$1" section="$2" option="$3" def="${4-}" val
-	val=$(uci_value "$section.$option")
+	local var="$1" section="$2" option="$3" def="${4-}" val=''
+	if [ "$CONFIG_STRICT" -ne 1 ] || [ "$CONFIG_LOADED" -eq 1 ]; then
+		val=$(uci_value "$section.$option")
+	fi
 	[ -n "$val" ] || val="$def"
 	eval "$var=\$val"
 }
 
 config_get_bool() {
-	local var="$1" section="$2" option="$3" def="${4-0}" val
-	val=$(uci_value "$section.$option")
+	local var="$1" section="$2" option="$3" def="${4-0}" val=''
+	if [ "$CONFIG_STRICT" -ne 1 ] || [ "$CONFIG_LOADED" -eq 1 ]; then
+		val=$(uci_value "$section.$option")
+	fi
 	[ -n "$val" ] || val="$def"
 	eval "$var=\$val"
 }
@@ -433,6 +443,70 @@ test_enable_path_keeps_the_running_probe() {
 	assert_call_count "tailscale restart" 0
 }
 
+# rc.common runs every action in a fresh shell, so when procd's config.change
+# trigger calls reload_service nothing has read /etc/config/tailscale yet. The
+# handler reads service_enabled and the daemon options itself, so
+# reload_service has to load the config first. The tests above call
+# handle_service_state directly and cannot see a missing config_load.
+fresh_boot() { ( CONFIG_STRICT=1; CONFIG_LOADED=0; start_service ); }
+fresh_reload() { ( CONFIG_STRICT=1; CONFIG_LOADED=0; reload_service ); }
+
+# The UI disables the service: request armed, config committed, then reload.
+test_reload_service_stops_a_disabled_service() {
+	setup
+	echo 1 > "$DAEMON_RUNNING"
+	set_option service_enabled 1
+	fresh_boot
+	: > "$CALLS"
+
+	touch "$DISABLE_REQUEST_FILE"
+	set_option service_enabled 0
+	fresh_reload
+	assert_call "tailscale stop"
+}
+
+# A service that is disabled and down must stay that way when an unrelated
+# option is saved.
+test_reload_service_keeps_a_disabled_service_down() {
+	setup
+	echo 0 > "$DAEMON_RUNNING"
+	set_option service_enabled 0
+	fresh_boot
+	: > "$CALLS"
+
+	set_option hostname lab
+	fresh_reload
+	assert_call_count "tailscale start" 0
+	assert_call_count "tailscale enable" 0
+}
+
+# A daemon option that is not at its default must not look like a change.
+test_reload_service_nondefault_daemon_option_no_restart() {
+	setup
+	echo 1 > "$DAEMON_RUNNING"
+	set_option service_enabled 1
+	set_option port 12345
+	fresh_boot
+	: > "$CALLS"
+
+	set_option hostname lab
+	fresh_reload
+	assert_call_count "tailscale restart" 0
+}
+
+# ...and a real change of it has to be noticed.
+test_reload_service_restarts_on_daemon_option_change() {
+	setup
+	echo 1 > "$DAEMON_RUNNING"
+	set_option service_enabled 1
+	fresh_boot
+	: > "$CALLS"
+
+	set_option port 23456
+	fresh_reload
+	assert_call_count "tailscale restart" 1
+}
+
 test_missing_tailscale_init_is_tolerated() {
 	setup
 	TAILSCALE_INIT="$SANDBOX/does-not-exist"
@@ -672,6 +746,10 @@ for t in \
 	test_manual_disable_then_enabled_config_starts \
 	test_boot_keeps_existing_state_record \
 	test_enable_does_not_start_a_running_daemon \
+	test_reload_service_stops_a_disabled_service \
+	test_reload_service_keeps_a_disabled_service_down \
+	test_reload_service_nondefault_daemon_option_no_restart \
+	test_reload_service_restarts_on_daemon_option_change \
 	test_missing_tailscale_init_is_tolerated \
 	test_dns_forward_only_on_transition \
 	test_dns_forward_survives_switch_to_disabled \
@@ -691,10 +769,18 @@ do
 	fi
 	# The frozen pre-fix script predates run_tailscale_set, so these tests would
 	# fail there for a reason unrelated to issue #80.
+	# It also loads the config inside handle_service_state and calls the daemon
+	# init by absolute path, so the reload_service tests cannot be evaluated
+	# against it.
 	if [ "$NEGATIVE" -eq 1 ]; then
 		case "$t" in
 			test_set_*|test_source_apply_settings_uses_the_helper)
 				echo "skip: $t (the pre-fix script predates run_tailscale_set)"
+				skipped=$((skipped + 1))
+				continue
+				;;
+			test_reload_service_*)
+				echo "skip: $t (the pre-fix script loads the config itself and is not observable here)"
 				skipped=$((skipped + 1))
 				continue
 				;;
