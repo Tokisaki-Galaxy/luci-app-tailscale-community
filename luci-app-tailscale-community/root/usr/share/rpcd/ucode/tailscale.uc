@@ -367,7 +367,7 @@ methods.setup_firewall = {
 				if (st == null || rename('/var/run/tailscale-fwsetup.status.tmp', '/var/run/tailscale-fwsetup.status') == null) {
 					// Without a writable status file the poll can never see a
 					// result, so say so instead of letting the UI wait it out.
-					return { error: 'Cannot write the firewall status file in /var/run. Configuration was not changed.' };
+					return { error: 'Cannot write the firewall status file in /var/run. The configuration was committed but not applied.' };
 				}
 
 				// The background shell exits immediately, so its status only
