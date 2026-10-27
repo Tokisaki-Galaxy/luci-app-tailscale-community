@@ -2,7 +2,7 @@
 
 'use strict';
 
-import { access, popen, readfile, writefile, unlink } from 'fs';
+import { access, popen, readfile, writefile, rename, unlink } from 'fs';
 import { cursor } from 'uci';
 
 const uci = cursor();
