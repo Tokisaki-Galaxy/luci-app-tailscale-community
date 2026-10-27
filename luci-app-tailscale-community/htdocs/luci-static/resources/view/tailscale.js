@@ -872,13 +872,16 @@ return view.extend({
 	// standard OpenWrt apply mechanism, which triggers /etc/init.d/tailscale-settings
 	// and provides automatic rollback protection if the device becomes unreachable.
 	handleSaveApply(ev, mode) {
-		// Read the submitted value before map.save() consumes the staged delta.
-		// uci.get() prefers the staged change over the saved value, and the
-		// staged delta is only populated once the form has been parsed, which
-		// map.save() guarantees here.
-		const wantEnabled = uci.get('tailscale', 'settings', 'service_enabled');
+		// The submitted value only reaches the uci model while map.save() parses
+		// the form, so reading it before map.save() returns the previously saved
+		// value: switching the service off then passed '1' and never armed the
+		// stop request. Read it in the save callback, which runs right after the
+		// form was parsed and before the staged changes are sent to the device.
+		let wantEnabled;
 
-		return map.save().then(function () {
+		return map.save(function () {
+			wantEnabled = uci.get('tailscale', 'settings', 'service_enabled');
+		}).then(function () {
 			// Only records the disable request; the reload handler performs
 			// the stop after the commit, so a LuCI rollback still finds a
 			// running daemon. One concurrency slot on purpose: an overlapping
@@ -886,7 +889,10 @@ return view.extend({
 			// Fail-open on purpose: an install whose rpcd ACL cache predates
 			// this method would otherwise be unable to apply anything. The
 			// worst case is that the stop is skipped for this apply.
-			return callSetServiceEnabled({ enabled: wantEnabled === '0' ? '0' : '1' })
+			// The declaration maps positional arguments to its params, so pass
+			// the value itself: { enabled: ... } reached ubus as the value of
+			// enabled and was rejected as an invalid argument.
+			return callSetServiceEnabled(wantEnabled === '0' ? '0' : '1')
 				.catch(function(err) {
 					console.warn('set_service_enabled failed: %s', err);
 					return null;

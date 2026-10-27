@@ -72,6 +72,8 @@ function makeHarness(responses, opts) {
 	const elements = {};
 	const modals = [];
 	let pollFns = [];
+	// what the uci stub returns; opts.submitted lands here when the form is saved
+	const uciValues = Object.assign({}, opts.saved);
 
 	function makeOption(name) {
 		const self = {
@@ -100,7 +102,11 @@ function makeHarness(responses, opts) {
 	function makeSection() {
 		const s = makeOption();
 		s.section = function() { return s; };
-		s.save = function() { return Promise.resolve(); };
+		// like Map.save(): parsing the form puts the submitted values into the uci model, then the callback runs
+		s.save = function(cb) {
+			Object.assign(uciValues, opts.submitted);
+			return Promise.resolve(typeof cb === 'function' ? cb() : undefined);
+		};
 		s.parse = function() { return Promise.resolve(); };
 		s.render = function() { return E('div', {}, []); };
 		return s;
@@ -116,7 +122,11 @@ function makeHarness(responses, opts) {
 	const rpc = {
 		declare: function(opt) {
 			return function(args) {
-				calls.push({ method: opt.method, args: args });
+				// like rpc.declare(): positional arguments are mapped to the declared params
+				const argv = Array.prototype.slice.call(arguments);
+				const wire = {};
+				(opt.params || []).forEach(function(name, i) { wire[name] = argv[i]; });
+				calls.push({ method: opt.method, args: args, wire: wire });
 				const v = responses[opt.method];
 				if (v instanceof Error) return Promise.reject(v);
 				return Promise.resolve(typeof v === 'function' ? v(args) : v);
@@ -152,7 +162,7 @@ function makeHarness(responses, opts) {
 		get: function(name, s, o) {
 			// pretend the settings section exists so load() skips first-run init
 			if (o === undefined && s === 'settings') return 'settings';
-			return null;
+			return o in uciValues ? uciValues[o] : null;
 		},
 		set: function() {},
 		add: function() {},
@@ -432,6 +442,28 @@ async function run() {
 		joined.slice(0, 400));
 	check('the exit node help names the admin console approval',
 		joined.indexOf('admin console') !== -1, joined.slice(0, 400));
+
+	console.log('test: turning the service off in the form sends the stop request');
+	// The submitted value only reaches the uci model while map.save() parses the
+	// form, and the declared rpc maps positional arguments to its params. Reading
+	// the value before the save, or passing { enabled: value }, never arms the request.
+	const h14 = makeHarness({ set_service_enabled: { success: true, armed: true } },
+		{ saved: { service_enabled: '1' }, submitted: { service_enabled: '0' } });
+	await h14.start();
+	await h14.obj.handleSaveApply({}, '0');
+	const off = h14.calls.filter(function(c) { return c.method === 'set_service_enabled'; });
+	check('set_service_enabled is called once', off.length === 1, JSON.stringify(off));
+	check('it is sent the submitted value 0 as a plain string',
+		off.length === 1 && off[0].wire.enabled === '0', JSON.stringify(off));
+
+	console.log('test: turning the service on in the form clears the stop request');
+	const h15 = makeHarness({ set_service_enabled: { success: true, armed: false } },
+		{ saved: { service_enabled: '0' }, submitted: { service_enabled: '1' } });
+	await h15.start();
+	await h15.obj.handleSaveApply({}, '0');
+	const on = h15.calls.filter(function(c) { return c.method === 'set_service_enabled'; });
+	check('it is sent the submitted value 1 as a plain string',
+		on.length === 1 && on[0].wire.enabled === '1', JSON.stringify(on));
 
 	console.log('');
 	console.log('passed: ' + passes + '  failed: ' + failures);
