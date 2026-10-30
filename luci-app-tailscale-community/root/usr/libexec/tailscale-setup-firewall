@@ -47,7 +47,16 @@ lock_age() {
 	# holder has not written pid/ts yet. Reporting that window as ancient let a
 	# late worker rip the lock away mid start up, so two reloads ran at once:
 	# the very thing this lock exists to prevent. It is a fresh lock instead.
-	case "$ts" in ''|*[!0-9]*) echo 0; return ;; esac
+	#
+	# The directory mtime covers the other side of the same window: a worker
+	# killed between mkdir and the ts write would otherwise leave an ageless
+	# lock that nobody ever takes over.
+	case "$ts" in
+		''|*[!0-9]*)
+			ts=$(date -r "$LOCK_DIR" +%s 2>/dev/null)
+			case "$ts" in ''|*[!0-9]*) echo 0; return ;; esac
+			;;
+	esac
 	now=$(date +%s)
 	echo $((now - ts))
 }

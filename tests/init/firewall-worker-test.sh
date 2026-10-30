@@ -126,9 +126,18 @@ rm -f "$LOCK_DIR/ts"
 age=$(lock_age)
 check "missing timestamp counts as just created" [ "$age" -eq 0 ]
 
-printf 'not-a-number\n' > "$LOCK_DIR/ts"
+# The directory mtime keeps a worker that died before writing ts from leaving a
+# lock nobody ever takes over.
+touch -d '10 minutes ago' "$LOCK_DIR" 2>/dev/null || true
 age=$(lock_age)
-check "an unreadable timestamp counts as just created" [ "$age" -eq 0 ]
+check "a lock without ts still ages out through the directory mtime" [ "$age" -gt 300 ]
+
+printf 'not-a-number\n' > "$LOCK_DIR/ts"
+touch -d '10 minutes ago' "$LOCK_DIR" 2>/dev/null || true
+age=$(lock_age)
+check "an unreadable timestamp follows the directory mtime" [ "$age" -gt 300 ]
+rm -f "$LOCK_DIR/ts"
+touch "$LOCK_DIR"
 
 echo "test: lock holder liveness"
 load_functions
@@ -194,6 +203,19 @@ check "network was reloaded" grep -qx network "$SANDBOX/reload.log"
 check "firewall was reloaded" grep -qx firewall "$SANDBOX/reload.log"
 check "the lock is released" [ ! -e "$LOCK_DIR" ]
 check "no renamed lock left behind" [ -z "$(ls -d "$LOCK_DIR".stale.* 2>/dev/null)" ]
+
+echo "test: a lock killed before writing its timestamp is taken over once it ages"
+rm -rf "$LOCK_DIR" "$STATE_FILE" "$SANDBOX/reload.log"
+mkdir -p "$LOCK_DIR"
+echo "$DEAD_PID" > "$LOCK_DIR/pid"
+touch -d '10 minutes ago' "$LOCK_DIR" 2>/dev/null || true
+sh "$SANDBOX/worker" notsid
+status=$?
+check "the takeover worker exits 0" [ "$status" -eq 0 ]
+check "done state" [ "$(sed -n 1p "$STATE_FILE")" = "done" ]
+check "run id kept" [ "$(sed -n 4p "$STATE_FILE")" = "notsid" ]
+check "network was reloaded" grep -qx network "$SANDBOX/reload.log"
+check "the lock is released" [ ! -e "$LOCK_DIR" ]
 
 echo
 echo "passed: $passes  failed: $failures"
