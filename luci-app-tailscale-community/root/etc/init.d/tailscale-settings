@@ -254,10 +254,18 @@ apply_settings() {
 		&& set -- "$@" --webclient=true \
 		|| set -- "$@" --webclient=false
 
-	# --snat-subnet-routes (inverse of nosnat)
-	[ "$nosnat" = "1" ] \
-		&& set -- "$@" --snat-subnet-routes=false \
-		|| set -- "$@" --snat-subnet-routes=true
+	# Everything below is handed to 'tailscale set' in one call, and 'set'
+	# aborts on an unknown flag. Gate the newer options on the first release
+	# that accepts them, so an older CLI still applies the rest.
+	local ts_ver
+	ts_ver=$("$ts_bin" version 2>/dev/null | head -n1)
+
+	# --snat-subnet-routes (requires tailscale >= 1.66.1)
+	if [ -n "$ts_ver" ] && version_gte "$ts_ver" "1.66.1"; then
+		[ "$nosnat" = "1" ] \
+			&& set -- "$@" --snat-subnet-routes=false \
+			|| set -- "$@" --snat-subnet-routes=true
+	fi
 
 	# --advertise-routes (comma-separated, empty clears routes)
 	set -- "$@" "--advertise-routes=$routes"
@@ -271,10 +279,8 @@ apply_settings() {
 	# --hostname (empty resets it to the OS hostname)
 	set -- "$@" "--hostname=$hostname"
 
-	# --relay-server-port (requires tailscale >= 1.90.5)
-	local ts_ver
-	ts_ver=$("$ts_bin" version 2>/dev/null | head -n1)
-	if [ -n "$ts_ver" ] && version_gte "$ts_ver" "1.90.5"; then
+	# --relay-server-port (requires tailscale >= 1.84.0)
+	if [ -n "$ts_ver" ] && version_gte "$ts_ver" "1.84.0"; then
 		if [ "$enable_relay" = "1" ]; then
 			set -- "$@" "--relay-server-port=${relay_server_port:-40000}"
 		else
@@ -283,17 +289,15 @@ apply_settings() {
 	fi
 
 	# --netfilter-mode (off when disable_fw_config is enabled, back to on
-	# otherwise). 'tailscale set' only learned this flag in 1.68: older
-	# releases abort the whole call on an unknown flag, which would drop every
-	# other setting as well, so leave the saved preference alone there.
-	if [ -n "$ts_ver" ] && version_gte "$ts_ver" "1.68"; then
+	# otherwise; requires tailscale >= 1.66.1)
+	if [ -n "$ts_ver" ] && version_gte "$ts_ver" "1.66.1"; then
 		if [ "$disable_fw_config" = "1" ]; then
 			set -- "$@" --netfilter-mode=off
 		else
 			set -- "$@" --netfilter-mode=on
 		fi
 	elif [ "$disable_fw_config" = "1" ]; then
-		logger -t "$NAME" "tailscale ${ts_ver:-before 1.68} has no --netfilter-mode in 'set', ignoring disable_fw_config"
+		logger -t "$NAME" "tailscale ${ts_ver:-before 1.66.1} has no --netfilter-mode in 'set', ignoring disable_fw_config"
 	fi
 
 	logger -t "$NAME" "Applying settings"
@@ -328,8 +332,16 @@ sync_service_enabled() {
 			# the baseline instead of treating it as a transition: starting
 			# a daemon here would run start_service, which arms another UCI
 			# rollback window right after the one this apply is inside.
-			echo "$service_enabled" > "$ENABLED_FILE"
-			prev="$service_enabled"
+			#
+			# An armed disable request is the exception: the user just asked
+			# for the stop, so the baseline has to be "was running", not "was
+			# stopped", or the request would be dropped without stopping.
+			if [ -f "$DISABLE_REQUEST_FILE" ]; then
+				prev=1
+			else
+				echo "$service_enabled" > "$ENABLED_FILE"
+				prev="$service_enabled"
+			fi
 			;;
 	esac
 
