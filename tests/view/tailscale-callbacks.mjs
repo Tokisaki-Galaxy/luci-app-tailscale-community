@@ -188,7 +188,7 @@ function makeHarness(responses, opts) {
 		formStub, rpc, ui, uci, E,
 		function(s) { return s; },
 		L,
-		{ getElementById: function(id) { return elements[id] || null; }, createElement: function() { return {}; } },
+		{ getElementById: function(id) { return elements[id] || null; }, createElement: function() { return {}; }, getElementsByClassName: function() { return []; } },
 		{
 			setTimeout: function(fn, ms) { return setTimeout(fn, opts.realTimers ? ms : Math.min(ms, 5)); },
 			open: function() { return null; }
@@ -488,6 +488,26 @@ async function run() {
 	check('the notice is still shown',
 		h16.notifications.some(function(n) { return n.text.indexOf('Reloading') !== -1 || n.text.indexOf('committed') !== -1; }),
 		JSON.stringify(h16.notifications));
+
+	console.log('test: repeated renders keep a single status poller');
+	// Map.save() re-renders the form, so render() used to add a fresh 10 second
+	// get_status loop on every save and never remove the old ones.
+	const h17 = makeHarness({ get_status: { status: 'running', peers: {} } });
+	await h17.start();
+	check('the first render registers one poller', h17.pollers().length === 1,
+		String(h17.pollers().length));
+	await h17.obj.render([ {}, {}, { routes: [] } ]);
+	await h17.obj.render([ {}, {}, { routes: [] } ]);
+	check('two more renders do not add pollers', h17.pollers().length === 1,
+		String(h17.pollers().length));
+	let pollErr = null;
+	try {
+		await h17.pollers()[0]();
+	} catch (e) {
+		pollErr = e;
+	}
+	check('the poller tolerates missing DOM nodes', pollErr === null,
+		String(pollErr && pollErr.message));
 
 	console.log('');
 	console.log('passed: ' + passes + '  failed: ' + failures);

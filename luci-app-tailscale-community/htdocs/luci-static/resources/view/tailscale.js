@@ -134,6 +134,43 @@ function getRunningStatus() {
 	});
 }
 
+// Map.save() re-renders the form after every save, so registering the status
+// poller from s.render would add another 10 second get_status loop per save and
+// never remove the previous ones. The poller is therefore module level and
+// guarded by a flag; the flag is the only dedup mechanism on purpose, the
+// poller function reference is never compared.
+let statusPollerRegistered = false;
+
+function pollRunningStatus() {
+	return getRunningStatus().then(function (res) {
+		const view = document.getElementById("service_status_display");
+		if (view) {
+			const content = renderStatus(res);
+			view.replaceChildren(content);
+		}
+
+		lastDevicesStatus = res;
+		const devicesTbody = document.getElementById("tailscale_devices_tbody");
+		if (devicesTbody) {
+			const filterInput = document.getElementById("tailscale_devices_filter");
+			const currentQuery = filterInput ? filterInput.value : '';
+			devicesTbody.replaceChildren(...renderPeerRows(res, currentQuery));
+		}
+
+		// login button only available when logged out
+		const login_btn=document.getElementsByClassName('cbi-button cbi-button-apply')[0];
+		if(login_btn) { login_btn.disabled=(res.status != 'logout'); }
+	});
+}
+
+function ensureStatusPoller() {
+	if (statusPollerRegistered)
+		return;
+
+	statusPollerRegistered = true;
+	L.Poll.add(function () { return pollRunningStatus(); }, 10);
+}
+
 // Poll the background firewall job until it finishes. A poll that fails
 // (network reloading, the connection dropped for a moment) is expected and is
 // simply retried on the next tick instead of being reported as an error.
@@ -587,28 +624,8 @@ return view.extend({
 		s = map.section(form.NamedSection, '_status');
 		s.anonymous = true;
 		s.render = function (section_id) {
-			L.Poll.add(
-				function () {
-					return getRunningStatus().then(function (res) {
-						const view = document.getElementById("service_status_display");
-						if (view) {
-							const content = renderStatus(res);
-							view.replaceChildren(content);
-						}
-
-						lastDevicesStatus = res;
-						const devicesTbody = document.getElementById("tailscale_devices_tbody");
-						if (devicesTbody) {
-							const filterInput = document.getElementById("tailscale_devices_filter");
-							const currentQuery = filterInput ? filterInput.value : '';
-							devicesTbody.replaceChildren(...renderPeerRows(res, currentQuery));
-						}
-
-						// login button only available when logged out
-						const login_btn=document.getElementsByClassName('cbi-button cbi-button-apply')[0];
-						if(login_btn) { login_btn.disabled=(res.status != 'logout'); }
-					});
-				}, 10);
+			// Registering is idempotent and must not affect what is rendered.
+			ensureStatusPoller();
 
 			return E('div', { 'id': 'service_status_display', 'class': 'cbi-value' },
 				_('Collecting data ...')
