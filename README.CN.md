@@ -4,7 +4,7 @@
 <p align="center">
   <img src="https://github.com/Tokisaki-Galaxy/luci-app-tailscale-community/actions/workflows/build.yml/badge.svg" alt="构建状态">
   <img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" alt="许可证">
-  <img src="https://img.shields.io/badge/OpenWrt-24.10.3-orange.svg" alt="OpenWrt 版本">
+  <img src="https://img.shields.io/badge/OpenWrt-24.10.8-orange.svg" alt="OpenWrt 版本">
 </p>
 
 <p align="center">
@@ -33,7 +33,9 @@
 > 本应用已被 OpenWrt 官方 LuCI 仓库收录，推荐直接使用官方 `opkg` 源进行安装。详情参见 [openwrt/luci#8018](https://github.com/openwrt/luci/pull/8018)。
 
 > [!IMPORTANT]
-> 推荐版本: OpenWrt 23.05 及以上。
+> 支持版本: OpenWrt 24.10 及以上。
+>
+> 不再支持 23.05。其 LuCI 没有 `ui.addTimeLimitedNotification`，官方源的 tailscale 是 1.58.2，缺少本应用依赖的多个 `tailscale set` 参数。最后一个支持 23.05 的版本是 [v2.2.1](https://github.com/Tokisaki-Galaxy/luci-app-tailscale-community/releases/tag/v2.2.1)。
 
 说明: 本应用使用 `ucode` 作为后端服务器。低版本 OpenWrt 仅支持 Lua 后端，无法运行基于 `ucode` 的后端逻辑。
 

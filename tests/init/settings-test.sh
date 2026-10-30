@@ -331,6 +331,30 @@ test_disable_requires_armed_request() {
 	fi
 }
 
+# First disable on a fresh install: no ENABLED_FILE exists yet, so the old code
+# adopted service_enabled=0 as the baseline and returned without stopping, even
+# though the UI had armed a request. The request must win over the baseline.
+test_first_disable_without_state_file_stops() {
+	setup
+	echo 1 > "$DAEMON_RUNNING"
+	touch "$DISABLE_REQUEST_FILE"
+	set_option service_enabled 0
+
+	handle_service_state
+	assert_call "tailscale stop"
+	assert_call "tailscale disable"
+	if [ -f "$DISABLE_REQUEST_FILE" ]; then
+		fail "disable request should be consumed"
+	else
+		pass
+	fi
+	if [ "$(cat "$ENABLED_FILE" 2>/dev/null)" = "0" ]; then
+		pass
+	else
+		fail "enabled record should be 0"
+	fi
+}
+
 test_rolled_back_disable_keeps_daemon() {
 	setup
 	echo 1 > "$DAEMON_RUNNING"
@@ -853,15 +877,15 @@ test_apply_settings_sends_netfilter_off() {
 	assert_call "tailscale set .*--netfilter-mode=off$"
 }
 
-# 'tailscale set' only knows --netfilter-mode since 1.68. Older releases abort
+# 'tailscale set' only knows --netfilter-mode since 1.66.1. Older releases abort
 # the entire call on the unknown flag, so it must not be passed there: the rest
 # of the settings still has to be applied.
-test_apply_settings_skips_netfilter_before_1_68() {
+test_apply_settings_skips_netfilter_before_1_66_1() {
 	setup
 	mk_fake_tailscale
 	load_apply_settings
 	echo 1 > "$DAEMON_RUNNING"
-	echo "1.66.1" > "$TS_VERSION_FILE"
+	echo "1.66.0" > "$TS_VERSION_FILE"
 	ts_reply 0 ''
 
 	apply_settings
@@ -871,10 +895,71 @@ test_apply_settings_skips_netfilter_before_1_68() {
 	assert_no_call "netfilter-mode"
 }
 
+# --snat-subnet-routes arrived in the same release. 1.58.2 on OpenWrt 23.05 has
+# neither flag, and passing one used to abort every setting this script sends.
+test_apply_settings_sends_snat_when_supported() {
+	setup
+	mk_fake_tailscale
+	load_apply_settings
+	echo 1 > "$DAEMON_RUNNING"
+	echo "1.80.3" > "$TS_VERSION_FILE"
+	ts_reply 0 ''
+
+	apply_settings
+	rc=$?
+	assert_rc 0
+	assert_call "tailscale set .*--snat-subnet-routes=true"
+}
+
+test_apply_settings_skips_snat_before_1_66_1() {
+	setup
+	mk_fake_tailscale
+	load_apply_settings
+	echo 1 > "$DAEMON_RUNNING"
+	echo "1.58.2" > "$TS_VERSION_FILE"
+	ts_reply 0 ''
+
+	apply_settings
+	rc=$?
+	assert_rc 0
+	assert_call "tailscale set "
+	assert_no_call "snat-subnet-routes"
+}
+
+# --relay-server-port arrived in 1.84.0; 1.80.3 still fails on it.
+test_apply_settings_sends_relay_when_supported() {
+	setup
+	mk_fake_tailscale
+	load_apply_settings
+	echo 1 > "$DAEMON_RUNNING"
+	echo "1.84.0" > "$TS_VERSION_FILE"
+	ts_reply 0 ''
+
+	apply_settings
+	rc=$?
+	assert_rc 0
+	assert_call "tailscale set .*--relay-server-port="
+}
+
+test_apply_settings_skips_relay_before_1_84() {
+	setup
+	mk_fake_tailscale
+	load_apply_settings
+	echo 1 > "$DAEMON_RUNNING"
+	echo "1.80.3" > "$TS_VERSION_FILE"
+	ts_reply 0 ''
+
+	apply_settings
+	rc=$?
+	assert_rc 0
+	assert_call "tailscale set "
+	assert_no_call "relay-server-port"
+}
+
 # The off direction has the same version limit: 1.58 on OpenWrt 23.05 would
 # otherwise fail every apply as soon as the checkbox is set. The user asked for
 # something the CLI cannot do, so say so in the log instead of failing silently.
-test_apply_settings_skips_netfilter_off_before_1_68() {
+test_apply_settings_skips_netfilter_off_before_1_66_1() {
 	setup
 	mk_fake_tailscale
 	load_apply_settings
@@ -918,6 +1003,7 @@ for t in \
 	test_daemon_option_change_restarts_once \
 	test_apply_never_starts_a_stopped_daemon \
 	test_disable_requires_armed_request \
+	test_first_disable_without_state_file_stops \
 	test_rolled_back_disable_keeps_daemon \
 	test_enable_after_disable_starts \
 	test_boot_start_service_record_does_not_act \
@@ -945,8 +1031,12 @@ for t in \
 	test_apply_settings_sends_configured_hostname \
 	test_apply_settings_restores_netfilter_on \
 	test_apply_settings_sends_netfilter_off \
-	test_apply_settings_skips_netfilter_before_1_68 \
-	test_apply_settings_skips_netfilter_off_before_1_68 \
+	test_apply_settings_skips_netfilter_before_1_66_1 \
+	test_apply_settings_sends_snat_when_supported \
+	test_apply_settings_skips_snat_before_1_66_1 \
+	test_apply_settings_sends_relay_when_supported \
+	test_apply_settings_skips_relay_before_1_84 \
+	test_apply_settings_skips_netfilter_off_before_1_66_1 \
 	test_source_apply_settings_uses_the_helper
 do
 	if [ -n "${SETTINGS_INIT:-}" ] && [ "$t" = "test_enable_after_disable_starts" ] && [ "$abs_observable" -eq 0 ]; then

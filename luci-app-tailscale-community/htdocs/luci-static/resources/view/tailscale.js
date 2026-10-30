@@ -18,6 +18,29 @@ const callGetFirewallStatus = rpc.declare({ object: 'tailscale', method: 'get_fi
 let map;
 let lastDevicesStatus;
 
+// ui.addTimeLimitedNotification only exists since OpenWrt 24.10. Older
+// releases, 23.05 included, only have addNotification and would throw on every
+// call, so fade the notice out ourselves there.
+function notifyTimed(title, children, timeout, ...classes) {
+	if (typeof ui.addTimeLimitedNotification == 'function')
+		return ui.addTimeLimitedNotification(title, children, timeout, ...classes);
+
+	const msg = ui.addNotification(title, children, ...classes);
+
+	if (typeof timeout == 'number' && timeout > 0 && msg) {
+		window.setTimeout(function() {
+			msg.classList.add('fade-out');
+			msg.classList.remove('fade-in');
+			window.setTimeout(function() {
+				if (msg.parentNode)
+					msg.parentNode.removeChild(msg);
+			}, 250);
+		}, timeout);
+	}
+
+	return msg;
+}
+
 // uci.changes() returns an object keyed by config name; count the entries so
 // the firewall button can warn about unsaved work.
 function countPending(changes) {
@@ -156,7 +179,7 @@ function pollFirewallJob(runId, timeoutSec) {
 
 				if (state === 'done') {
 					if (stop())
-						ui.addTimeLimitedNotification(null, [ E('p', _('Firewall configuration applied.')) ], 5000, 'info');
+						notifyTimed(null, [ E('p', _('Firewall configuration applied.')) ], 5000, 'info');
 					resolve(res);
 					return;
 				}
@@ -174,7 +197,7 @@ function pollFirewallJob(runId, timeoutSec) {
 				if (state !== lastState) {
 					lastState = state;
 					if (state === 'running' && res?.step === 'firewall')
-						ui.addTimeLimitedNotification(null, [ E('p', _('Reloading firewall...')) ], 3000, 'info');
+						notifyTimed(null, [ E('p', _('Reloading firewall...')) ], 3000, 'info');
 				}
 			});
 		}
@@ -242,7 +265,7 @@ async function initializeRegionMap() {
 			}
 		}
 	} catch (e) {
-		ui.addTimeLimitedNotification(null, [ E('p', _('Error reading cached DERP region map: %s').format(e.message || _('Unknown error'))) ], 7000, 'error');
+		notifyTimed(null, [ E('p', _('Error reading cached DERP region map: %s').format(e.message || _('Unknown error'))) ], 7000, 'error');
 	}
 
 	// If no valid cache, fetch from the network
@@ -269,10 +292,10 @@ async function initializeRegionMap() {
 			};
 			localStorage.setItem(cacheKey, JSON.stringify(itemToCache));
 		} catch (e) {
-			ui.addTimeLimitedNotification(null, [ E('p', _('Error caching DERP region map: %s').format(e.message || _('Unknown error'))) ], 7000, 'error');
+			notifyTimed(null, [ E('p', _('Error caching DERP region map: %s').format(e.message || _('Unknown error'))) ], 7000, 'error');
 		}
 	} catch (error) {
-		ui.addTimeLimitedNotification(null, [ E('p', _('Error fetching DERP region map: %s').format(error.message || _('Unknown error'))) ], 7000, 'error');
+		notifyTimed(null, [ E('p', _('Error fetching DERP region map: %s').format(error.message || _('Unknown error'))) ], 7000, 'error');
 	}
 }
 
@@ -677,7 +700,7 @@ return view.extend({
 					return null;
 				}
 
-				ui.addTimeLimitedNotification(null, [ E('p', _('Configuration committed, reloading network and firewall. This can take a moment.')) ], 5000, 'info');
+				notifyTimed(null, [ E('p', _('Configuration committed, reloading network and firewall. This can take a moment.')) ], 5000, 'info');
 				return pollFirewallJob(res.run_id);
 			}).catch(function(err) {
 				ui.addNotification(null, E('p', {}, _('Failed to configure firewall: %s').format(err?.message || err?.error || err || _('Unknown error'))), 'error');
@@ -759,7 +782,7 @@ return view.extend({
 			const customServerAuth = customserverAuthInput ? customserverAuthInput.value : '';
 			const loginWindow = window.open('', '_blank');
 			if (!loginWindow) {
-				ui.addTimeLimitedNotification(null, [ E('p', _('Could not open a new tab. Please check if your browser or an extension blocked the pop-up.')) ], 10000, 'error');
+				notifyTimed(null, [ E('p', _('Could not open a new tab. Please check if your browser or an extension blocked the pop-up.')) ], 10000, 'error');
 				return;
 			}
 			// Display a prompt message in the new window
@@ -786,11 +809,11 @@ return view.extend({
 					doc.body.innerHTML =
 						'<h2>' + _('Error') + '</h2>' +
 						'<p>' + _('Failed to get login URL. You may close this tab.') + '</p>';
-					ui.addTimeLimitedNotification(null, [ E('p', _('Failed to get login URL: %s').format(res?.error || _('Invalid response from server.'))) ], 7000, 'error');
+					notifyTimed(null, [ E('p', _('Failed to get login URL: %s').format(res?.error || _('Invalid response from server.'))) ], 7000, 'error');
 				}
 			}).catch(function(err) {
 				ui.hideModal();
-				ui.addTimeLimitedNotification(null, [ E('p', _('Failed to get login URL: %s').format(err.message || _('Unknown error'))) ], 7000, 'error');
+				notifyTimed(null, [ E('p', _('Failed to get login URL: %s').format(err.message || _('Unknown error'))) ], 7000, 'error');
 			});
 		};
 
@@ -814,10 +837,10 @@ return view.extend({
 							return callDoLogout().then(function(res) {
 								unwrapRpc(res, _('Logout'));
 								ui.hideModal();
-								ui.addTimeLimitedNotification(null, [ E('p', _('Successfully logged out.')) ], 5000, 'info');
+								notifyTimed(null, [ E('p', _('Successfully logged out.')) ], 5000, 'info');
 							}).catch(function(err) {
 								ui.hideModal();
-								ui.addTimeLimitedNotification(null, [ E('p', _('Logout failed: %s').format(err.message || _('Unknown error'))) ], 7000, 'error');
+								notifyTimed(null, [ E('p', _('Logout failed: %s').format(err.message || _('Unknown error'))) ], 7000, 'error');
 							});
 						}
 					}, _('Logout'))

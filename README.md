@@ -3,7 +3,7 @@
 <p align="center">
   <img src="https://github.com/Tokisaki-Galaxy/luci-app-tailscale-community/actions/workflows/build.yml/badge.svg" alt="构建状态">
   <img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" alt="许可证">
-  <img src="https://img.shields.io/badge/OpenWrt-24.10.3-orange.svg" alt="OpenWrt 版本">
+  <img src="https://img.shields.io/badge/OpenWrt-24.10.8-orange.svg" alt="OpenWrt 版本">
 </p>
 
 <p align="center">
@@ -32,7 +32,9 @@ A community-maintained LuCI application for managing Tailscale on OpenWrt. This 
 > This application has been merged into the official OpenWrt LuCI repository. You can now install it directly via the official `opkg` source. See [openwrt/luci#8018](https://github.com/openwrt/luci/pull/8018) for details.
 
 > [!IMPORTANT]
-> Recommended Version: OpenWrt 23.05 or later.
+> Supported version: OpenWrt 24.10 or later.
+>
+> OpenWrt 23.05 is no longer supported. Its LuCI has no `ui.addTimeLimitedNotification`, and the `tailscale` package in the official feed is 1.58.2, which lacks several `tailscale set` options this app relies on. The last release that works on 23.05 is [v2.2.1](https://github.com/Tokisaki-Galaxy/luci-app-tailscale-community/releases/tag/v2.2.1).
 
 Note: This application uses `ucode` as the backend server. Older versions of OpenWrt primarily support Lua-based backends and cannot run the `ucode` backend logic used by this app.
 
