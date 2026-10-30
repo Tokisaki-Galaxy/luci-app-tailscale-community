@@ -268,8 +268,8 @@ apply_settings() {
 	# when an exit node is configured, always allow LAN access
 	[ -n "$exit_node" ] && set -- "$@" --exit-node-allow-lan-access=true
 
-	# --hostname (only set if non-empty)
-	[ -n "$hostname" ] && set -- "$@" "--hostname=$hostname"
+	# --hostname (empty resets it to the OS hostname)
+	set -- "$@" "--hostname=$hostname"
 
 	# --relay-server-port (requires tailscale >= 1.90.5)
 	local ts_ver
@@ -282,9 +282,11 @@ apply_settings() {
 		fi
 	fi
 
-	# --netfilter-mode (only when disable_fw_config is enabled and tailscale init doesn't already handle it)
+	# --netfilter-mode (off when disable_fw_config is enabled, back to on otherwise)
 	if [ "$disable_fw_config" = "1" ]; then
 		set -- "$@" --netfilter-mode=off
+	else
+		set -- "$@" --netfilter-mode=on
 	fi
 
 	logger -t "$NAME" "Applying settings"
