@@ -282,11 +282,18 @@ apply_settings() {
 		fi
 	fi
 
-	# --netfilter-mode (off when disable_fw_config is enabled, back to on otherwise)
-	if [ "$disable_fw_config" = "1" ]; then
-		set -- "$@" --netfilter-mode=off
-	else
-		set -- "$@" --netfilter-mode=on
+	# --netfilter-mode (off when disable_fw_config is enabled, back to on
+	# otherwise). 'tailscale set' only learned this flag in 1.68: older
+	# releases abort the whole call on an unknown flag, which would drop every
+	# other setting as well, so leave the saved preference alone there.
+	if [ -n "$ts_ver" ] && version_gte "$ts_ver" "1.68"; then
+		if [ "$disable_fw_config" = "1" ]; then
+			set -- "$@" --netfilter-mode=off
+		else
+			set -- "$@" --netfilter-mode=on
+		fi
+	elif [ "$disable_fw_config" = "1" ]; then
+		logger -t "$NAME" "tailscale ${ts_ver:-before 1.68} has no --netfilter-mode in 'set', ignoring disable_fw_config"
 	fi
 
 	logger -t "$NAME" "Applying settings"

@@ -557,10 +557,21 @@ mk_fake_tailscale() {
 	TS_FAKE="$SANDBOX/tailscale"
 	TS_REPLIES="$SANDBOX/ts-replies"
 	TS_STDERR="$SANDBOX/ts-stderr"
+	TS_VERSION_FILE="$SANDBOX/ts-version"
 	: > "$TS_REPLIES"
+	: > "$TS_VERSION_FILE"
 	cat > "$TS_FAKE" <<EOF
 #!/bin/sh
 echo "tailscale \$*" >> "$CALLS"
+# 'version' answers from a file when one is set, so tests can pin the version
+# that apply_settings gates on. Without it the reply queue is used like before.
+if [ "\$1" = "version" ]; then
+	v=\$(cat "$TS_VERSION_FILE" 2>/dev/null)
+	if [ -n "\$v" ]; then
+		echo "\$v"
+		exit 0
+	fi
+fi
 reply=\$(head -n1 "$TS_REPLIES")
 [ -n "\$reply" ] || reply='99|unexpected extra tailscale call'
 tail -n +2 "$TS_REPLIES" > "$TS_REPLIES.next"
@@ -779,6 +790,107 @@ test_apply_settings_runs_set_without_init_script() {
 	assert_call "tailscale set"
 }
 
+# A cleared hostname has to travel as an empty value, otherwise the saved
+# hostname survives and the node keeps its old name.
+test_apply_settings_sends_empty_hostname() {
+	setup
+	mk_fake_tailscale
+	load_apply_settings
+	echo 1 > "$DAEMON_RUNNING"
+	echo "1.80.3" > "$TS_VERSION_FILE"
+	ts_reply 0 ''
+
+	apply_settings
+	rc=$?
+	assert_rc 0
+	assert_call "tailscale set .*--hostname= "
+}
+
+# A hostname that is still configured keeps travelling as its value.
+test_apply_settings_sends_configured_hostname() {
+	setup
+	mk_fake_tailscale
+	load_apply_settings
+	echo 1 > "$DAEMON_RUNNING"
+	echo "1.80.3" > "$TS_VERSION_FILE"
+	set_option hostname lab
+	ts_reply 0 ''
+
+	apply_settings
+	rc=$?
+	assert_rc 0
+	assert_call "tailscale set .*--hostname=lab"
+}
+
+# Unchecking disable_fw_config must hand netfilter control back to tailscale.
+test_apply_settings_restores_netfilter_on() {
+	setup
+	mk_fake_tailscale
+	load_apply_settings
+	echo 1 > "$DAEMON_RUNNING"
+	echo "1.80.3" > "$TS_VERSION_FILE"
+	ts_reply 0 ''
+
+	apply_settings
+	rc=$?
+	assert_rc 0
+	assert_call "tailscale set .*--netfilter-mode=on$"
+}
+
+# Checking it still turns tailscale's netfilter off.
+test_apply_settings_sends_netfilter_off() {
+	setup
+	mk_fake_tailscale
+	load_apply_settings
+	echo 1 > "$DAEMON_RUNNING"
+	echo "1.80.3" > "$TS_VERSION_FILE"
+	set_option disable_fw_config 1
+	ts_reply 0 ''
+
+	apply_settings
+	rc=$?
+	assert_rc 0
+	assert_call "tailscale set .*--netfilter-mode=off$"
+}
+
+# 'tailscale set' only knows --netfilter-mode since 1.68. Older releases abort
+# the entire call on the unknown flag, so it must not be passed there: the rest
+# of the settings still has to be applied.
+test_apply_settings_skips_netfilter_before_1_68() {
+	setup
+	mk_fake_tailscale
+	load_apply_settings
+	echo 1 > "$DAEMON_RUNNING"
+	echo "1.66.1" > "$TS_VERSION_FILE"
+	ts_reply 0 ''
+
+	apply_settings
+	rc=$?
+	assert_rc 0
+	assert_call "tailscale set "
+	assert_no_call "netfilter-mode"
+}
+
+# The off direction has the same version limit: 1.58 on OpenWrt 23.05 would
+# otherwise fail every apply as soon as the checkbox is set. The user asked for
+# something the CLI cannot do, so say so in the log instead of failing silently.
+test_apply_settings_skips_netfilter_off_before_1_68() {
+	setup
+	mk_fake_tailscale
+	load_apply_settings
+	echo 1 > "$DAEMON_RUNNING"
+	echo "1.58.2" > "$TS_VERSION_FILE"
+	set_option disable_fw_config 1
+	ts_reply 0 ''
+
+	apply_settings
+	rc=$?
+	assert_rc 0
+	assert_call "tailscale set "
+	assert_no_call "tailscale set .*netfilter-mode"
+	assert_call "logger .*has no --netfilter-mode"
+}
+
 # apply_settings resolves the CLI from fixed paths, so the call site cannot be
 # exercised from here. Guard it at source level instead.
 test_source_apply_settings_uses_the_helper() {
@@ -829,6 +941,12 @@ for t in \
 	test_apply_settings_skips_set_when_daemon_not_running \
 	test_apply_settings_runs_set_when_daemon_running \
 	test_apply_settings_runs_set_without_init_script \
+	test_apply_settings_sends_empty_hostname \
+	test_apply_settings_sends_configured_hostname \
+	test_apply_settings_restores_netfilter_on \
+	test_apply_settings_sends_netfilter_off \
+	test_apply_settings_skips_netfilter_before_1_68 \
+	test_apply_settings_skips_netfilter_off_before_1_68 \
 	test_source_apply_settings_uses_the_helper
 do
 	if [ -n "${SETTINGS_INIT:-}" ] && [ "$t" = "test_enable_after_disable_starts" ] && [ "$abs_observable" -eq 0 ]; then
