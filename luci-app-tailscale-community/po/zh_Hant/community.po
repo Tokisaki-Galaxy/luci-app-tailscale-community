@@ -9,37 +9,37 @@ msgstr "%s 失敗"
 msgid "(Experimental) Reduce Memory Usage"
 msgstr "(實驗性) 減少記憶體使用"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:734
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:751
 msgid "1. Enable \"Advertise Exit Node\"."
 msgstr "1. 啟用「宣告出口節點」。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:716
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:733
 msgid "1. Select \"Accept Routes\" (to access remote devices)."
 msgstr "1. 勾選「接受路由」(以存取遠端設備)。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:735
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:752
 msgid ""
 "2. Click \"Auto Configure Firewall\" (it forwards Tailscale traffic "
 "to WAN)."
 msgstr "2. 點選「自動設定防火牆」(將 Tailscale 流量轉送到 WAN)。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:717
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:734
 msgid ""
 "2. In \"Advertise Routes\", select your local subnet (to allow remote "
 "devices to access this LAN)."
 msgstr "2. 在「宣告路由」選擇本裝置的區域網段 (讓遠端能存取這個區網)。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:718
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:735
 msgid "3. Click \"Auto Configure Firewall\" (to allow traffic forwarding)."
 msgstr "3. 點選「自動設定防火牆」(允許流量轉送)。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:736
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:753
 msgid ""
 "3. In the Tailscale admin console, edit this device under the route "
 "settings and approve it as an Exit Node."
 msgstr "3. 在 Tailscale 管理控制台的路由設定中編輯此裝置，並核准為出口節點。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:741
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:758
 msgid "4. On the client, set this device as its exit node."
 msgstr "4. 在用戶端上，將此裝置設為出口節點。"
 
@@ -47,7 +47,7 @@ msgstr "4. 在用戶端上，將此裝置設為出口節點。"
 msgid "Accept Routes"
 msgstr "接受路由"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:748
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:765
 msgid "Account Settings"
 msgstr "帳號設定"
 
@@ -55,11 +55,11 @@ msgstr "帳號設定"
 msgid "Advertise Exit Node"
 msgstr "宣告出口節點"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:659
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:676
 msgid "Advertise Routes"
 msgstr "宣告路由"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:659
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:676
 msgid ""
 "Advertise subnet routes behind this device. Select from the detected "
 "subnets below or enter custom routes (comma-separated)."
@@ -81,52 +81,52 @@ msgstr "允許透過 Tailscale 的 SSH 功能連線到此裝置。"
 msgid "Allow user access to tailscale"
 msgstr "允許使用者存取 Tailscale"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:193
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:230
 msgid "Another firewall reload is already running"
 msgstr "另一個防火牆重新載入作業正在執行中"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:822
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:839
 msgid "Are you sure you want to log out?"
 msgstr "您確定要登出嗎？"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:667
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:684
 msgid "Auto Configure Firewall"
 msgstr "自動設定防火牆"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:829
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:846
 msgid "Cancel"
 msgstr "取消"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:773
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:790
 msgid "Click to Log out account on this device."
 msgstr "點選以登出此裝置上的帳號。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:752
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:769
 msgid "Click to get a login URL for this device."
 msgstr "點選獲取此裝置的登入 URL。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:314
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:406
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:614
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:873
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:351
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:443
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:631
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:890
 msgid "Collecting data ..."
 msgstr "正在收集資料..."
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:703
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:720
 msgid ""
 "Configuration committed, reloading network and firewall. This can "
 "take a moment."
 msgstr "設定已提交，正在重新載入網路與防火牆。這可能需要一點時間。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:696
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:713
 msgid "Configuring firewall"
 msgstr "正在設定防火牆"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:849
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:866
 msgid "Confirm Logout"
 msgstr "確認登出"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:475
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:512
 msgid "Connection Info"
 msgstr "連線資訊"
 
@@ -134,17 +134,17 @@ msgstr "連線資訊"
 msgid "Controls how Tailscale DNS is handled."
 msgstr "控制 Tailscale DNS 的處理方式。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:785
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:802
 msgid ""
 "Could not open a new tab. Please check if your browser or an "
 "extension blocked the pop-up."
 msgstr "無法開啟新分頁。請檢查您的瀏覽器或擴充套件程式是否阻止了彈出式視窗。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:757
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:774
 msgid "Custom Login Server"
 msgstr "自訂登入伺服器"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:765
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:782
 msgid "Custom Login Server Auth Key"
 msgstr "自訂登入伺服器認證金鑰"
 
@@ -156,7 +156,7 @@ msgstr "DNS 模式"
 msgid "Daemon MTU"
 msgstr "常駐程式 MTU"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:888
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:905
 msgid "Daemon Settings"
 msgstr "常駐程式設定"
 
@@ -164,7 +164,7 @@ msgstr "常駐程式設定"
 msgid "Declare this device as an Exit Node."
 msgstr "將此裝置宣告為出口節點。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:852
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:869
 msgid "Devices List"
 msgstr "裝置清單"
 
@@ -187,7 +187,7 @@ msgid "Disable Tailscale netfilter auto-configuration (--netfilter-mode=off)."
 msgstr "停用 Tailscale netfilter 自動設定 (--netfilter-mode=off)。"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:85
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:374
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:411
 msgid "Disabled"
 msgstr "已停用"
 
@@ -195,7 +195,7 @@ msgstr "已停用"
 msgid "Disabled: system DNS only."
 msgstr "已停用: 僅使用系統 DNS。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:774
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:791
 msgid "Disconnect from Tailscale and expire current node key."
 msgstr "中斷 Tailscale 連線並使目前節點金鑰過期。"
 
@@ -231,7 +231,7 @@ msgid ""
 "an UDP port open on the router."
 msgstr "將此設備做為對等中繼伺服器。需要公開 IP 位址，且路由器上需要開啟一個 UDP 連接埠。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:374
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:411
 msgid "Enabled"
 msgstr "已啟用"
 
@@ -241,30 +241,30 @@ msgid ""
 "some performance (set GOGC=10)."
 msgstr "啟用此選項可以減少記憶體使用，但可能會犧牲一些效能 (設定 GOGC=10)。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:810
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:827
 msgid "Error"
 msgstr "錯誤"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:295
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:332
 msgid "Error caching DERP region map: %s"
 msgstr "快取 DERP 區域對照表時出錯: %s"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:298
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:335
 msgid "Error fetching DERP region map: %s"
 msgstr "獲取 DERP 區域對照表時出錯: %s"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:268
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:305
 msgid "Error reading cached DERP region map: %s"
 msgstr "讀取快取的 DERP 區域對照表時出錯: %s"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:668
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:685
 msgid ""
 "Essential configuration for Subnet Routing (Site-to-Site) and Exit "
 "Node features."
 msgstr "子網路由(站對站)和出口節點功能的基本設定"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:447
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:635
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:484
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:652
 msgid "Exit Node"
 msgstr "出口節點"
 
@@ -274,28 +274,28 @@ msgid ""
 "Tailscale."
 msgstr "在埠 5252 上暴露一個 Web 介面，用於透過 Tailscale 管理此節點。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:706
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:723
 msgid "Failed to configure firewall: %s"
 msgstr "設定防火牆失敗: %s"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:811
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:828
 msgid "Failed to get login URL. You may close this tab."
 msgstr "獲取登入 URL 失敗。您可以關閉此分頁。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:812
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:816
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:829
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:833
 msgid "Failed to get login URL: %s"
 msgstr "獲取登入 URL 失敗: %s"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:882
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:899
 msgid "Failed to load logs: %s"
 msgstr "載入日誌失敗: %s"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:510
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:547
 msgid "Filter peers by name, IP, or OS..."
 msgstr "依名稱、IP 或作業系統篩選..."
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:527
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:564
 msgid "Filter:"
 msgstr "篩選:"
 
@@ -303,55 +303,55 @@ msgstr "篩選:"
 msgid "Firewall Mode"
 msgstr "防火牆模式"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:699
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:716
 msgid "Firewall configuration already applied."
 msgstr "防火牆設定已套用。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:182
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:219
 msgid "Firewall configuration applied."
 msgstr "已套用防火牆設定"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:188
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:225
 msgid "Firewall reload failed"
 msgstr "防火牆重新載入失敗"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:623
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:640
 msgid "General Settings"
 msgstr "一般設定"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:472
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:509
 msgid "Hostname"
 msgstr "主機名"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:729
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:746
 msgid "How to enable Exit Node?"
 msgstr "如何啟用出口節點？"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:711
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:728
 msgid "How to enable Site-to-Site?"
 msgstr "如何啟用站對站通訊？"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:753
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:770
 msgid ""
 "If the timeout is displayed, you can refresh the page and click Login "
 "again."
 msgstr "如果顯示逾時，您可以重新整理頁面並再次點選登入。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:767
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:784
 msgid ""
 "If you are using custom login server but not providing an Auth Key, "
 "will redirect to the login page without pre-filling the key."
 msgstr "如果您使用自訂登入伺服器但未提供認證金鑰，將重新導向至登入頁面，且不會預先填入金鑰。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:238
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:275
 msgid "Invalid Date"
 msgstr "無效日期"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:812
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:829
 msgid "Invalid response from server."
 msgstr "伺服器回應無效。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:669
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:686
 msgid ""
 "It creates the tailscale interface, adds it to a firewall zone, and "
 "sets up forwarding between LAN and Tailscale, plus Tailscale to WAN."
@@ -359,45 +359,45 @@ msgstr ""
 "它會建立 tailscale 介面、加入防火牆區域，並設定 LAN 與 Tailscale 之間的轉送，以及 Tailscale 到 "
 "WAN 的轉送。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:241
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:278
 msgid "Just now"
 msgstr "剛才"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:353
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:390
 msgid "LOGGED OUT"
 msgstr "已登出"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:478
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:515
 msgid "Last Seen"
 msgstr "上次連線"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:759
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:776
 msgid "Leave blank for default Tailscale control plane."
 msgstr "留白則使用預設的 Tailscale 控制台。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:876
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:893
 msgid "Loading logs"
 msgstr "正在載入日誌"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:835
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:852
 msgid "Logging out..."
 msgstr "正在登出..."
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:751
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:768
 msgid "Login"
 msgstr "登入"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:772
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:838
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:846
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:789
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:855
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:863
 msgid "Logout"
 msgstr "登出"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:843
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:860
 msgid "Logout failed: %s"
 msgstr "登出失敗: %s"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:859
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:876
 msgid "Logs"
 msgstr "日誌"
 
@@ -405,50 +405,50 @@ msgstr "日誌"
 msgid "MagicDNS: Tailscale overrides resolv.conf."
 msgstr "MagicDNS：Tailscale 將接管 resolv.conf。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:671
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:688
 msgid ""
 "Masquerading and MSS Clamping (MTU fix) are enabled to keep "
 "connections stable."
 msgstr "同時啟用偽裝與 MSS Clamping (MTU 修復)，以維持連線穩定。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:235
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:272
 msgid "N/A"
 msgstr "N/A"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:364
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:401
 msgid "NOT RUNNING"
 msgstr "未執行"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:462
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:499
 msgid "No matching peer devices found."
 msgstr "找不到符合的對等裝置。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:423
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:460
 msgid "No peer devices found."
 msgstr "未找到對等裝置。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:391
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:863
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:428
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:880
 msgid "No tailscale-related logs found."
 msgstr "未找到與 tailscale 相關的日誌。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:636
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:653
 msgid "None"
 msgstr "無"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:236
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:273
 msgid "Now"
 msgstr "現在"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:474
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:511
 msgid "OS"
 msgstr "作業系統"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:447
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:484
 msgid "Offline"
 msgstr "離線"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:447
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:484
 msgid "Online"
 msgstr "上線"
 
@@ -464,58 +464,58 @@ msgstr "OpenWrt 轉送：僅經由 dnsmasq 轉送至 MagicDNS。(僅支援tailxx
 msgid "Operation"
 msgstr "操作"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:758
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:775
 msgid ""
 "Optional: Specify a custom control server URL (e.g., a Headscale "
 "instance, %s)."
 msgstr "可選：指定自訂控制伺服器 URL（例如，Headscale 實例，「%s」)。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:766
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:783
 msgid ""
 "Optional: Specify an authentication key for the custom control "
 "server. Leave blank if not required."
 msgstr "可選：為自訂控制伺服器指定一個認證金鑰。如果不需要，請留白。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:627
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:644
 msgid "Peer Relay Port"
 msgstr "對等中繼連接埠"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:355
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:392
 msgid "Please use the login button in the settings below to authenticate."
 msgstr "請使用下方設定中的登入按鈕進行認證。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:795
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:801
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:835
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:812
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:818
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:852
 msgid "Please wait."
 msgstr "請稍候。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:372
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:409
 msgid "RUNNING"
 msgstr "正在執行"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:476
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:513
 msgid "RX"
 msgstr "接收"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:868
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:885
 msgid "Refresh"
 msgstr "重新整理"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:200
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:237
 msgid "Reloading firewall..."
 msgstr "正在重新載入防火牆..."
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:795
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:801
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:812
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:818
 msgid "Requesting Login URL..."
 msgstr "正在請求登入 URL..."
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:792
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:809
 msgid "Requesting Tailscale login URL... Please wait."
 msgstr "正在請求 Tailscale 登入 URL... 請稍候。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:635
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:652
 msgid ""
 "Select an exit node from the list. If enabled, Allow LAN Access is "
 "enabled implicitly."
@@ -527,10 +527,10 @@ msgid ""
 "restart to take effect."
 msgstr "選擇 Tailscale 使用的防火牆後端。需要重新啟動服務才能生效。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:343
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:351
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:363
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:372
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:380
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:388
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:400
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:409
 msgid "Service Status"
 msgstr "服務狀態"
 
@@ -544,56 +544,56 @@ msgstr "為 Tailscale 常駐程式設定自訂 MTU。留白則使用預設值。
 msgid "Shields Up"
 msgstr "封鎖入站連線"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:471
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:508
 msgid "Status"
 msgstr "狀態"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:840
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:857
 msgid "Successfully logged out."
 msgstr "登出成功。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:344
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:381
 msgid "TAILSCALE NOT FOUND"
 msgstr "找不到 TAILSCALE"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:374
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:411
 msgid "TUN Mode"
 msgstr "TUN 模式"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:477
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:514
 msgid "TX"
 msgstr "傳送"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:377
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:414
 msgid "Tailnet Name"
 msgstr "Tailnet 名稱"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:585
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:622
 #: luci-app-tailscale-community/root/usr/share/luci/menu.d/luci-app-tailscale-community.json:1
 msgid "Tailscale"
 msgstr "Tailscale"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:320
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:357
 msgid "Tailscale Health Check: %s"
 msgstr "Tailscale 健康檢查: %s"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:473
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:510
 msgid "Tailscale IP"
 msgstr "Tailscale IP"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:375
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:412
 msgid "Tailscale IPv4"
 msgstr "Tailscale IPv4"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:376
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:413
 msgid "Tailscale IPv6"
 msgstr "Tailscale IPv6"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:791
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:808
 msgid "Tailscale Login"
 msgstr "Tailscale 登入"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:585
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:622
 msgid ""
 "Tailscale is a mesh VPN solution that makes it easy to connect your "
 "devices securely. This configuration page allows you to manage "
@@ -602,48 +602,48 @@ msgstr ""
 "Tailscale 是一個網狀 VPN 解決方案，可以輕鬆地安全連線您的裝置。此設定頁面允許您在 OpenWrt 裝置上管理 "
 "Tailscale 設定。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:412
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:449
 msgid "Tailscale status error"
 msgstr "Tailscale 狀態錯誤"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:670
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:687
 msgid ""
 "The Tailscale to WAN forwarding is what lets clients send their "
 "internet traffic through this device as an Exit Node."
 msgstr "Tailscale 到 WAN 的轉送，讓用戶端能透過此裝置以出口節點傳送網際網路流量。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:793
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:810
 msgid "This can take up to 30 seconds."
 msgstr "此過程最多可能需要 30 秒。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:823
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:840
 msgid ""
 "This will disconnect this device from your Tailnet and require you to "
 "re-authenticate."
 msgstr "這將使此裝置從您的 Tailnet 中斷連線，並需要您重新進行身份驗證。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:166
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:217
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:203
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:254
 msgid "Timed out waiting for the firewall reload"
 msgstr "等待防火牆重新載入逾時"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:628
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:645
 msgid ""
 "UDP port for the Peer Relay service. Open this port on your router "
 "firewall/NAT."
 msgstr "用於對等中繼服務的 UDP 連接埠。請在路由器的防火牆/NAT 上開放此連接埠。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:268
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:295
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:298
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:706
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:816
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:843
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:882
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:305
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:332
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:335
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:723
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:833
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:860
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:899
 msgid "Unknown error"
 msgstr "未知錯誤"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:373
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:410
 msgid "Version"
 msgstr "版本"
 
@@ -657,25 +657,25 @@ msgstr "啟用後，將阻止來自 Tailscale 網路的所有入站連線。"
 msgid "When using the exit node, access to the local LAN is allowed."
 msgstr "使用出口節點時，允許存取區域網路。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:683
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:700
 msgid ""
 "You have unapplied changes. Save & Apply them first so the firewall "
 "matches the form."
 msgstr "您有尚未套用的變更。請先儲存並套用，防火牆才會與表單內容一致。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:719
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:736
 msgid ""
 "[Important] Log in to the Tailscale admin console and manually enable "
 "\"Subnet Routes\" for this device."
 msgstr "【重要】 登入 Tailscale 管理控制台，在裝置設定中手動授權子網路由。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:742
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:759
 msgid ""
 "[Important] Step 3 cannot be done here: it needs your Tailscale "
 "account."
 msgstr "[重要] 步驟 3 無法在此完成：需要您的 Tailscale 帳號。"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:244
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:281
 msgid "ago"
 msgstr "前"
 

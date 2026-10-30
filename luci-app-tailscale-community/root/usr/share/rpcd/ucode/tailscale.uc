@@ -361,12 +361,21 @@ methods.setup_firewall = {
 				// gets a chance to overwrite it. Without both, a poll arriving
 				// while the worker is still starting would read the previous
 				// run's "done" and report success for work that has not run.
-				run_id = time();
-				let st = writefile('/var/run/tailscale-fwsetup.status.tmp',
-					'queued\nstart\n\n' + run_id + '\n');
-				if (st == null || rename('/var/run/tailscale-fwsetup.status.tmp', '/var/run/tailscale-fwsetup.status') == null) {
+				// clock() returns [seconds, nanoseconds], not milliseconds, so
+				// fold it explicitly. Two clicks within the same second still
+				// get distinct ids; the temp file name carries the id as well,
+				// so concurrent writers cannot clobber each other's queued
+				// state through a shared fixed path.
+				let now = clock();
+				run_id = now[0] * 1000 + int(now[1] / 1000000);
+				let tmp = '/var/run/tailscale-fwsetup.status.tmp.' + run_id;
+				let st = writefile(tmp, 'queued\nstart\n\n' + run_id + '\n');
+				if (st == null || rename(tmp, '/var/run/tailscale-fwsetup.status') == null) {
 					// Without a writable status file the poll can never see a
 					// result, so say so instead of letting the UI wait it out.
+					// Drop the temp file we may have created, so a failed run
+					// leaves no stray state behind for the next poll.
+					unlink(tmp);
 					return { error: 'Cannot write the firewall status file in /var/run. The configuration was committed but not applied.' };
 				}
 
@@ -467,7 +476,12 @@ methods.get_logs = {
 	args: { lines: 200 },
 	call: function(request) {
 		let lines = int(request?.args?.lines) || 200;
-		let cmd = 'logread -l ' + lines + ' 2>/dev/null | grep -i -E "tailscale" || true';
+		if (lines < 1) lines = 200;
+		if (lines > 1000) lines = 1000;
+		// Filter first, then take the tail: logread -l would only hand the last
+		// N lines of every daemon to grep, so a busy box hides the tailscale
+		// records entirely and the log page claims there is nothing to show.
+		let cmd = 'logread 2>/dev/null | grep -i -E "tailscale" | tail -n ' + lines;
 		let result = exec(cmd);
 		if (result.code == 0) {
 			return { success: true, logs: result.stdout };
