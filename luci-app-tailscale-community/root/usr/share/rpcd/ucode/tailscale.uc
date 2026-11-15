@@ -233,14 +233,20 @@ methods.get_subroutes = {
 methods.setup_firewall = {
 	call: function() {
 		try {
-			uci.load('tailscale');
-
 			uci.load('network');
 			uci.load('firewall');
 
 			let changed_network = false;
 			let changed_firewall = false;
 			let run_id = 0;
+
+			// A previous run that failed or was killed left the configuration
+			// committed but not applied, so its UCI diff is gone and a second
+			// click would otherwise report "already configured" while nothing
+			// took effect. This marker is written before the commit and
+			// removed only by a worker that finished the reload.
+			const PENDING = '/var/run/tailscale-fwsetup.pending';
+			let pending = access(PENDING);
 
 			// 1. config Network Interface
 			let net_ts = uci.get('network', 'tailscale');
@@ -341,6 +347,16 @@ methods.setup_firewall = {
 			// button failed through a reverse proxy: the reload tears down the
 			// connection carrying this very request. The worker records its
 			// progress in /var/run/tailscale-fwsetup.status and the UI polls it.
+			if (changed_network || changed_firewall) {
+				// Written before the commit: if anything below fails, the
+				// configuration is already committed and only the reload is
+				// missing, which is exactly what the marker records.
+				if (writefile(PENDING, '1\n') == null) {
+					return { error: 'Cannot write the firewall pending marker in /var/run. The configuration was not changed.' };
+				}
+				pending = true;
+			}
+
 			if (changed_network) {
 				uci.save('network');
 				uci.commit('network');
@@ -351,7 +367,7 @@ methods.setup_firewall = {
 				uci.commit('firewall');
 			}
 
-			if (changed_network || changed_firewall) {
+			if (pending) {
 				if (!access('/usr/libexec/tailscale-setup-firewall')) {
 					return { error: 'Firewall worker /usr/libexec/tailscale-setup-firewall is missing. Reinstall the package.' };
 				}
@@ -392,9 +408,9 @@ methods.setup_firewall = {
 				success: true,
 				changed_network: changed_network,
 				changed_firewall: changed_firewall,
-				job: (changed_network || changed_firewall) ? 'running' : 'idle',
+				job: pending ? 'running' : 'idle',
 				run_id: run_id,
-				message: (changed_network || changed_firewall) ? 'Configuration committed, reloading network and firewall in the background.' : 'Tailscale firewall/interface already configured.'
+				message: pending ? 'Configuration committed, reloading network and firewall in the background.' : 'Tailscale firewall/interface already configured.'
 			};
 
 		} catch (e) {
