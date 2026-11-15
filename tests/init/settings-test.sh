@@ -467,6 +467,58 @@ test_enable_path_keeps_the_running_probe() {
 	assert_call_count "tailscale restart" 0
 }
 
+# A hand edited service_enabled=0 only ran `tailscale disable`, so the 0 -> 1
+# transition has to put the autostart symlink back even though the daemon was
+# never stopped. Without it the tunnel is gone after the next reboot while the
+# form and the recorded state both say enabled.
+test_enable_restores_autostart_after_hand_edited_disable() {
+	setup
+	echo 1 > "$DAEMON_RUNNING"
+	set_option service_enabled 1
+	echo 0 > "$ENABLED_FILE"
+
+	handle_service_state
+	assert_call "tailscale enable"
+	assert_call_count "tailscale start" 0
+	assert_call_count "tailscale restart" 0
+	assert_call_count "tailscale stop" 0
+	if [ "$(cat "$ENABLED_FILE")" = "1" ]; then pass; else fail "recorded state not corrected"; fi
+}
+
+# Adopting a hand edited service_enabled=0 as the baseline used to record 0
+# and return, leaving autostart enabled because the disable path was never
+# reached, so the daemon came back on the next boot.
+test_baseline_adoption_disables_autostart() {
+	setup
+	echo 1 > "$DAEMON_RUNNING"
+	set_option service_enabled 0
+
+	handle_service_state
+	assert_call "tailscale disable"
+	assert_call_count "tailscale stop" 0
+	if [ "$(cat "$ENABLED_FILE")" = "0" ]; then pass; else fail "enabled record should be 0"; fi
+}
+
+# The RPC arms a stop request on every save with the checkbox off. An unchanged
+# disabled state used to return before consuming it, so the request stayed
+# around forever and the daemon was never stopped.
+test_armed_request_wins_over_unchanged_disabled_state() {
+	setup
+	echo 1 > "$DAEMON_RUNNING"
+	echo 0 > "$ENABLED_FILE"
+	touch "$DISABLE_REQUEST_FILE"
+	set_option service_enabled 0
+
+	handle_service_state
+	assert_call "tailscale stop"
+	assert_call "tailscale disable"
+	if [ -f "$DISABLE_REQUEST_FILE" ]; then
+		fail "disable request should be consumed"
+	else
+		pass
+	fi
+}
+
 # rc.common runs every action in a fresh shell, so when procd's config.change
 # trigger calls reload_service nothing has read /etc/config/tailscale yet. The
 # handler reads service_enabled and the daemon options itself, so
@@ -1010,6 +1062,9 @@ for t in \
 	test_manual_disable_then_enabled_config_starts \
 	test_boot_keeps_existing_state_record \
 	test_enable_does_not_start_a_running_daemon \
+	test_enable_restores_autostart_after_hand_edited_disable \
+	test_baseline_adoption_disables_autostart \
+	test_armed_request_wins_over_unchanged_disabled_state \
 	test_reload_service_stops_a_disabled_service \
 	test_reload_service_keeps_a_disabled_service_down \
 	test_reload_service_nondefault_daemon_option_no_restart \

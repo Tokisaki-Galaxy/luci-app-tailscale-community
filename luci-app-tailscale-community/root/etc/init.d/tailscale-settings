@@ -30,13 +30,6 @@ version_gte() {
 	return $?
 }
 
-# Path of the tailscale daemon state file, as configured for the daemon init.
-tailscale_state_file() {
-	local state_file
-	config_get state_file settings state_file '/etc/tailscale/tailscaled.state'
-	echo "$state_file"
-}
-
 # Fingerprint of the UCI options that are only read by the daemon init script
 # (they end up as procd env/command arguments, so changing them needs a restart).
 daemon_signature() {
@@ -339,8 +332,16 @@ sync_service_enabled() {
 			if [ -f "$DISABLE_REQUEST_FILE" ]; then
 				prev=1
 			else
+				# Autostart still has to match the configuration. A hand
+				# edited service_enabled=0 that lands here used to record 0
+				# and return, leaving the rc.d symlink in place, so the
+				# daemon came back on the next boot even though the option
+				# said disabled. Disabling does not touch a running daemon.
+				if [ "$service_enabled" = "0" ]; then
+					"$TAILSCALE_INIT" disable 2>/dev/null
+				fi
 				echo "$service_enabled" > "$ENABLED_FILE"
-				prev="$service_enabled"
+				return 0
 			fi
 			;;
 	esac
@@ -350,22 +351,24 @@ sync_service_enabled() {
 	fi
 
 	if [ "$service_enabled" = "0" ]; then
-		if [ "$prev" = "0" ]; then
+		# An unchanged disabled state only stays untouched when nothing asked
+		# for a stop. The RPC arms a request on every save with the checkbox
+		# off, and dropping it here left that request unconsumed forever.
+		if [ "$prev" = "0" ] && [ "$requested" -eq 0 ]; then
 			return 0
 		fi
+
+		"$TAILSCALE_INIT" disable 2>/dev/null
 
 		# Only stop when the UI asked for it, a hand edited config is
 		# respected for autostart but never kills a running tunnel.
-		if [ "$requested" -eq 0 ]; then
+		if [ "$requested" -eq 1 ]; then
+			logger -t "$NAME" "Service disabled, stopping tailscale"
+			"$TAILSCALE_INIT" stop 2>/dev/null
+		else
 			logger -t "$NAME" "service_enabled=0 for the first time, disabling autostart only"
-			"$TAILSCALE_INIT" disable 2>/dev/null
-			echo "0" > "$ENABLED_FILE"
-			return 0
 		fi
 
-		logger -t "$NAME" "Service disabled, stopping tailscale"
-		"$TAILSCALE_INIT" stop 2>/dev/null
-		"$TAILSCALE_INIT" disable 2>/dev/null
 		rm -f "$DISABLE_REQUEST_FILE"
 		echo "0" > "$ENABLED_FILE"
 		return 0
@@ -379,7 +382,13 @@ sync_service_enabled() {
 	# apply, not because some unrelated option happened to be saved, and not
 	# because it crashed or was stopped by hand.
 	if tailscale_running; then
-		[ "$prev" = "1" ] || echo "1" > "$ENABLED_FILE"
+		# A hand edited disable only removed the autostart symlink, so the
+		# 0 -> 1 transition still has to restore it. Autostart is separate
+		# from the daemon, so this does not touch the running process.
+		if [ "$prev" != "1" ]; then
+			"$TAILSCALE_INIT" enable 2>/dev/null
+		fi
+		echo "1" > "$ENABLED_FILE"
 		return 0
 	fi
 
