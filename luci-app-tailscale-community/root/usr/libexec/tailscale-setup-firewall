@@ -15,6 +15,11 @@
 
 STATE_FILE=/var/run/tailscale-fwsetup.status
 LOCK_FILE=/var/run/tailscale-fwsetup.lock
+# Records that a committed configuration still has to be applied. The RPC
+# writes it before it commits, and this worker removes it only after a
+# successful reload, so a run that failed or was killed can be retried even
+# though the UCI diff is already gone by then.
+PENDING_FILE=/var/run/tailscale-fwsetup.pending
 
 RUN_ID="$1"
 
@@ -97,7 +102,17 @@ fi
 echo "$$" > "$LOCK_DIR/pid"
 date +%s > "$LOCK_DIR/ts"
 
-trap 'write_state failed aborted "Worker terminated unexpectedly"; rm -rf "$LOCK_DIR"' EXIT HUP INT TERM
+# A trapped signal runs the handler and then lets the shell carry on with the
+# next command, which would reload the network after reporting "failed" and
+# still finish with "done". Exit instead and leave the cleanup to the EXIT trap.
+trap 'write_state failed aborted "Worker terminated unexpectedly"; rm -rf "$LOCK_DIR"' EXIT
+trap 'exit 1' HUP INT TERM
+
+# Let the RPC reply reach the client before the network goes down. This worker
+# is spawned by the request whose connection the reload tears down, and the
+# reply is written after the RPC returns, so reloading immediately can drop it
+# and make the UI report an error for a job that did run.
+sleep 1
 
 write_state running network "Reloading network"
 
@@ -118,5 +133,8 @@ if ! /etc/init.d/firewall reload >/dev/null 2>&1; then
 fi
 
 write_state done done "Firewall configuration applied"
+# Only a finished reload clears this, so a failed or killed run is retried by
+# the next click even though its UCI changes are already committed.
+rm -f "$PENDING_FILE"
 trap - EXIT HUP INT TERM
 rm -rf "$LOCK_DIR"
