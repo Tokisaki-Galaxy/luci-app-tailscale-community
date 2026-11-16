@@ -784,6 +784,7 @@ return view.extend({
 			+'<br>'+_('If you are using custom login server but not providing an Auth Key, will redirect to the login page without pre-filling the key.')
 		);
 		customLoginAuthKey.placeholder = '';
+		customLoginAuthKey.password = true;
 		customLoginAuthKey.rmempty = true;
 
 		const logoutBtn = s.taboption('account', form.Button, '_logout', _('Logout'),
