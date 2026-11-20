@@ -98,7 +98,7 @@ msgstr "Permitir el acceso de usuarios a Tailscale"
 msgid "Another firewall reload is already running"
 msgstr "Ya se está recargando el cortafuegos"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:851
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:852
 msgid "Are you sure you want to log out?"
 msgstr "¿Seguro que desea cerrar la sesión?"
 
@@ -106,15 +106,15 @@ msgstr "¿Seguro que desea cerrar la sesión?"
 msgid "Auto Configure Firewall"
 msgstr "Configurar el cortafuegos automáticamente"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:858
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:859
 msgid "Cancel"
 msgstr "Cancelar"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:894
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:895
 msgid "Click Refresh to load logs."
 msgstr "Haga clic en «Actualizar» para cargar el registro."
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:802
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:803
 msgid "Click to Log out account on this device."
 msgstr "Haga clic para cerrar la sesión de la cuenta en este dispositivo."
 
@@ -127,7 +127,7 @@ msgstr ""
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:351
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:445
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:633
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:904
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:905
 msgid "Collecting data ..."
 msgstr "Recopilando datos..."
 
@@ -141,7 +141,7 @@ msgstr ""
 msgid "Configuring firewall"
 msgstr "Configurando el cortafuegos"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:878
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:879
 msgid "Confirm Logout"
 msgstr "Confirmar cierre de sesión"
 
@@ -153,7 +153,7 @@ msgstr "Información de conexión"
 msgid "Controls how Tailscale DNS is handled."
 msgstr "Controla cómo se gestiona el DNS de Tailscale."
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:814
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:815
 msgid ""
 "Could not open a new tab. Please check if your browser or an "
 "extension blocked the pop-up."
@@ -177,7 +177,7 @@ msgstr "Modo DNS"
 msgid "Daemon MTU"
 msgstr "MTU del demonio"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:919
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:920
 msgid "Daemon Settings"
 msgstr "Ajustes del demonio"
 
@@ -185,7 +185,7 @@ msgstr "Ajustes del demonio"
 msgid "Declare this device as an Exit Node."
 msgstr "Declarar este dispositivo como nodo de salida."
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:881
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:882
 msgid "Devices List"
 msgstr "Lista de dispositivos"
 
@@ -221,7 +221,7 @@ msgstr "Desactivado"
 msgid "Disabled: system DNS only."
 msgstr "Desactivado: solo el DNS del sistema."
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:803
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:804
 msgid "Disconnect from Tailscale and expire current node key."
 msgstr "Desconectar de Tailscale e invalidar la clave actual del nodo."
 
@@ -274,7 +274,7 @@ msgstr ""
 "Activar esta opción puede reducir el uso de memoria, pero puede "
 "mermar algo el rendimiento (establece GOGC=10)."
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:839
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:840
 msgid "Error"
 msgstr "Error"
 
@@ -315,18 +315,18 @@ msgstr ""
 msgid "Failed to configure firewall: %s"
 msgstr "No se pudo configurar el cortafuegos: %s"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:840
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:841
 msgid "Failed to get login URL. You may close this tab."
 msgstr ""
 "No se pudo obtener la URL de inicio de sesión. Puede cerrar esta "
 "pestaña."
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:841
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:845
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:842
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:846
 msgid "Failed to get login URL: %s"
 msgstr "No se pudo obtener la URL de inicio de sesión: %s"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:913
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:914
 msgid "Failed to load logs: %s"
 msgstr "No se pudieron cargar los registros: %s"
 
@@ -391,7 +391,7 @@ msgstr ""
 msgid "Invalid Date"
 msgstr "Fecha no válida"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:841
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:842
 msgid "Invalid response from server."
 msgstr "Respuesta no válida del servidor."
 
@@ -421,11 +421,11 @@ msgstr ""
 "Déjelo en blanco para usar el plano de control predeterminado de "
 "Tailscale."
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:907
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:908
 msgid "Loading logs"
 msgstr "Cargando registros"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:864
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:865
 msgid "Logging out..."
 msgstr "Cerrando sesión..."
 
@@ -433,17 +433,17 @@ msgstr "Cerrando sesión..."
 msgid "Login"
 msgstr "Iniciar sesión"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:801
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:867
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:875
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:802
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:868
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:876
 msgid "Logout"
 msgstr "Cerrar sesión"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:872
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:873
 msgid "Logout failed: %s"
 msgstr "Error al cerrar sesión: %s"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:888
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:889
 msgid "Logs"
 msgstr "Registros"
 
@@ -539,9 +539,9 @@ msgstr ""
 "Utilice el botón de inicio de sesión de los ajustes que aparecen a "
 "continuación para autenticarse."
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:824
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:830
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:864
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:825
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:831
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:865
 msgid "Please wait."
 msgstr "Espere, por favor."
 
@@ -553,7 +553,7 @@ msgstr "EN EJECUCIÓN"
 msgid "RX"
 msgstr "RX"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:899
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:900
 msgid "Refresh"
 msgstr "Actualizar"
 
@@ -561,12 +561,12 @@ msgstr "Actualizar"
 msgid "Reloading firewall..."
 msgstr "Recargando el cortafuegos..."
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:824
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:830
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:825
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:831
 msgid "Requesting Login URL..."
 msgstr "Solicitando la URL de inicio de sesión..."
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:821
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:822
 msgid "Requesting Tailscale login URL... Please wait."
 msgstr ""
 "Solicitando la URL de inicio de sesión de Tailscale... Espere, por "
@@ -611,7 +611,7 @@ msgstr "Bloquear conexiones entrantes"
 msgid "Status"
 msgstr "Estado"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:869
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:870
 msgid "Successfully logged out."
 msgstr "Sesión cerrada correctamente."
 
@@ -652,7 +652,7 @@ msgstr "IPv4 de Tailscale"
 msgid "Tailscale IPv6"
 msgstr "IPv6 de Tailscale"
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:820
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:821
 msgid "Tailscale Login"
 msgstr "Inicio de sesión en Tailscale"
 
@@ -679,11 +679,11 @@ msgstr ""
 "clientes envíen su tráfico de Internet a través de este dispositivo "
 "como nodo de salida."
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:822
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:823
 msgid "This can take up to 30 seconds."
 msgstr "Esto puede tardar hasta 30 segundos."
 
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:852
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:853
 msgid ""
 "This will disconnect this device from your Tailnet and require you to "
 "re-authenticate."
@@ -708,9 +708,9 @@ msgstr ""
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:332
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:335
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:735
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:845
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:872
-#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:913
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:846
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:873
+#: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:914
 msgid "Unknown error"
 msgstr "Error desconocido"
 
