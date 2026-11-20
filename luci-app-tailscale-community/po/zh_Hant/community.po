@@ -357,11 +357,9 @@ msgstr "伺服器回應無效。"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:688
 msgid ""
-"It creates the tailscale interface, adds it to a firewall zone, and "
-"sets up forwarding between LAN and Tailscale, plus Tailscale to WAN."
-msgstr ""
-"它會建立 tailscale 介面、加入防火牆區域，並設定 LAN 與 Tailscale 之間的轉送，以及 Tailscale 到 "
-"WAN 的轉送。"
+"It binds the tailscale0 device to a firewall zone and sets up "
+"forwarding between LAN and Tailscale, plus Tailscale to WAN."
+msgstr "將 tailscale0 裝置綁定到防火牆區域，並設定 LAN 與 Tailscale 之間以及 Tailscale 到 WAN 的轉發。"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:278
 msgid "Just now"
@@ -738,3 +736,10 @@ msgstr "前"
 #~ "Enable or disable the Tailscale service. When disabled, the service "
 #~ "will be stopped and the process will be killed."
 #~ msgstr "啟用或停用 Tailscale 服務。停用後，該服務將停止，處理程序將被終止。"
+
+#~ msgid ""
+#~ "It creates the tailscale interface, adds it to a firewall zone, and "
+#~ "sets up forwarding between LAN and Tailscale, plus Tailscale to WAN."
+#~ msgstr ""
+#~ "它會建立 tailscale 介面、加入防火牆區域，並設定 LAN 與 Tailscale 之間的轉送，以及 Tailscale 到 "
+#~ "WAN 的轉送。"

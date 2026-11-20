@@ -399,12 +399,11 @@ msgstr "Respuesta no válida del servidor."
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:688
 msgid ""
-"It creates the tailscale interface, adds it to a firewall zone, and "
-"sets up forwarding between LAN and Tailscale, plus Tailscale to WAN."
+"It binds the tailscale0 device to a firewall zone and sets up "
+"forwarding between LAN and Tailscale, plus Tailscale to WAN."
 msgstr ""
-"Crea la interfaz tailscale, la agrega a una zona del cortafuegos y "
-"configura el reenvío entre la LAN y Tailscale, además de Tailscale "
-"hacia la WAN."
+"Vincula el dispositivo tailscale0 a una zona del cortafuegos y "
+"configura el reenvío entre LAN y Tailscale, además de Tailscale a WAN."
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:278
 msgid "Just now"
@@ -792,3 +791,11 @@ msgstr "atrás"
 #~ msgstr ""
 #~ "Activa o desactiva el servicio Tailscale. Al desactivarlo, el "
 #~ "servicio se detendrá y el proceso se finalizará."
+
+#~ msgid ""
+#~ "It creates the tailscale interface, adds it to a firewall zone, and "
+#~ "sets up forwarding between LAN and Tailscale, plus Tailscale to WAN."
+#~ msgstr ""
+#~ "Crea la interfaz tailscale, la agrega a una zona del cortafuegos y "
+#~ "configura el reenvío entre la LAN y Tailscale, además de Tailscale "
+#~ "hacia la WAN."

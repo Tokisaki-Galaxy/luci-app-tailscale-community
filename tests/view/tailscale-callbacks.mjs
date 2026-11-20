@@ -417,6 +417,10 @@ async function run() {
 	// enough: dropping either of the first two must fail here.
 	const desc = String((h13.option('_setup_firewall') || {}).description || '');
 
+	check('the description names direct device binding',
+		desc.indexOf('binds the tailscale0 device to a firewall zone') !== -1, desc);
+	check('the description does not promise a network interface',
+		desc.indexOf('creates the tailscale interface') === -1, desc);
 	check('the description names the LAN and Tailscale directions',
 		desc.indexOf('forwarding between LAN and Tailscale') !== -1, desc);
 	check('the description names Tailscale to WAN as a separate direction',

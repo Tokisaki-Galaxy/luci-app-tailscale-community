@@ -357,11 +357,9 @@ msgstr "服务器响应无效。"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:688
 msgid ""
-"It creates the tailscale interface, adds it to a firewall zone, and "
-"sets up forwarding between LAN and Tailscale, plus Tailscale to WAN."
-msgstr ""
-"它会创建 tailscale 接口，将其加入防火墙区域，并设置 LAN 与 Tailscale 之间的转发，以及 Tailscale 到 "
-"WAN 的转发。"
+"It binds the tailscale0 device to a firewall zone and sets up "
+"forwarding between LAN and Tailscale, plus Tailscale to WAN."
+msgstr "将 tailscale0 设备绑定到防火墙区域，并设置 LAN 与 Tailscale 之间以及 Tailscale 到 WAN 的转发。"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:278
 msgid "Just now"
@@ -738,3 +736,10 @@ msgstr "前"
 #~ "Enable or disable the Tailscale service. When disabled, the service "
 #~ "will be stopped and the process will be killed."
 #~ msgstr "启用或禁用Tailscale服务。禁用后，服务将被停止，当前进程将被终止。"
+
+#~ msgid ""
+#~ "It creates the tailscale interface, adds it to a firewall zone, and "
+#~ "sets up forwarding between LAN and Tailscale, plus Tailscale to WAN."
+#~ msgstr ""
+#~ "它会创建 tailscale 接口，将其加入防火墙区域，并设置 LAN 与 Tailscale 之间的转发，以及 Tailscale 到 "
+#~ "WAN 的转发。"

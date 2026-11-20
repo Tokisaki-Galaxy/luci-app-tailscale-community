@@ -393,12 +393,11 @@ msgstr "Nieprawidłowa odpowiedź z serwera."
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:688
 msgid ""
-"It creates the tailscale interface, adds it to a firewall zone, and "
-"sets up forwarding between LAN and Tailscale, plus Tailscale to WAN."
+"It binds the tailscale0 device to a firewall zone and sets up "
+"forwarding between LAN and Tailscale, plus Tailscale to WAN."
 msgstr ""
-"Tworzy interfejs tailscale, dodaje go do strefy zapory i konfiguruje "
-"przekazywanie między sieciami LAN i Tailscale oraz z Tailscale do "
-"sieci WAN."
+"Wiąże urządzenie tailscale0 ze strefą zapory i konfiguruje "
+"przekazywanie między LAN a Tailscale oraz z Tailscale do WAN."
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:278
 msgid "Just now"
@@ -787,3 +786,11 @@ msgstr "temu"
 #~ msgstr ""
 #~ "Włącz lub wyłącz usługę Tailscale. Po wyłączeniu usługa zostanie "
 #~ "zatrzymana, a proces zostanie zakończony."
+
+#~ msgid ""
+#~ "It creates the tailscale interface, adds it to a firewall zone, and "
+#~ "sets up forwarding between LAN and Tailscale, plus Tailscale to WAN."
+#~ msgstr ""
+#~ "Tworzy interfejs tailscale, dodaje go do strefy zapory i konfiguruje "
+#~ "przekazywanie między sieciami LAN i Tailscale oraz z Tailscale do "
+#~ "sieci WAN."

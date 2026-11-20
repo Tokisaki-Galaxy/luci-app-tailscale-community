@@ -685,7 +685,7 @@ return view.extend({
 
 		const fwBtn = s.taboption('general', form.Button, '_setup_firewall', _('Auto Configure Firewall'));
 		fwBtn.description = _('Essential configuration for Subnet Routing (Site-to-Site) and Exit Node features.')
-		+'<br>'+_('It creates the tailscale interface, adds it to a firewall zone, and sets up forwarding between LAN and Tailscale, plus Tailscale to WAN.')
+		+'<br>'+_('It binds the tailscale0 device to a firewall zone and sets up forwarding between LAN and Tailscale, plus Tailscale to WAN.')
 		+'<br>'+_('The Tailscale to WAN forwarding is what lets clients send their internet traffic through this device as an Exit Node.')
 		+'<br>'+_('Masquerading and MSS Clamping (MTU fix) are enabled to keep connections stable.');
 		fwBtn.inputstyle = 'action';
