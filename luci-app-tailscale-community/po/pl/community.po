@@ -130,12 +130,10 @@ msgid "Collecting data ..."
 msgstr "Zbieranie danych ..."
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:722
-msgid ""
-"Configuration committed, reloading network and firewall. This can "
-"take a moment."
+msgid "Configuration committed, reloading firewall. This can take a moment."
 msgstr ""
-"Konfiguracja została zatwierdzona, ponowne ładowanie sieci i zapory. "
-"Może to chwilę potrwać."
+"Konfiguracja zatwierdzona, ponowne ładowanie zapory. Może to chwilę "
+"potrwać."
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:715
 msgid "Configuring firewall"
@@ -794,3 +792,10 @@ msgstr "temu"
 #~ "Tworzy interfejs tailscale, dodaje go do strefy zapory i konfiguruje "
 #~ "przekazywanie między sieciami LAN i Tailscale oraz z Tailscale do "
 #~ "sieci WAN."
+
+#~ msgid ""
+#~ "Configuration committed, reloading network and firewall. This can "
+#~ "take a moment."
+#~ msgstr ""
+#~ "Konfiguracja została zatwierdzona, ponowne ładowanie sieci i zapory. "
+#~ "Może to chwilę potrwać."

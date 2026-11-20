@@ -279,7 +279,7 @@ async function run() {
 	console.log('test: a failed background job is reported');
 	const h3 = makeHarness({
 		setup_firewall: { success: true, changed_network: true, changed_firewall: false, job: 'running', run_id: 8 },
-		get_firewall_status: { success: true, state: 'failed', message: 'Network reload failed', run_id: 8 }
+		get_firewall_status: { success: true, state: 'failed', message: 'Firewall reload failed', run_id: 8 }
 	});
 	await h3.start();
 	await h3.button('_setup_firewall')();
@@ -288,7 +288,7 @@ async function run() {
 		h3.notifications.some(function(n) { return n.cls === 'error'; }),
 		JSON.stringify(h3.notifications));
 	check('the job message is surfaced',
-		h3.notifications.some(function(n) { return n.text.indexOf('Network reload failed') !== -1; }),
+		h3.notifications.some(function(n) { return n.text.indexOf('Firewall reload failed') !== -1; }),
 		JSON.stringify(h3.notifications));
 
 	console.log('test: nothing changed means no polling');

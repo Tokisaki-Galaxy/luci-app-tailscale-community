@@ -117,9 +117,7 @@ msgid "Collecting data ..."
 msgstr ""
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:722
-msgid ""
-"Configuration committed, reloading network and firewall. This can "
-"take a moment."
+msgid "Configuration committed, reloading firewall. This can take a moment."
 msgstr ""
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:715

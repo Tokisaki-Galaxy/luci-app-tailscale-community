@@ -117,10 +117,8 @@ msgid "Collecting data ..."
 msgstr "正在收集資料..."
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:722
-msgid ""
-"Configuration committed, reloading network and firewall. This can "
-"take a moment."
-msgstr "設定已提交，正在重新載入網路與防火牆。這可能需要一點時間。"
+msgid "Configuration committed, reloading firewall. This can take a moment."
+msgstr "設定已提交，正在重新載入防火牆。這可能需要一點時間。"
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:715
 msgid "Configuring firewall"
@@ -743,3 +741,8 @@ msgstr "前"
 #~ msgstr ""
 #~ "它會建立 tailscale 介面、加入防火牆區域，並設定 LAN 與 Tailscale 之間的轉送，以及 Tailscale 到 "
 #~ "WAN 的轉送。"
+
+#~ msgid ""
+#~ "Configuration committed, reloading network and firewall. This can "
+#~ "take a moment."
+#~ msgstr "設定已提交，正在重新載入網路與防火牆。這可能需要一點時間。"

@@ -249,8 +249,8 @@ methods.setup_firewall = {
 			// Bind the firewall zone directly to the tun device. Creating a
 			// proto-none network interface would let netifd take ownership of
 			// tailscale0 and erase tailscaled's addresses and routes on reload.
-			// Leave existing network-based configurations untouched: migrating
-			// them requires a network reload and a tailscale restart.
+			// Leave existing network-based configurations untouched. The worker
+			// only reloads the firewall, so netifd does not clear their state.
 			// 1. config Firewall Zone
 			let ts_zone_section = null;
 			let fwd_lan_to_ts = false;
@@ -312,8 +312,7 @@ methods.setup_firewall = {
 					}
 
 					if (!has_ts_net) {
-						push(net_list, 'tailscale');
-						uci.set('firewall', ts_zone_section, 'network', net_list);
+						uci.set('firewall', ts_zone_section, 'device', ['tailscale0']);
 						changed_firewall = true;
 					}
 				}
@@ -349,8 +348,7 @@ methods.setup_firewall = {
 
 			// 3. save and hand the reload to a background worker
 			//
-			// Reloading network/firewall synchronously here was the reason the
-			// button failed through a reverse proxy: the reload tears down the
+			// Reloading the firewall synchronously here can tear down the
 			// connection carrying this very request. The worker records its
 			// progress in /var/run/tailscale-fwsetup.status and the UI polls it.
 			if (changed_firewall) {
@@ -411,7 +409,7 @@ methods.setup_firewall = {
 				changed_firewall: changed_firewall,
 				job: pending ? 'running' : 'idle',
 				run_id: run_id,
-				message: pending ? 'Configuration committed, reloading network and firewall in the background.' : 'Tailscale firewall already configured.'
+				message: pending ? 'Configuration committed, reloading firewall in the background.' : 'Tailscale firewall already configured.'
 			};
 
 		} catch (e) {

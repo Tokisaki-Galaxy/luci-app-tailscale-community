@@ -132,12 +132,10 @@ msgid "Collecting data ..."
 msgstr "Recopilando datos..."
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:722
-msgid ""
-"Configuration committed, reloading network and firewall. This can "
-"take a moment."
+msgid "Configuration committed, reloading firewall. This can take a moment."
 msgstr ""
-"Configuración guardada, recargando la red y el cortafuegos. Esto "
-"puede tardar un momento."
+"Configuración confirmada, recargando el cortafuegos. Esto puede "
+"tardar un momento."
 
 #: luci-app-tailscale-community/htdocs/luci-static/resources/view/tailscale.js:715
 msgid "Configuring firewall"
@@ -799,3 +797,10 @@ msgstr "atrás"
 #~ "Crea la interfaz tailscale, la agrega a una zona del cortafuegos y "
 #~ "configura el reenvío entre la LAN y Tailscale, además de Tailscale "
 #~ "hacia la WAN."
+
+#~ msgid ""
+#~ "Configuration committed, reloading network and firewall. This can "
+#~ "take a moment."
+#~ msgstr ""
+#~ "Configuración guardada, recargando la red y el cortafuegos. Esto "
+#~ "puede tardar un momento."

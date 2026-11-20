@@ -201,7 +201,7 @@ check "the takeover worker exits 0" [ "$status" -eq 0 ]
 check "done state" [ "$(sed -n 1p "$STATE_FILE")" = "done" ]
 check "done step" [ "$(sed -n 2p "$STATE_FILE")" = "done" ]
 check "run id kept" [ "$(sed -n 4p "$STATE_FILE")" = "staleid" ]
-check "network was reloaded" grep -qx network "$SANDBOX/reload.log"
+check "network is not reloaded" sh -c "! grep -qx network '$SANDBOX/reload.log'"
 check "firewall was reloaded" grep -qx firewall "$SANDBOX/reload.log"
 check "the lock is released" [ ! -e "$LOCK_DIR" ]
 check "no renamed lock left behind" [ -z "$(ls -d "$LOCK_DIR".stale.* 2>/dev/null)" ]
@@ -216,7 +216,7 @@ status=$?
 check "the takeover worker exits 0" [ "$status" -eq 0 ]
 check "done state" [ "$(sed -n 1p "$STATE_FILE")" = "done" ]
 check "run id kept" [ "$(sed -n 4p "$STATE_FILE")" = "notsid" ]
-check "network was reloaded" grep -qx network "$SANDBOX/reload.log"
+check "network is not reloaded" sh -c "! grep -qx network '$SANDBOX/reload.log'"
 check "the lock is released" [ ! -e "$LOCK_DIR" ]
 
 echo "test: a finished run clears the pending marker"
@@ -249,12 +249,12 @@ build_worker
 echo "test: a terminated worker stops instead of finishing the reload"
 rm -rf "$LOCK_DIR" "$STATE_FILE" "$SANDBOX/reload.log"
 rm -f "$PENDING_FILE"
-cat > "$SANDBOX/bin/network" <<EOF
+cat > "$SANDBOX/bin/firewall" <<EOF
 #!/bin/sh
-echo network >> "$SANDBOX/reload.log"
+echo firewall >> "$SANDBOX/reload.log"
 sleep 30
 EOF
-chmod +x "$SANDBOX/bin/network"
+chmod +x "$SANDBOX/bin/firewall"
 sh "$SANDBOX/worker" sigid &
 worker_pid=$!
 sleep 0.3

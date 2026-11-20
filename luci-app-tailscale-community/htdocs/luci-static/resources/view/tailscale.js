@@ -719,7 +719,7 @@ return view.extend({
 					return null;
 				}
 
-				notifyTimed(null, [ E('p', _('Configuration committed, reloading network and firewall. This can take a moment.')) ], 5000, 'info');
+				notifyTimed(null, [ E('p', _('Configuration committed, reloading firewall. This can take a moment.')) ], 5000, 'info');
 				return pollFirewallJob(res.run_id);
 			}).catch(function(err) {
 				// The reply itself can be the casualty of the reload it
