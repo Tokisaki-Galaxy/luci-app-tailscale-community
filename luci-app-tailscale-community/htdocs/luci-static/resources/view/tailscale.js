@@ -73,7 +73,7 @@ function unwrapRpc(res, action) {
 }
 
 const tailscaleSettingsConf = [
-	[form.Flag, 'service_enabled', _('Enable Tailscale Service'), _('Enable or disable the Tailscale service. When disabled, the service will be stopped and the process will be killed.'), { rmempty: false }],
+	[form.Flag, 'service_enabled', _('Enable Tailscale Service'), _('Enable or disable the Tailscale service. Turning it off here stops the daemon and disables autostart; turning it back on starts it again.'), { rmempty: false }],
 	[form.ListValue, 'fw_mode', _('Firewall Mode'), _('Select the firewall backend for Tailscale to use. Requires service restart to take effect.'), {values: ['nftables','iptables'],rmempty: false}],
 	[form.Flag, 'accept_routes', _('Accept Routes'), _('Allow accepting routes announced by other nodes.'), { rmempty: false }],
 	[form.Flag, 'advertise_exit_node', _('Advertise Exit Node'), _('Declare this device as an Exit Node.'), { rmempty: false }],
@@ -429,7 +429,9 @@ function renderLogs(logs_data) {
 	}
 
 	const lines = logs_data.logs.map(function(line) {
-		return E('div', { 'style': 'white-space: pre; font-family: monospace; font-size: 13px; line-height: 1.5;' }, line);
+		// An array child becomes a text node, a bare string would be assigned
+		// to innerHTML and a log record containing markup would run as HTML.
+		return E('div', { 'style': 'white-space: pre; font-family: monospace; font-size: 13px; line-height: 1.5;' }, [ line ]);
 	});
 
 	return E('div', {
@@ -683,7 +685,7 @@ return view.extend({
 
 		const fwBtn = s.taboption('general', form.Button, '_setup_firewall', _('Auto Configure Firewall'));
 		fwBtn.description = _('Essential configuration for Subnet Routing (Site-to-Site) and Exit Node features.')
-		+'<br>'+_('It creates the tailscale interface, adds it to a firewall zone, and sets up forwarding between LAN and Tailscale, plus Tailscale to WAN.')
+		+'<br>'+_('It binds the tailscale0 device to a firewall zone and sets up forwarding between LAN and Tailscale, plus Tailscale to WAN.')
 		+'<br>'+_('The Tailscale to WAN forwarding is what lets clients send their internet traffic through this device as an Exit Node.')
 		+'<br>'+_('Masquerading and MSS Clamping (MTU fix) are enabled to keep connections stable.');
 		fwBtn.inputstyle = 'action';
@@ -712,13 +714,23 @@ return view.extend({
 			return callSetupFirewall().then(function(res) {
 				unwrapRpc(res, _('Configuring firewall'));
 
-				if (!res.changed_network && !res.changed_firewall) {
+				if (res.job !== 'running') {
 					ui.addNotification(null, E('p', {}, _('Firewall configuration already applied.')), 'info');
 					return null;
 				}
 
-				notifyTimed(null, [ E('p', _('Configuration committed, reloading network and firewall. This can take a moment.')) ], 5000, 'info');
+				notifyTimed(null, [ E('p', _('Configuration committed, reloading firewall. This can take a moment.')) ], 5000, 'info');
 				return pollFirewallJob(res.run_id);
+			}).catch(function(err) {
+				// The reply itself can be the casualty of the reload it
+				// started, in which case the job is running fine and only the
+				// answer was lost. Ask the status endpoint before reporting a
+				// failure, so a dropped response does not read as an error.
+				return callGetFirewallStatus().then(function(st) {
+					if (st && st.run_id && (st.state === 'queued' || st.state === 'running'))
+						return pollFirewallJob(st.run_id);
+					throw err;
+				});
 			}).catch(function(err) {
 				ui.addNotification(null, E('p', {}, _('Failed to configure firewall: %s').format(err?.message || err?.error || err || _('Unknown error'))), 'error');
 			});
@@ -727,7 +739,7 @@ return view.extend({
 		const helpTitle = s.taboption('general', form.DummyValue, '_help_title');
 		helpTitle.title = _('How to enable Site-to-Site?');
 		helpTitle.render = function() {
-			return E('div', { 'class': 'cbi-value', 'style': 'margin-top: 1em; border-top: 1px font-weight: bold;' }, [
+			return E('div', { 'class': 'cbi-value', 'style': 'margin-top: 1em; border-top: 1px solid var(--border-color-medium, #ccc); font-weight: bold;' }, [
 				E('label', { 'class': 'cbi-value-title' }, this.title),
 				E('div', { 'class': 'cbi-value-field', 'style': 'line-height: 1.6em; font-size: 95%; color: #555;' }, [
 					_('1. Select "Accept Routes" (to access remote devices).'), E('br'),
@@ -745,7 +757,7 @@ return view.extend({
 		const exitHelp = s.taboption('general', form.DummyValue, '_exit_node_help');
 		exitHelp.title = _('How to enable Exit Node?');
 		exitHelp.render = function() {
-			return E('div', { 'class': 'cbi-value', 'style': 'margin-top: 1em; border-top: 1px font-weight: bold;' }, [
+			return E('div', { 'class': 'cbi-value', 'style': 'margin-top: 1em; border-top: 1px solid var(--border-color-medium, #ccc); font-weight: bold;' }, [
 				E('label', { 'class': 'cbi-value-title' }, this.title),
 				E('div', { 'class': 'cbi-value-field', 'style': 'line-height: 1.6em; font-size: 95%; color: #555;' }, [
 					_('1. Enable "Advertise Exit Node".'), E('br'),
@@ -877,8 +889,10 @@ return view.extend({
 		s.tab('logs', _('Logs'));
 		const logsSection = s.taboption('logs', form.DummyValue, '_logs');
 		logsSection.render = function () {
+			// Logs are only fetched on Refresh, so the placeholder must not
+			// claim that nothing was found before anything was asked for.
 			const container = E('div', { 'id': 'tailscale_logs_display', 'class': 'cbi-value' },
-				_('No tailscale-related logs found.')
+				_('Click Refresh to load logs.')
 			);
 			return container;
 		};

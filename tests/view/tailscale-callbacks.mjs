@@ -260,7 +260,7 @@ async function run() {
 
 	console.log('test: success polls the background job until done');
 	const h2 = makeHarness({
-		setup_firewall: { success: true, changed_network: true, changed_firewall: true, run_id: 7 },
+		setup_firewall: { success: true, changed_network: true, changed_firewall: true, job: 'running', run_id: 7 },
 		get_firewall_status: { success: true, state: 'done', run_id: 7 }
 	});
 	await h2.start();
@@ -278,8 +278,8 @@ async function run() {
 
 	console.log('test: a failed background job is reported');
 	const h3 = makeHarness({
-		setup_firewall: { success: true, changed_network: true, changed_firewall: false, run_id: 8 },
-		get_firewall_status: { success: true, state: 'failed', message: 'Network reload failed', run_id: 8 }
+		setup_firewall: { success: true, changed_network: true, changed_firewall: false, job: 'running', run_id: 8 },
+		get_firewall_status: { success: true, state: 'failed', message: 'Firewall reload failed', run_id: 8 }
 	});
 	await h3.start();
 	await h3.button('_setup_firewall')();
@@ -288,12 +288,12 @@ async function run() {
 		h3.notifications.some(function(n) { return n.cls === 'error'; }),
 		JSON.stringify(h3.notifications));
 	check('the job message is surfaced',
-		h3.notifications.some(function(n) { return n.text.indexOf('Network reload failed') !== -1; }),
+		h3.notifications.some(function(n) { return n.text.indexOf('Firewall reload failed') !== -1; }),
 		JSON.stringify(h3.notifications));
 
 	console.log('test: nothing changed means no polling');
 	const h4 = makeHarness({
-		setup_firewall: { success: true, changed_network: false, changed_firewall: false, run_id: 0 }
+		setup_firewall: { success: true, changed_network: false, changed_firewall: false, job: 'idle', run_id: 0 }
 	});
 	await h4.start();
 	await h4.button('_setup_firewall')();
@@ -315,7 +315,7 @@ async function run() {
 
 	console.log('test: a result from a previous run is not accepted');
 	const h6 = makeHarness({
-		setup_firewall: { success: true, changed_network: true, changed_firewall: false, run_id: 200 },
+		setup_firewall: { success: true, changed_network: true, changed_firewall: false, job: 'running', run_id: 200 },
 		// the only answer available belongs to an earlier run and says done
 		get_firewall_status: { success: true, state: 'done', run_id: 100 }
 	}, { realTimers: true });
@@ -368,7 +368,7 @@ async function run() {
 	// The warning is advisory: blocking on a stale answer would make the
 	// button unusable after the first save on the same page.
 	const h10 = makeHarness({
-		setup_firewall: { success: true, changed_network: true, changed_firewall: true, run_id: 5 },
+		setup_firewall: { success: true, changed_network: true, changed_firewall: true, job: 'running', run_id: 5 },
 		get_firewall_status: { success: true, state: 'done', run_id: 5 }
 	}, { pending: true });
 	await h10.start();
@@ -383,7 +383,7 @@ async function run() {
 
 	console.log('test: no warning when nothing is staged');
 	const h11 = makeHarness({
-		setup_firewall: { success: true, changed_network: false, changed_firewall: false, run_id: 0 }
+		setup_firewall: { success: true, changed_network: false, changed_firewall: false, job: 'idle', run_id: 0 }
 	});
 	await h11.start();
 	await h11.button('_setup_firewall')();
@@ -394,7 +394,7 @@ async function run() {
 
 	console.log('test: a busy worker is reported instead of waiting to time out');
 	const h12 = makeHarness({
-		setup_firewall: { success: true, changed_network: true, changed_firewall: false, run_id: 9 },
+		setup_firewall: { success: true, changed_network: true, changed_firewall: false, job: 'running', run_id: 9 },
 		get_firewall_status: { success: true, state: 'busy', message: 'Another firewall reload is already running', run_id: 0 }
 	});
 	await h12.start();
@@ -417,6 +417,10 @@ async function run() {
 	// enough: dropping either of the first two must fail here.
 	const desc = String((h13.option('_setup_firewall') || {}).description || '');
 
+	check('the description names direct device binding',
+		desc.indexOf('binds the tailscale0 device to a firewall zone') !== -1, desc);
+	check('the description does not promise a network interface',
+		desc.indexOf('creates the tailscale interface') === -1, desc);
 	check('the description names the LAN and Tailscale directions',
 		desc.indexOf('forwarding between LAN and Tailscale') !== -1, desc);
 	check('the description names Tailscale to WAN as a separate direction',

@@ -60,6 +60,7 @@ EOF
 	chmod +x "$SANDBOX/bin/network" "$SANDBOX/bin/firewall"
 	sed -e "s#^STATE_FILE=.*#STATE_FILE='$STATE_FILE'#" \
 		-e "s#^LOCK_FILE=.*#LOCK_FILE='$LOCK_FILE'#" \
+		-e "s#^PENDING_FILE=.*#PENDING_FILE='$PENDING_FILE'#" \
 		-e "s#/etc/init.d/network#$SANDBOX/bin/network#g" \
 		-e "s#/etc/init.d/firewall#$SANDBOX/bin/firewall#g" \
 		"$WORKER" > "$SANDBOX/worker"
@@ -69,6 +70,7 @@ EOF
 STATE_FILE="$STATE_DIR/status"
 LOCK_FILE="$STATE_DIR/lock"
 LOCK_DIR="$LOCK_FILE.d"
+PENDING_FILE="$STATE_DIR/pending"
 RUN_ID="1234"
 load_functions
 
@@ -199,7 +201,7 @@ check "the takeover worker exits 0" [ "$status" -eq 0 ]
 check "done state" [ "$(sed -n 1p "$STATE_FILE")" = "done" ]
 check "done step" [ "$(sed -n 2p "$STATE_FILE")" = "done" ]
 check "run id kept" [ "$(sed -n 4p "$STATE_FILE")" = "staleid" ]
-check "network was reloaded" grep -qx network "$SANDBOX/reload.log"
+check "network is not reloaded" sh -c "! grep -qx network '$SANDBOX/reload.log'"
 check "firewall was reloaded" grep -qx firewall "$SANDBOX/reload.log"
 check "the lock is released" [ ! -e "$LOCK_DIR" ]
 check "no renamed lock left behind" [ -z "$(ls -d "$LOCK_DIR".stale.* 2>/dev/null)" ]
@@ -214,8 +216,56 @@ status=$?
 check "the takeover worker exits 0" [ "$status" -eq 0 ]
 check "done state" [ "$(sed -n 1p "$STATE_FILE")" = "done" ]
 check "run id kept" [ "$(sed -n 4p "$STATE_FILE")" = "notsid" ]
-check "network was reloaded" grep -qx network "$SANDBOX/reload.log"
+check "network is not reloaded" sh -c "! grep -qx network '$SANDBOX/reload.log'"
 check "the lock is released" [ ! -e "$LOCK_DIR" ]
+
+echo "test: a finished run clears the pending marker"
+rm -rf "$LOCK_DIR" "$STATE_FILE" "$SANDBOX/reload.log"
+rm -f "$PENDING_FILE"
+: > "$PENDING_FILE"
+sh "$SANDBOX/worker" pendingdone
+status=$?
+check "the worker exits 0" [ "$status" -eq 0 ]
+check "done state" [ "$(sed -n 1p "$STATE_FILE")" = "done" ]
+check "the pending marker is gone" [ ! -e "$PENDING_FILE" ]
+
+echo "test: a failed run keeps the pending marker for a retry"
+rm -rf "$LOCK_DIR" "$STATE_FILE" "$SANDBOX/reload.log"
+rm -f "$PENDING_FILE"
+: > "$PENDING_FILE"
+cat > "$SANDBOX/bin/firewall" <<EOF
+#!/bin/sh
+exit 1
+EOF
+chmod +x "$SANDBOX/bin/firewall"
+sh "$SANDBOX/worker" pendingfail
+status=$?
+check "the worker exits 1" [ "$status" -eq 1 ]
+check "failed state" [ "$(sed -n 1p "$STATE_FILE")" = "failed" ]
+check "the pending marker survives" [ -e "$PENDING_FILE" ]
+check "the lock is released" [ ! -e "$LOCK_DIR" ]
+build_worker
+
+echo "test: a terminated worker stops instead of finishing the reload"
+rm -rf "$LOCK_DIR" "$STATE_FILE" "$SANDBOX/reload.log"
+rm -f "$PENDING_FILE"
+cat > "$SANDBOX/bin/firewall" <<EOF
+#!/bin/sh
+echo firewall >> "$SANDBOX/reload.log"
+sleep 30
+EOF
+chmod +x "$SANDBOX/bin/firewall"
+sh "$SANDBOX/worker" sigid &
+worker_pid=$!
+sleep 0.3
+kill -TERM "$worker_pid" 2>/dev/null
+wait "$worker_pid"
+status=$?
+check "the worker reports failure" [ "$status" -ne 0 ]
+check "aborted step" [ "$(sed -n 2p "$STATE_FILE")" = "aborted" ]
+check "no reload after the signal" [ ! -e "$SANDBOX/reload.log" ]
+check "the lock is released" [ ! -e "$LOCK_DIR" ]
+build_worker
 
 echo
 echo "passed: $passes  failed: $failures"

@@ -2,8 +2,7 @@
 # Background worker for the "Auto Configure Firewall" action.
 #
 # Kept outside the rpcd plugin on purpose: the RPC must return before the
-# network is reloaded, otherwise a request coming through the network being
-# reloaded (reverse proxy, or LuCI over Tailscale itself) dies with an XHR
+# firewall is reloaded, otherwise the request connection can die with an XHR
 # abort and the user cannot tell whether anything happened.
 #
 # The status file is line based rather than JSON so that a message containing
@@ -15,6 +14,11 @@
 
 STATE_FILE=/var/run/tailscale-fwsetup.status
 LOCK_FILE=/var/run/tailscale-fwsetup.lock
+# Records that a committed configuration still has to be applied. The RPC
+# writes it before it commits, and this worker removes it only after a
+# successful reload, so a run that failed or was killed can be retried even
+# though the UCI diff is already gone by then.
+PENDING_FILE=/var/run/tailscale-fwsetup.pending
 
 RUN_ID="$1"
 
@@ -34,7 +38,7 @@ write_state() {
 }
 
 # Only one worker at a time: a second click while a reload is running would
-# queue another network reload on top of an unfinished one. mkdir is atomic and
+# queue another firewall reload on top of an unfinished one. mkdir is atomic and
 # is the only portable primitive available here; a test-then-write pair lets
 # two workers through at the same moment. Stale locks are recognised by age and
 # by a dead pid so a killed worker cannot block forever, but a lock that is
@@ -97,17 +101,20 @@ fi
 echo "$$" > "$LOCK_DIR/pid"
 date +%s > "$LOCK_DIR/ts"
 
-trap 'write_state failed aborted "Worker terminated unexpectedly"; rm -rf "$LOCK_DIR"' EXIT HUP INT TERM
+# A trapped signal runs the handler and then lets the shell carry on with the
+# next command, which would reload the firewall after reporting "failed" and
+# still finish with "done". Exit instead and leave the cleanup to the EXIT trap.
+trap 'write_state failed aborted "Worker terminated unexpectedly"; rm -rf "$LOCK_DIR"' EXIT
+trap 'exit 1' HUP INT TERM
 
-write_state running network "Reloading network"
+# Let the RPC reply reach the client before the firewall reload potentially
+# interrupts its connection. The reply is written after the RPC returns, so
+# reloading immediately can make the UI report an error for a job that did run.
+sleep 1
 
-if ! /etc/init.d/network reload >/dev/null 2>&1; then
-	write_state failed network "Network reload failed"
-	trap - EXIT HUP INT TERM
-	rm -rf "$LOCK_DIR"
-	exit 1
-fi
-
+# Do not reload network here. Legacy configurations may still have a proto-none
+# network interface bound to tailscale0, and netifd would erase tailscaled's
+# addresses and routes. This worker only needs to apply firewall changes.
 write_state running firewall "Reloading firewall"
 
 if ! /etc/init.d/firewall reload >/dev/null 2>&1; then
@@ -118,5 +125,8 @@ if ! /etc/init.d/firewall reload >/dev/null 2>&1; then
 fi
 
 write_state done done "Firewall configuration applied"
+# Only a finished reload clears this, so a failed or killed run is retried by
+# the next click even though its UCI changes are already committed.
+rm -f "$PENDING_FILE"
 trap - EXIT HUP INT TERM
 rm -rf "$LOCK_DIR"

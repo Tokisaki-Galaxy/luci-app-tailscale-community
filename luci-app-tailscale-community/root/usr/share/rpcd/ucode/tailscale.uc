@@ -233,31 +233,25 @@ methods.get_subroutes = {
 methods.setup_firewall = {
 	call: function() {
 		try {
-			uci.load('tailscale');
-
-			uci.load('network');
 			uci.load('firewall');
 
-			let changed_network = false;
 			let changed_firewall = false;
 			let run_id = 0;
 
-			// 1. config Network Interface
-			let net_ts = uci.get('network', 'tailscale');
-			if (net_ts == null) {
-				uci.set('network', 'tailscale', 'interface');
-				uci.set('network', 'tailscale', 'proto', 'none');
-				uci.set('network', 'tailscale', 'device', 'tailscale0');
-				changed_network = true;
-			} else {
-				let current_dev = uci.get('network', 'tailscale', 'device');
-				if (current_dev != 'tailscale0') {
-					uci.set('network', 'tailscale', 'device', 'tailscale0');
-					changed_network = true;
-				}
-			}
+			// A previous run that failed or was killed left the configuration
+			// committed but not applied, so its UCI diff is gone and a second
+			// click would otherwise report "already configured" while nothing
+			// took effect. This marker is written before the commit and
+			// removed only by a worker that finished the reload.
+			const PENDING = '/var/run/tailscale-fwsetup.pending';
+			let pending = access(PENDING);
 
-			// 2. config Firewall Zone
+			// Bind the firewall zone directly to the tun device. Creating a
+			// proto-none network interface would let netifd take ownership of
+			// tailscale0 and erase tailscaled's addresses and routes on reload.
+			// Leave existing network-based configurations untouched. The worker
+			// only reloads the firewall, so netifd does not clear their state.
+			// 1. config Firewall Zone
 			let ts_zone_section = null;
 			let fwd_lan_to_ts = false;
 			let fwd_ts_to_lan = false;
@@ -279,35 +273,52 @@ methods.setup_firewall = {
 				uci.set('firewall', zid, 'forward', 'ACCEPT');
 				uci.set('firewall', zid, 'masq', '1');
 				uci.set('firewall', zid, 'mtu_fix', '1');
-				uci.set('firewall', zid, 'network', ['tailscale']);
+				uci.set('firewall', zid, 'device', ['tailscale0']);
 				changed_firewall = true;
 			} else {
-				let nets = uci.get('firewall', ts_zone_section, 'network');
-				let net_list = [];
-				let has_ts_net = false;
+				let devices = uci.get('firewall', ts_zone_section, 'device');
+				let has_ts_device = false;
 
-				if (type(nets) == 'array') {
-					net_list = nets;
-				} else if (type(nets) == 'string') {
-					net_list = [nets];
-				}
+				if (type(devices) == 'string')
+					devices = [devices];
 
-				// check if 'tailscale' is already in the list
-				for (let n in net_list) {
-					if (n == 'tailscale') {
-						has_ts_net = true;
-						break;
+				if (type(devices) == 'array') {
+					for (let d in devices) {
+						if (d == 'tailscale0') {
+							has_ts_device = true;
+							break;
+						}
 					}
 				}
 
-				if (!has_ts_net) {
-					push(net_list, 'tailscale');
-					uci.set('firewall', ts_zone_section, 'network', net_list);
-					changed_firewall = true;
+				// A device-based zone is already safe. Do not reintroduce the
+				// network reference when the button is clicked again.
+				if (!has_ts_device) {
+					let nets = uci.get('firewall', ts_zone_section, 'network');
+					let net_list = [];
+					let has_ts_net = false;
+
+					if (type(nets) == 'array') {
+						net_list = nets;
+					} else if (type(nets) == 'string') {
+						net_list = [nets];
+					}
+
+					for (let n in net_list) {
+						if (n == 'tailscale') {
+							has_ts_net = true;
+							break;
+						}
+					}
+
+					if (!has_ts_net) {
+						uci.set('firewall', ts_zone_section, 'device', ['tailscale0']);
+						changed_firewall = true;
+					}
 				}
 			}
 
-			// 3. config Forwarding
+			// 2. config Forwarding
 			if (!fwd_lan_to_ts) {
 				let fid = uci.add('firewall', 'forwarding');
 				uci.set('firewall', fid, 'src', 'lan');
@@ -335,15 +346,19 @@ methods.setup_firewall = {
 				changed_firewall = true;
 			}
 
-			// 4. save and hand the reload to a background worker
+			// 3. save and hand the reload to a background worker
 			//
-			// Reloading network/firewall synchronously here was the reason the
-			// button failed through a reverse proxy: the reload tears down the
+			// Reloading the firewall synchronously here can tear down the
 			// connection carrying this very request. The worker records its
 			// progress in /var/run/tailscale-fwsetup.status and the UI polls it.
-			if (changed_network) {
-				uci.save('network');
-				uci.commit('network');
+			if (changed_firewall) {
+				// Written before the commit: if anything below fails, the
+				// configuration is already committed and only the reload is
+				// missing, which is exactly what the marker records.
+				if (writefile(PENDING, '1\n') == null) {
+					return { error: 'Cannot write the firewall pending marker in /var/run. The configuration was not changed.' };
+				}
+				pending = true;
 			}
 
 			if (changed_firewall) {
@@ -351,7 +366,7 @@ methods.setup_firewall = {
 				uci.commit('firewall');
 			}
 
-			if (changed_network || changed_firewall) {
+			if (pending) {
 				if (!access('/usr/libexec/tailscale-setup-firewall')) {
 					return { error: 'Firewall worker /usr/libexec/tailscale-setup-firewall is missing. Reinstall the package.' };
 				}
@@ -390,11 +405,11 @@ methods.setup_firewall = {
 
 			return {
 				success: true,
-				changed_network: changed_network,
+				changed_network: false,
 				changed_firewall: changed_firewall,
-				job: (changed_network || changed_firewall) ? 'running' : 'idle',
+				job: pending ? 'running' : 'idle',
 				run_id: run_id,
-				message: (changed_network || changed_firewall) ? 'Configuration committed, reloading network and firewall in the background.' : 'Tailscale firewall/interface already configured.'
+				message: pending ? 'Configuration committed, reloading firewall in the background.' : 'Tailscale firewall already configured.'
 			};
 
 		} catch (e) {
